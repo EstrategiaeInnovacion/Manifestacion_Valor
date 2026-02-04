@@ -1,0 +1,27 @@
+:root {
+    --ei-blue-dark: #001a4d; 
+    --ei-blue-main: #003399;
+}
+
+body { 
+    font-family: 'Instrument Sans', sans-serif; 
+}
+
+.bg-ei-gradient {
+    background: linear-gradient(135deg, #001a4d 0%, #002b80 100%);
+}
+
+.glass-card {
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.image-container {
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+}
+
+.welcome-pattern {
+    background-image: radial-gradient(#fff 1px, transparent 1px);
+    background-size: 40px 40px;
+}

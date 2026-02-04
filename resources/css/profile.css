@@ -1,0 +1,227 @@
+/* Profile page styles */
+.bg-ei-gradient {
+    background: linear-gradient(135deg, #001a4d 0%, #002b80 100%);
+}
+
+.profile-card {
+    background: white;
+    border-radius: 2rem;
+    padding: 2.5rem;
+    border: 1px solid #eef2f6;
+    box-shadow: 0 10px 30px -15px rgba(0, 0, 0, 0.05);
+}
+
+.profile-header {
+    margin-bottom: 2rem;
+}
+
+.profile-title {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #001a4d;
+    margin-bottom: 0.5rem;
+}
+
+.profile-description {
+    color: #64748b;
+    font-size: 0.875rem;
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: #001a4d;
+    margin-bottom: 0.5rem;
+    padding-left: 0.25rem;
+}
+
+.form-input {
+    width: 100%;
+    padding: 1rem 1.5rem;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 1rem;
+    transition: all 0.3s;
+    outline: none;
+    font-size: 0.875rem;
+}
+
+.form-input:focus {
+    background: white;
+    border-color: #003399;
+    box-shadow: 0 0 0 3px rgba(0, 51, 153, 0.1);
+}
+
+.btn-primary {
+    background: #001a4d;
+    color: white;
+    font-weight: 700;
+    padding: 0.875rem 2rem;
+    border-radius: 1rem;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-size: 0.875rem;
+}
+
+.btn-primary:hover {
+    background: #003399;
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px -5px rgba(0, 26, 77, 0.2);
+}
+
+.btn-danger {
+    background: #ef4444;
+    color: white;
+    font-weight: 700;
+    padding: 0.875rem 2rem;
+    border-radius: 1rem;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-size: 0.875rem;
+}
+
+.btn-danger:hover {
+    background: #dc2626;
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px -5px rgba(239, 68, 68, 0.3);
+}
+
+.btn-secondary {
+    background: #f1f5f9;
+    color: #475569;
+    font-weight: 600;
+    padding: 0.875rem 2rem;
+    border-radius: 1rem;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-size: 0.875rem;
+}
+
+.btn-secondary:hover {
+    background: #e2e8f0;
+}
+
+.success-message {
+    color: #059669;
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+.error-message {
+    color: #ef4444;
+    font-size: 0.875rem;
+    margin-top: 0.5rem;
+}
+
+.verification-box {
+    background: #fef3c7;
+    border: 1px solid #fbbf24;
+    border-radius: 1rem;
+    padding: 1rem;
+    margin-top: 1rem;
+}
+
+.verification-link {
+    color: #d97706;
+    font-weight: 600;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.verification-link:hover {
+    color: #b45309;
+}
+
+/* Dropdown menu */
+.user-dropdown {
+    position: relative;
+}
+
+.dropdown-menu {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    margin-top: 0.75rem;
+    background: white;
+    border-radius: 1.25rem;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+    border: 1px solid #eef2f6;
+    min-width: 240px;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 50;
+}
+
+.dropdown-menu.active {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.dropdown-menu::before {
+    content: '';
+    position: absolute;
+    top: -6px;
+    right: 20px;
+    width: 12px;
+    height: 12px;
+    background: white;
+    border-left: 1px solid #eef2f6;
+    border-top: 1px solid #eef2f6;
+    transform: rotate(45deg);
+}
+
+.dropdown-header {
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid #eef2f6;
+}
+
+.dropdown-item {
+    padding: 1rem 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: #475569;
+    transition: all 0.2s;
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.dropdown-item:hover {
+    background: #f8fafc;
+    color: #001a4d;
+}
+
+.dropdown-item:last-child {
+    border-radius: 0 0 1.25rem 1.25rem;
+}
+
+.dropdown-item.logout {
+    color: #ef4444;
+    border-top: 1px solid #eef2f6;
+}
+
+.dropdown-item.logout:hover {
+    background: #fef2f2;
+    color: #dc2626;
+}
+
+.avatar-button {
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.avatar-button:hover {
+    transform: scale(1.05);
+    box-shadow: 0 10px 25px -5px rgba(0, 26, 77, 0.2);
+}

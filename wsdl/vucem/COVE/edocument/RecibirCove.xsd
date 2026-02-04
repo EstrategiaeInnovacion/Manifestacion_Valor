@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schema 
+	xmlns="http://www.w3.org/2001/XMLSchema"
+	targetNamespace="http://www.ventanillaunica.gob.mx/cove/ws/oxml/"
+	xmlns:tns="http://www.ventanillaunica.gob.mx/cove/ws/oxml/"
+	elementFormDefault="qualified">
+	
+	<complexType name="FirmaElectronica">
+        <annotation>
+            <documentation>Datos de la firma electronica</documentation>
+        </annotation>
+        <sequence>
+            <element name="certificado" type="base64Binary" minOccurs="1" nillable="false">
+                <annotation>
+                    <documentation>Certificado Digital en base64</documentation>
+                </annotation>
+            </element>
+            <element name="cadenaOriginal" type="string" minOccurs="1" nillable="false">
+                <annotation>
+                    <documentation>Cadena original para obtener la firma digital (formato: |numeroOperacion|RFC|)</documentation>
+                </annotation>
+            </element>
+            <element name="firma" type="base64Binary" minOccurs="1" nillable="false">
+                <annotation>
+                    <documentation>Firma digital generada</documentation>
+                </annotation>
+            </element>
+        </sequence>
+    </complexType>
+
+</schema>

@@ -1,0 +1,6 @@
+<?xml version='1.0' encoding='UTF-8'?><!-- Published by JAX-WS RI at http://jax-ws.dev.java.net. RI's version is Oracle JAX-WS 2.1.5. --><xs:schema xmlns:ns1="http://www.ventanillaunica.gob.mx/ws/consulta/acuses/" xmlns:xs="http://www.w3.org/2001/XMLSchema" version="1.0" targetNamespace="http://www.ventanillaunica.gob.mx/consulta/acuses/oxml">
+
+<xs:import namespace="http://www.ventanillaunica.gob.mx/ws/consulta/acuses/" schemaLocation="https://www.ventanillaunica.gob.mx:443/ventanilla-acuses-HA/ConsultaAcusesServiceWS?xsd=1"/>
+
+<xs:element name="consultaAcusesPeticion" nillable="true" type="ns1:requestConsultaAcuses"/>
+</xs:schema>

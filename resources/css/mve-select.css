@@ -1,0 +1,130 @@
+@import './dashboard.css';
+
+.applicants-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 1.5rem;
+}
+
+.applicant-card {
+    background: white;
+    border-radius: 1.5rem;
+    padding: 1.5rem;
+    border: 2px solid #eef2f6;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+}
+
+.applicant-card:hover {
+    border-color: #003399;
+    transform: translateY(-4px);
+    box-shadow: 0 20px 40px -12px rgba(0, 51, 153, 0.15);
+}
+
+.applicant-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+}
+
+.applicant-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 1rem;
+    background: linear-gradient(135deg, #001a4d 0%, #003399 100%);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.applicant-name {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: #001a4d;
+    margin-bottom: 0.25rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+
+.applicant-rfc {
+    font-size: 0.875rem;
+    color: #64748b;
+    font-weight: 600;
+}
+
+.applicant-divider {
+    height: 1px;
+    background: #eef2f6;
+    margin: 1rem 0;
+}
+
+.applicant-details {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.detail-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.applicant-action {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #eef2f6;
+    transition: all 0.3s;
+}
+
+.applicant-card:hover .applicant-action {
+    gap: 1rem;
+}
+
+.empty-state {
+    background: white;
+    border-radius: 2rem;
+    padding: 4rem 2rem;
+    text-align: center;
+    border: 2px dashed #cbd5e1;
+}
+
+.empty-icon {
+    width: 80px;
+    height: 80px;
+    border-radius: 1.5rem;
+    background: #f1f5f9;
+    color: #94a3b8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+}
+
+.btn-primary {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.875rem 1.75rem;
+    background: linear-gradient(135deg, #001a4d 0%, #003399 100%);
+    color: white;
+    font-weight: 700;
+    border-radius: 1rem;
+    transition: all 0.3s;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px -5px rgba(0, 51, 153, 0.3);
+}

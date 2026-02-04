@@ -1,0 +1,44 @@
+<?xml version='1.0' encoding='UTF-8'?><!-- Published by JAX-WS RI at http://jax-ws.dev.java.net. RI's version is Oracle JAX-WS 2.1.5. --><xs:schema xmlns:tns="http://www.ventanillaunica.gob.mx/ws/consulta/acuses/" xmlns:xs="http://www.w3.org/2001/XMLSchema" version="1.0" targetNamespace="http://www.ventanillaunica.gob.mx/ws/consulta/acuses/">
+
+<xs:element name="responseConsultaAcuses" nillable="true" type="tns:responseConsultaAcuses"/>
+
+<xs:complexType name="requestConsultaAcuses">
+<xs:sequence>
+<xs:element name="idEdocument" type="xs:string"/>
+</xs:sequence>
+</xs:complexType>
+
+<xs:complexType name="responseConsultaAcuses">
+<xs:complexContent>
+<xs:extension base="tns:baseSerializableModel">
+<xs:sequence>
+<xs:element name="code" type="xs:int"/>
+<xs:element name="descripcion" type="xs:string" minOccurs="0"/>
+<xs:element name="error" type="xs:boolean"/>
+<xs:element name="mensaje" type="tns:mensaje" nillable="true" minOccurs="0" maxOccurs="unbounded"/>
+<xs:element name="mensajeErrores" type="tns:mensaje" nillable="true" minOccurs="0" maxOccurs="unbounded"/>
+<xs:element name="acuseDocumento" type="xs:string" minOccurs="0"/>
+</xs:sequence>
+</xs:extension>
+</xs:complexContent>
+</xs:complexType>
+
+<xs:complexType name="baseSerializableModel">
+<xs:complexContent>
+<xs:extension base="tns:baseModel">
+<xs:sequence/>
+</xs:extension>
+</xs:complexContent>
+</xs:complexType>
+
+<xs:complexType name="baseModel">
+<xs:sequence/>
+</xs:complexType>
+
+<xs:complexType name="mensaje">
+<xs:sequence>
+<xs:element name="claveMensaje" type="xs:string" minOccurs="0"/>
+<xs:element name="descripcion" type="xs:string" minOccurs="0"/>
+</xs:sequence>
+</xs:complexType>
+</xs:schema>
