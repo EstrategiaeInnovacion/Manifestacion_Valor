@@ -28,7 +28,6 @@ class MvClientApplicant extends Model
         'interior_number',
         'area_code',
         'phone',
-        'ws_file_upload_key',
     ];
 
     /**
@@ -50,7 +49,6 @@ class MvClientApplicant extends Model
         'interior_number' => 'encrypted',
         'area_code' => 'encrypted',
         'phone' => 'encrypted',
-        //'ws_file_upload_key' => 'encrypted',
     ];
 
     /**

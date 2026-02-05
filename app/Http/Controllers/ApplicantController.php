@@ -45,7 +45,6 @@ class ApplicantController extends Controller
             'interior_number' => ['nullable', 'string', 'max:20'],
             'area_code' => ['required', 'string', 'max:5'],
             'phone' => ['required', 'string', 'max:20'],
-            'ws_file_upload_key' => ['nullable', 'string', 'max:255'],
         ]);
 
         $validated['user_email'] = auth()->user()->email;
@@ -92,7 +91,6 @@ class ApplicantController extends Controller
             'interior_number' => ['nullable', 'string', 'max:20'],
             'area_code' => ['required', 'string', 'max:5'],
             'phone' => ['required', 'string', 'max:20'],
-            'ws_file_upload_key' => ['nullable', 'string', 'max:255'],
         ]);
 
         $applicant->update($validated);

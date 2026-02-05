@@ -233,6 +233,10 @@
     background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%);
 }
 
+.mve-icon-success {
+    background: linear-gradient(135deg, #10b981 0%, #22c55e 100%);
+}
+
 .mve-badge {
     position: absolute;
     top: 1rem;
@@ -249,6 +253,23 @@
     justify-content: center;
     box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
     animation: pulse 2s infinite;
+}
+
+.mve-badge-success {
+    background: linear-gradient(135deg, #10b981 0%, #22c55e 100%);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+    animation: pulse-success 2s infinite;
+}
+
+@keyframes pulse-success {
+    0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+    }
+    50% {
+        transform: scale(1.1);
+        box-shadow: 0 6px 16px rgba(16, 185, 129, 0.6);
+    }
 }
 
 @keyframes fadeIn {

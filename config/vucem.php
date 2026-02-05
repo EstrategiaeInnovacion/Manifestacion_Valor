@@ -154,11 +154,12 @@ return [
     */
     'send_manifestation_enabled' => env('VUCEM_SEND_MANIFESTATION_ENABLED', false),
     
-    'mv_endpoint' => env('VUCEM_MV_ENDPOINT', 'https://privados.ventanillaunica.gob.mx:8104/IngresoManifestacionImpl/IngresoManifestacionService'),
+    // Endpoint sin puerto 8104 (el puerto 8104 no es accesible externamente)
+    'mv_endpoint' => env('VUCEM_MV_ENDPOINT', 'https://privados.ventanillaunica.gob.mx/IngresoManifestacionImpl/IngresoManifestacionService'),
     'mv_wsdl' => env('VUCEM_MV_WSDL', 'https://privados.ventanillaunica.gob.mx/IngresoManifestacionImpl/IngresoManifestacionService?wsdl'),
     
     'mv_consulta_endpoint' => env('VUCEM_MV_CONSULTA_ENDPOINT', 'https://privados.ventanillaunica.gob.mx/ConsultaManifestacionImpl/ConsultaManifestacionService'),
     'mv_consulta_wsdl' => env('VUCEM_MV_CONSULTA_WSDL', 'https://privados.ventanillaunica.gob.mx/ConsultaManifestacionImpl/ConsultaManifestacionService?wsdl'),
     
-    'soap_timeout' => env('VUCEM_SOAP_TIMEOUT', 30),
+    'soap_timeout' => env('VUCEM_SOAP_TIMEOUT', 60),
 ];

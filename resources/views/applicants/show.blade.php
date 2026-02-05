@@ -190,13 +190,6 @@
                         <span class="detail-value">{{ $applicant->phone }}</span>
                     </div>
 
-                    @if($applicant->ws_file_upload_key)
-                        <div class="detail-item">
-                            <span class="detail-label">Clave Web Services</span>
-                            <span class="detail-value font-mono text-sm">{{ $applicant->ws_file_upload_key }}</span>
-                        </div>
-                    @endif
-
                     <div class="detail-item">
                         <span class="detail-label">Teléfono Completo</span>
                         <span class="detail-value font-semibold text-[#003399]">+{{ $applicant->area_code }} {{ $applicant->phone }}</span>

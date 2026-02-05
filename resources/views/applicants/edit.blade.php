@@ -203,12 +203,6 @@
                                 <input type="text" id="phone" name="phone" value="{{ old('phone', $applicant->phone) }}" 
                                        class="form-input" maxlength="20" required>
                             </div>
-
-                            <div class="form-group">
-                                <label for="ws_file_upload_key" class="form-label">Clave WS (Opcional)</label>
-                                <input type="text" id="ws_file_upload_key" name="ws_file_upload_key" 
-                                       value="{{ old('ws_file_upload_key', $applicant->ws_file_upload_key) }}" class="form-input">
-                            </div>
                         </div>
                     </div>
 

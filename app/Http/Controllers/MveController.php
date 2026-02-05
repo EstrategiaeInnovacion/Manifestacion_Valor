@@ -337,11 +337,29 @@ class MveController extends Controller
             
         $documentosPendientes = MvDocumentos::with('applicant')
             ->whereIn('applicant_id', $applicantIds)
+            ->whereIn('status', $estadosPendientes)
             ->get();
         
         return view('mve.pendientes', compact('datosMvPendientes', 'covePendientes', 'documentosPendientes'));
     }
     
+    /**
+     * Ver MVE Completadas (enviadas a VUCEM)
+     */
+    public function completadas()
+    {
+        // Obtener todos los solicitantes del usuario
+        $applicantIds = MvClientApplicant::where('user_email', auth()->user()->email)
+            ->pluck('id');
+        
+        // Obtener manifestaciones enviadas (con acuse)
+        $mveCompletadas = MvAcuse::with(['applicant', 'datosManifestacion'])
+            ->whereIn('applicant_id', $applicantIds)
+            ->orderByDesc('fecha_envio')
+            ->get();
+            
+        return view('mve.completadas', compact('mveCompletadas'));
+    }
 
 
     /**
@@ -869,6 +887,7 @@ class MveController extends Controller
     /**
      * Firmar y enviar manifestación a VUCEM mediante AJAX
      * Usa PhpCfdi para procesar los archivos de e.firma
+     * Valida el XML SOAP antes de enviar
      */
     public function firmarYEnviarAjax(Request $request, $applicantId)
     {
@@ -882,16 +901,18 @@ class MveController extends Controller
                 ], 403);
             }
             
-            // Validar archivos de e.firma
+            // Validar archivos de e.firma y clave webservice
             $validator = Validator::make($request->all(), [
                 'certificado' => 'required|file',
                 'llave_privada' => 'required|file',
                 'password_llave' => 'required|string',
+                'clave_webservice' => 'required|string',
                 'confirmacion' => 'required|accepted'
             ], [
                 'certificado.required' => 'El archivo de certificado (.cer) es obligatorio',
                 'llave_privada.required' => 'El archivo de llave privada (.key) es obligatorio',
                 'password_llave.required' => 'La contraseña de la llave privada es obligatoria',
+                'clave_webservice.required' => 'La clave del web service de VUCEM es obligatoria',
                 'confirmacion.required' => 'Debe confirmar que la información es correcta',
                 'confirmacion.accepted' => 'Debe confirmar que la información es correcta'
             ]);
@@ -914,6 +935,54 @@ class MveController extends Controller
                     'message' => 'La manifestación debe estar en estado "guardado" para poder firmar'
                 ], 400);
             }
+
+            // =====================================================
+            // VALIDACIÓN DEL XML SOAP ANTES DE PROCESAR
+            // =====================================================
+            $claveWebservice = $request->input('clave_webservice');
+            $soapService = new \App\Services\MvVucemSoapService();
+            
+            // Generar y validar XML sin firma (para verificar estructura de datos)
+            $xmlValidation = $soapService->buildSoapXml(
+                $applicant,
+                $datosManifestacion,
+                $informacionCove,
+                $documentosRecord,
+                strtoupper($applicant->applicant_rfc),
+                $claveWebservice,
+                [] // Sin firma en validación inicial
+            );
+            
+            // Si hay errores en la estructura del XML, devolver sin continuar
+            if (!$xmlValidation['success'] || !empty($xmlValidation['errors'])) {
+                $errores = $xmlValidation['errors'] ?? ['Error desconocido en la estructura del XML'];
+                Log::warning('MVE AJAX - Validación XML fallida', [
+                    'applicant_id' => $applicantId,
+                    'errors' => $errores
+                ]);
+                
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Error en los datos de la manifestación: ' . implode(', ', $errores),
+                    'validation_errors' => $errores
+                ], 400);
+            }
+            
+            // Validar estructura XML
+            $structureValidation = $xmlValidation['validation'] ?? [];
+            if (!($structureValidation['xml_valid'] ?? false)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Error en la estructura del XML SOAP. Verifique los datos ingresados.',
+                    'validation_errors' => $structureValidation['errors'] ?? []
+                ], 400);
+            }
+
+            Log::info('MVE AJAX - Validación XML exitosa', [
+                'applicant_id' => $applicantId,
+                'xml_valid' => true
+            ]);
+            // =====================================================
             
             // Guardar archivos temporalmente
             $certificadoPath = $request->file('certificado')->store('temp/efirma');
@@ -1215,4 +1284,5 @@ class MveController extends Controller
             ->header('Content-Disposition', 'attachment; filename="respuesta_mve_' . $acuse->folio_manifestacion . '.xml"')
             ->header('Content-Length', strlen($acuse->xml_respuesta));
     }
+
 }

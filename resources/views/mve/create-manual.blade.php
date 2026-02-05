@@ -1253,6 +1253,7 @@
                         <i data-lucide="trash-2" class="w-5 h-5 mr-2"></i>
                         Borrar Borrador
                     </button>
+
                 </div>
                 
                 <button type="button" id="btnGuardarManifestacion" onclick="guardarManifestacionCompleta()" class="btn-primary-large" disabled>

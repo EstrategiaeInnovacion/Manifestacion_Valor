@@ -10,7 +10,7 @@ use App\Models\MvClientApplicant;
 
 echo "=== SOLICITANTES DISPONIBLES ===\n\n";
 
-$solicitantes = MvClientApplicant::select('id', 'applicant_rfc', 'ws_file_upload_key')
+$solicitantes = MvClientApplicant::select('id', 'applicant_rfc', 'business_name')
     ->get();
 
 if ($solicitantes->isEmpty()) {
@@ -19,7 +19,7 @@ if ($solicitantes->isEmpty()) {
     foreach ($solicitantes as $solicitante) {
         echo "ID: {$solicitante->id}\n";
         echo "RFC: {$solicitante->applicant_rfc}\n";
-        echo "WS Key: " . (strlen($solicitante->ws_file_upload_key ?? '') > 0 ? '[CONFIGURADA]' : '[FALTANTE]') . "\n";
+        echo "Razón Social: {$solicitante->business_name}\n";
         echo "---\n";
     }
 }

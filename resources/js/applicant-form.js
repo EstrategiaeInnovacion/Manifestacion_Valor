@@ -71,7 +71,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const textInputs = document.querySelectorAll('input[type="text"], textarea');
     textInputs.forEach(function(input) {
         // Excluir campos que no deben estar en mayúsculas
-        const excludeIds = ['area_code', 'phone', 'postal_code', 'ws_file_upload_key'];
+        const excludeIds = ['area_code', 'phone', 'postal_code'];
         
         if (!excludeIds.includes(input.id)) {
             input.addEventListener('input', function(e) {

@@ -297,7 +297,7 @@
                 <div class="mve-modal-body">
                     <p class="text-slate-600 mb-8">Seleccione el método para crear la Manifestación de Valor:</p>
                     
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                         <button type="button" onclick="selectMveManual()" class="mve-option-card">
                             <div class="mve-option-icon">
                                 <i data-lucide="pencil" class="w-8 h-8"></i>
@@ -323,6 +323,18 @@
                             <p class="text-sm text-slate-500">Continuar con manifestaciones guardadas en borrador</p>
                             @if($mvePendientesCount > 0)
                                 <div class="mve-badge">{{ $mvePendientesCount }}</div>
+                            @endif
+                        </button>
+                        
+                        {{-- Cuarta opción: MVE Completadas --}}
+                        <button type="button" onclick="selectMveCompletadas()" class="mve-option-card mve-option-completadas">
+                            <div class="mve-option-icon mve-icon-success">
+                                <i data-lucide="check-circle" class="w-8 h-8"></i>
+                            </div>
+                            <h4 class="text-xl font-bold text-[#001a4d] mb-2">MVE Completadas</h4>
+                            <p class="text-sm text-slate-500">Ver manifestaciones enviadas a VUCEM</p>
+                            @if($mveCompletadasCount > 0)
+                                <div class="mve-badge mve-badge-success">{{ $mveCompletadasCount }}</div>
                             @endif
                         </button>
                     </div>

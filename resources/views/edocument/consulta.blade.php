@@ -73,8 +73,8 @@
                         Información sobre Credenciales
                     </h3>
                     <div class="text-xs text-blue-700 space-y-1">
-                        <p>• <strong>RFC:</strong> Se obtiene automáticamente de su perfil o de los RFC asociados.</p>
-                        <p>• <strong>Clave WebService:</strong> Se utiliza la configurada en el solicitante seleccionado.</p>
+                        <p>• <strong>RFC:</strong> Se obtiene automáticamente del solicitante seleccionado.</p>
+                        <p>• <strong>Clave WebService:</strong> Debe ingresarse manualmente para autenticación con VUCEM.</p>
                         <p>• <strong>eFirma:</strong> Es obligatorio subir los archivos .cer y .key vigentes para firmar la solicitud.</p>
                     </div>
                 </div>
@@ -152,6 +152,12 @@
                                         <input type="password" name="contrasena_llave" id="contrasena_llave" class="form-input w-full" placeholder="••••••••" required />
                                     </div>
                                 </div>
+                            </div>
+
+                            <div>
+                                <label for="clave_webservice" class="block text-sm font-semibold text-slate-700 mb-2">Clave Web Service VUCEM <span class="text-red-500">*</span></label>
+                                <input type="password" name="clave_webservice" id="clave_webservice" class="form-input w-full" placeholder="Clave del Web Service de VUCEM" required />
+                                <p class="text-xs text-slate-500 mt-1">La clave de autenticación proporcionada por VUCEM para su RFC.</p>
                             </div>
 
                             <div class="flex justify-end pt-4">

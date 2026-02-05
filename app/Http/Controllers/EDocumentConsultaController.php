@@ -73,8 +73,15 @@ class EDocumentConsultaController extends Controller
             $solicitanteId = $request->input('solicitante_id');
             $solicitante = $user->clientApplicants()->find($solicitanteId);
 
-            if (!$solicitante || !$solicitante->applicant_rfc || !$solicitante->ws_file_upload_key) {
-                return back()->withErrors(['solicitante_id' => 'Solicitante inválido o sin credenciales VUCEM'])->withInput();
+            $rfc = $solicitante->applicant_rfc;
+            $claveWebService = $request->input('clave_webservice');
+
+            if (!$rfc) {
+                return back()->withErrors(['solicitante_id' => 'El solicitante no tiene RFC configurado'])->withInput();
+            }
+            
+            if (!$claveWebService) {
+                return back()->withErrors(['clave_webservice' => 'La clave del web service de VUCEM es obligatoria'])->withInput();
             }
 
             // 2. Archivos eFirma
@@ -107,7 +114,7 @@ class EDocumentConsultaController extends Controller
                 $result = $consultarService->consultarEdocument(
                     $folio, 
                     $solicitante->applicant_rfc, 
-                    $solicitante->ws_file_upload_key,
+                    $claveWebService,
                     $tempCertificadoPath,
                     $tempLlavePath,
                     $passwordLlave

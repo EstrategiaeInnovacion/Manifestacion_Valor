@@ -366,6 +366,22 @@
                         </div>
                     </div>
                     
+                    {{-- Clave Web Service VUCEM --}}
+                    <div>
+                        <label for="clave_webservice" class="block text-sm font-bold text-slate-700 mb-2">
+                            Clave Web Service VUCEM <span class="text-red-500">*</span>
+                        </label>
+                        <div class="relative">
+                            <input type="password" id="clave_webservice" name="clave_webservice" required
+                                class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                placeholder="Ingrese la clave del web service de VUCEM">
+                            <button type="button" onclick="toggleWebserviceVisibility()" class="absolute inset-y-0 right-0 pr-3 flex items-center">
+                                <i data-lucide="eye" id="eyeIconWs" class="w-5 h-5 text-slate-400"></i>
+                            </button>
+                        </div>
+                        <p class="text-xs text-slate-500 mt-1">La clave de autenticación proporcionada por VUCEM para su RFC.</p>
+                    </div>
+                    
                     {{-- Advertencia --}}
                     <div class="bg-amber-50 border-l-4 border-amber-400 p-4 rounded-r-lg">
                         <div class="flex items-start">
@@ -498,6 +514,20 @@
         function togglePasswordVisibility() {
             const input = document.getElementById('password_llave');
             const icon = document.getElementById('eyeIcon');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.setAttribute('data-lucide', 'eye-off');
+            } else {
+                input.type = 'password';
+                icon.setAttribute('data-lucide', 'eye');
+            }
+            lucide.createIcons();
+        }
+
+        // Toggle visibilidad de clave webservice
+        function toggleWebserviceVisibility() {
+            const input = document.getElementById('clave_webservice');
+            const icon = document.getElementById('eyeIconWs');
             if (input.type === 'password') {
                 input.type = 'text';
                 icon.setAttribute('data-lucide', 'eye-off');

@@ -12,6 +12,7 @@ use App\Models\MvClientApplicant;
 use App\Models\MvDatosManifestacion;
 use App\Models\MvInformacionCove;
 use App\Models\MvDocumentos;
+use App\Models\MvAcuse;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Http;
 
@@ -30,7 +31,10 @@ Route::get('/dashboard', function () {
     
     $mvePendientesCount = $pendientesIds->unique()->count();
     
-    return view('dashboard', compact('mvePendientesCount'));
+    // Contar manifestaciones completadas (enviadas a VUCEM)
+    $mveCompletadasCount = MvAcuse::whereIn('applicant_id', $applicantIds)->count();
+    
+    return view('dashboard', compact('mvePendientesCount', 'mveCompletadasCount'));
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 // API Routes for Exchange Rates (sin autenticación para AJAX)
@@ -68,6 +72,7 @@ Route::middleware('auth')->group(function () {
     
     // Rutas para borradores MVE por sección
     Route::get('/mve/pendientes', [MveController::class, 'pendientes'])->name('mve.pendientes');
+    Route::get('/mve/completadas', [MveController::class, 'completadas'])->name('mve.completadas');
     Route::delete('/mve/borrar-borrador', [MveController::class, 'borrarBorrador'])->name('mve.borrar-borrador');
     
     // Rutas para guardar secciones individuales

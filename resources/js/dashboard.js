@@ -62,6 +62,10 @@ window.selectMvePendientes = function() {
     window.location.href = '/mve/pendientes';
 };
 
+window.selectMveCompletadas = function() {
+    window.location.href = '/mve/completadas';
+};
+
 // Cerrar modal con tecla ESC
 document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {

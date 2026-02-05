@@ -22,7 +22,6 @@ class User extends Authenticatable
         'role',
         'created_by',
         'rfc',
-        'webservice_key',
     ];
 
     /**
@@ -31,7 +30,6 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
-        'webservice_key',
     ];
 
     /**
@@ -39,7 +37,6 @@ class User extends Authenticatable
      */
     protected $casts = [
         'rfc' => 'encrypted',
-        'webservice_key' => 'encrypted',
     ];
 
     /**
@@ -67,11 +64,4 @@ class User extends Authenticatable
         return $this->belongsTo(User::class, 'created_by');
     }
 
-    /**
-     * Obtener la clave webservice desencriptada
-     */
-    public function getDecryptedWebserviceKey(): ?string
-    {
-        return $this->webservice_key;
-    }
 }
