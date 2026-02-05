@@ -78,11 +78,15 @@ Route::middleware('auth')->group(function () {
     Route::post('/mve/parse-pedimento-edocuments', [MveController::class, 'parsePedimentoEdocuments'])->name('mve.parse-pedimento-edocuments');
     Route::post('/mve/validate-edocument', [MveController::class, 'validateEdocument'])->name('mve.validate-edocument');
 
-    // Rutas de Consulta eDocument (VUCEM)
+    // Rutas para Consulta de eDocument (PDFs - Digitalización)
     Route::get('/edocument/consulta', [EDocumentConsultaController::class, 'index'])->name('edocument.consulta.index');
     Route::post('/edocument/consulta', [EDocumentConsultaController::class, 'consultar'])->name('edocument.consulta');
     Route::get('/edocument/descargar/{token}', [EDocumentConsultaController::class, 'descargar'])->name('edocument.descargar');
-    
+
+    // Rutas para Consulta de COVE (XML - Valor)
+    Route::get('/cove/consulta', [EDocumentConsultaController::class, 'indexCove'])->name('cove.consulta.index');
+    Route::post('/cove/consulta', [EDocumentConsultaController::class, 'consultarCove'])->name('cove.consulta');    
+
     // Verificación de completitud y guardado final
     Route::get('/mve/check-completion/{applicant}', [MveController::class, 'checkCompletion'])->name('mve.check-completion');
     Route::get('/mve/preview-data/{applicant}', [MveController::class, 'previewData'])->name('mve.preview-data');

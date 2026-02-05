@@ -65,9 +65,9 @@ class DigitalizacionController extends Controller
             $rfcConsulta = $request->rfc_consulta ? strtoupper(trim($request->rfc_consulta)) : '';
             
             // Validación de negocio: Evitar auto-referencia si escribieron algo
-            if (!empty($rfcConsulta) && $rfcConsulta === $rfc) {
+            /*if (!empty($rfcConsulta) && $rfcConsulta === $rfc) {
                 return back()->withErrors(['rfc_consulta' => 'El RFC de Consulta NO puede ser el mismo que el RFC firmante. Si es un trámite propio, deja este campo vacío.']);
-            }
+            }*/
 
             $passwordVucem = $request->vucem_password;
             $passwordFiel = $request->password_fiel ?? ''; // Vacío si es PEM

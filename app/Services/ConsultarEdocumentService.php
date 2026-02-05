@@ -100,7 +100,7 @@ class ConsultarEdocumentService
 
             // 1. Generar Firma con la cadena correcta
             $firma = $this->efirmaService->generarFirmaElectronicaConArchivos(
-                $cadenaOriginal, // <--- AQUÍ ESTABA EL ERROR (Antes enviabas solo $eDocument)
+                $cadenaOriginal, 
                 $this->rfc, 
                 $certificadoPath, 
                 $llavePrivadaPath, 
@@ -139,19 +139,44 @@ class ConsultarEdocumentService
                 'soapaction' => self::SOAP_ACTION
             ]);
 
-            // Debug de éxito
+            // Debug info interno
             $this->debugInfo = [
                 'last_request' => $this->soapClient->__getLastRequest(),
                 'last_response' => $this->soapClient->__getLastResponse()
             ];
+
+            // =================================================================
+            // 🛑 DIAGNÓSTICO VUCEM (AQUÍ ESTÁ LA MAGIA)
+            // =================================================================
+            Log::info('🔍 --- INICIO DIAGNÓSTICO DE RESPUESTA VUCEM ---');
+            Log::info('Folio eDocument: ' . $eDocument);
+            
+            // 1. Logueamos el objeto PHP tal cual lo entendió SoapClient
+            Log::info('Objeto PHP Mapeado:', ['data' => json_decode(json_encode($response), true)]);
+
+            // 2. Logueamos el XML CRUDO (Raw)
+            // Esto es vital porque a veces PHP falla al mapear arrays de objetos anidados
+            try {
+                $rawXml = $this->soapClient->__getLastResponse();
+                // Lo guardamos en el log. Si es muy grande, VUCEM suele mandar base64, 
+                // así que veremos un string largo, pero buscaremos las etiquetas <contenido> o <Archivo>
+                Log::info('XML RAW VUCEM:', ['xml' => $rawXml]); 
+            } catch (Exception $e) {
+                Log::warning('No se pudo obtener el XML raw: ' . $e->getMessage());
+            }
+            Log::info('🔍 --- FIN DIAGNÓSTICO DE RESPUESTA VUCEM ---');
+            // =================================================================
             
             return $this->processResponse($response, $eDocument);
 
         } catch (SoapFault $e) {
-            Log::error('[EDOCUMENT] SOAP Fault: ' . $e->getMessage(), ['code' => $e->faultcode ?? 'N/A']);
+            Log::error('[EDOCUMENT] SOAP Fault: ' . $e->getMessage(), [
+                'code' => $e->faultcode ?? 'N/A',
+                'detail' => $e->detail ?? 'N/A'
+            ]);
             return ['success' => false, 'message' => "Error VUCEM: " . $e->getMessage()];
         } catch (Exception $e) {
-            Log::error('[EDOCUMENT] Exception: ' . $e->getMessage());
+            Log::error('[EDOCUMENT] Exception: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
             return ['success' => false, 'message' => $e->getMessage()];
         }
     }
@@ -208,33 +233,46 @@ class ConsultarEdocumentService
             'cove_data' => []
         ];
 
-        // 1. Extraer Datos COVE (Lo más importante)
+        // 1. Extraer Datos COVE
         if (isset($data->resultadoBusqueda->cove)) {
             $result['cove_data'] = json_decode(json_encode($data->resultadoBusqueda->cove), true);
             $result['message'] = 'Datos del COVE recuperados correctamente.';
         }
 
-        // 2. Buscar archivos adjuntos (Si los hubiera)
-        $posiblesCampos = ['archivos', 'adjuntos', 'documentos'];
+        // 2. Buscar archivos adjuntos (Modificado para ser más agresivo buscando)
+        // VUCEM a veces cambia los nombres de las propiedades
+        $posiblesCampos = ['archivos', 'adjuntos', 'documentos', 'Archivo', 'archivo']; 
         $listaArchivos = [];
 
         if (isset($data->resultadoBusqueda)) {
+            // Caso A: Propiedad directa
             foreach ($posiblesCampos as $campo) {
                 if (isset($data->resultadoBusqueda->$campo)) {
                     $items = $data->resultadoBusqueda->$campo;
-                    if (is_object($items)) $items = [$items];
+                    if (is_object($items)) $items = [$items]; // Un solo archivo
                     if (is_array($items)) $listaArchivos = array_merge($listaArchivos, $items);
                 }
             }
         }
+        
+        // Caso B: A veces viene directo en resultadoBusqueda (sin sub-propiedad)
+        // si es una digitalización pura.
+        if (empty($listaArchivos) && isset($data->resultadoBusqueda->nombre) && isset($data->resultadoBusqueda->contenido)) {
+             $listaArchivos[] = $data->resultadoBusqueda;
+        }
 
         foreach ($listaArchivos as $archivo) {
-            if (isset($archivo->contenido)) {
+            // Normalizar nombres de propiedades (VUCEM mezcla mayúsculas/minúsculas)
+            $contenido = $archivo->contenido ?? $archivo->Contenido ?? null;
+            $nombre = $archivo->nombre ?? $archivo->Nombre ?? 'documento_vucem.pdf';
+            $tipo = $archivo->tipo ?? $archivo->Tipo ?? 'application/pdf';
+
+            if ($contenido) {
                 $result['archivos'][] = [
-                    'nombre' => $archivo->nombre ?? 'archivo.pdf',
-                    'tipo' => $archivo->tipo ?? 'application/pdf',
-                    'contenido' => $archivo->contenido,
-                    'tamano' => $archivo->tamano ?? 0
+                    'nombre' => $nombre,
+                    'tipo' => $tipo,
+                    'contenido' => $contenido,
+                    'tamano' => $archivo->tamano ?? strlen($contenido)
                 ];
             }
         }
