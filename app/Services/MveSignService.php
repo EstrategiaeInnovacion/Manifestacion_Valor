@@ -66,8 +66,8 @@ class MveSignService
                 'firma_longitud' => strlen($firmaResult['firma'])
             ]);
 
-            // 3. Construir el XML para enviar a VUCEM
-            $xmlManifestacion = $this->buildXmlManifestacion(
+            // 3. Construir el envelope SOAP completo según XSD de VUCEM
+            $soapEnvelope = $this->buildSoapEnvelopeFromXsd(
                 $applicant,
                 $datosManifestacion,
                 $informacionCove,
@@ -77,9 +77,9 @@ class MveSignService
                 $firmaResult['certificado']    // Certificado limpio (sin headers PEM)
             );
 
-            Log::info('MVE - XML construido', [
+            Log::info('MVE - SOAP Envelope construido según XSD', [
                 'applicant_id' => $applicant->id,
-                'xml_size' => strlen($xmlManifestacion)
+                'envelope_size' => strlen($soapEnvelope)
             ]);
 
             // 4. Enviar a VUCEM o guardar en modo prueba
@@ -90,7 +90,7 @@ class MveSignService
                 return $this->guardarManifestacionPrueba(
                     $applicant,
                     $datosManifestacion,
-                    $xmlManifestacion
+                    $soapEnvelope
                 );
             }
 
@@ -98,7 +98,7 @@ class MveSignService
             return $this->enviarAVucem(
                 $applicant,
                 $datosManifestacion,
-                $xmlManifestacion
+                $soapEnvelope
             );
 
         } catch (\Exception $e) {
@@ -116,9 +116,10 @@ class MveSignService
     }
 
     /**
-     * Construir XML de manifestación de valor para VUCEM
+     * Construir envelope SOAP completo según el XSD de VUCEM
+     * La estructura es: registroManifestacion > informacionManifestacion > (firmaElectronica, importador-exportador, datosManifestacionValor)
      */
-    private function buildXmlManifestacion(
+    private function buildSoapEnvelopeFromXsd(
         MvClientApplicant $applicant,
         MvDatosManifestacion $datosManifestacion,
         MvInformacionCove $informacionCove,
@@ -127,76 +128,198 @@ class MveSignService
         string $selloDigital,
         string $certificado
     ): string {
-        $xml = new \SimpleXMLElement('<?xml version="1.0" encoding="UTF-8"?><datosManifestacionValor xmlns="http://www.ventanillaunica.gob.mx/IngresoManifestacion/"></datosManifestacionValor>');
+        $ns = 'http://ws.ingresomanifestacion.manifestacion.www.ventanillaunica.gob.mx';
+        $rfcFirmante = strtoupper($applicant->applicant_rfc);
+        $timestamp = gmdate('Y-m-d\TH:i:s\Z');
+        $expires = gmdate('Y-m-d\TH:i:s\Z', strtotime('+5 minutes'));
 
-        // RFC Importador
-        $xml->addChild('rfcImportador', strtoupper($applicant->applicant_rfc));
+        // Construir datosManifestacionValor
+        $datosXml = $this->buildDatosManifestacionXml($applicant, $datosManifestacion, $informacionCove, $documentos);
+
+        return '<?xml version="1.0" encoding="UTF-8"?>
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" 
+    xmlns:ws="' . $ns . '">
+    <soapenv:Header>
+        <wsse:Security xmlns:wsse="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd" 
+            xmlns:wsu="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd">
+            <wsu:Timestamp wsu:Id="TS-1">
+                <wsu:Created>' . $timestamp . '</wsu:Created>
+                <wsu:Expires>' . $expires . '</wsu:Expires>
+            </wsu:Timestamp>
+            <wsse:UsernameToken wsu:Id="UsernameToken-1">
+                <wsse:Username>' . $rfcFirmante . '</wsse:Username>
+                <wsse:Password Type="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-username-token-profile-1.0#PasswordText"></wsse:Password>
+            </wsse:UsernameToken>
+        </wsse:Security>
+    </soapenv:Header>
+    <soapenv:Body>
+        <ws:registroManifestacion>
+            <informacionManifestacion>
+                <firmaElectronica>
+                    <certificado>' . $certificado . '</certificado>
+                    <cadenaOriginal>' . htmlspecialchars($cadenaOriginal, ENT_XML1) . '</cadenaOriginal>
+                    <firma>' . $selloDigital . '</firma>
+                </firmaElectronica>
+                <importador-exportador>
+                    <rfc>' . $rfcFirmante . '</rfc>
+                </importador-exportador>
+                ' . $datosXml . '
+            </informacionManifestacion>
+        </ws:registroManifestacion>
+    </soapenv:Body>
+</soapenv:Envelope>';
+    }
+
+    /**
+     * Construir nodo datosManifestacionValor según XSD
+     */
+    private function buildDatosManifestacionXml(
+        MvClientApplicant $applicant,
+        MvDatosManifestacion $datosManifestacion,
+        MvInformacionCove $informacionCove,
+        array $documentos
+    ): string {
+        $xml = '<datosManifestacionValor>';
 
         // Personas de consulta
         $personasConsulta = $datosManifestacion->persona_consulta ?? [];
         foreach ($personasConsulta as $persona) {
-            $personaNode = $xml->addChild('personaConsulta');
-            $personaNode->addChild('rfc', strtoupper($persona['rfc'] ?? ''));
-            $personaNode->addChild('tipoFigura', $persona['tipo_figura'] ?? '');
+            $xml .= '<personaConsulta>';
+            $xml .= '<rfc>' . strtoupper($persona['rfc'] ?? '') . '</rfc>';
+            $xml .= '<tipoFigura>' . ($persona['tipo_figura'] ?? '') . '</tipoFigura>';
+            $xml .= '</personaConsulta>';
         }
 
-        // eDocuments
+        // Documentos (eDocuments)
         foreach ($documentos as $doc) {
-            $edocNode = $xml->addChild('documentos');
-            $edocNode->addChild('eDocument', $this->mveService->normalizeEdocumentFolio($doc['folio_edocument'] ?? ''));
+            $folio = $this->mveService->normalizeEdocumentFolio($doc['folio_edocument'] ?? '');
+            $xml .= '<documentos>';
+            $xml .= '<eDocument>' . $folio . '</eDocument>';
+            $xml .= '</documentos>';
         }
 
         // Información COVE
         $informacionCoveData = $informacionCove->informacion_cove ?? [];
         foreach ($informacionCoveData as $cove) {
-            $coveNode = $xml->addChild('informacionCove');
-            $coveNode->addChild('numeroCove', $cove['numero_cove'] ?? $cove['cove'] ?? '');
-            $coveNode->addChild('incoterm', $cove['incoterm'] ?? '');
-            $coveNode->addChild('vinculacion', $cove['vinculacion'] ?? $datosManifestacion->existe_vinculacion ?? '');
-            
+            $xml .= '<informacionCove>';
+            $xml .= '<cove>' . ($cove['numero_cove'] ?? $cove['cove'] ?? '') . '</cove>';
+            $xml .= '<incoterm>' . ($cove['incoterm'] ?? '') . '</incoterm>';
+            $xml .= '<existeVinculacion>' . ($cove['vinculacion'] ?? $datosManifestacion->existe_vinculacion ?? 0) . '</existeVinculacion>';
+
             // Pedimentos
             $pedimentos = $informacionCove->pedimentos ?? [];
             foreach ($pedimentos as $ped) {
-                $pedNode = $coveNode->addChild('pedimentos');
-                $pedNode->addChild('numero', $ped['pedimento'] ?? $ped['numero'] ?? '');
-                $pedNode->addChild('patente', $ped['patente'] ?? '');
-                $pedNode->addChild('aduana', $ped['aduana'] ?? '');
+                $xml .= '<pedimento>';
+                $xml .= '<pedimento>' . ($ped['pedimento'] ?? $ped['numero'] ?? '') . '</pedimento>';
+                $xml .= '<patente>' . ($ped['patente'] ?? '') . '</patente>';
+                $xml .= '<aduana>' . ($ped['aduana'] ?? '') . '</aduana>';
+                $xml .= '</pedimento>';
             }
 
-            $coveNode->addChild('metodoValoracion', $cove['metodo_valoracion'] ?? $datosManifestacion->metodo_valoracion ?? '');
+            // Precio pagado
+            $preciosPagados = $cove['precios_pagados'] ?? [];
+            foreach ($preciosPagados as $pp) {
+                $xml .= '<precioPagado>';
+                $xml .= '<fechaPago>' . ($pp['fecha_pago'] ?? date('Y-m-d\TH:i:s')) . '</fechaPago>';
+                $xml .= '<total>' . number_format((float)($pp['total'] ?? 0), 2, '.', '') . '</total>';
+                $xml .= '<tipoPago>' . ($pp['tipo_pago'] ?? '') . '</tipoPago>';
+                if (!empty($pp['especifique'])) {
+                    $xml .= '<especifique>' . $pp['especifique'] . '</especifique>';
+                }
+                $xml .= '<tipoMoneda>' . ($pp['tipo_moneda'] ?? 'USD') . '</tipoMoneda>';
+                $xml .= '<tipoCambio>' . number_format((float)($pp['tipo_cambio'] ?? 1), 6, '.', '') . '</tipoCambio>';
+                $xml .= '</precioPagado>';
+            }
+
+            // Precio por pagar
+            $preciosPorPagar = $cove['precios_por_pagar'] ?? [];
+            foreach ($preciosPorPagar as $ppp) {
+                $xml .= '<precioPorPagar>';
+                $xml .= '<fechaPago>' . ($ppp['fecha_pago'] ?? date('Y-m-d\TH:i:s')) . '</fechaPago>';
+                $xml .= '<total>' . number_format((float)($ppp['total'] ?? 0), 2, '.', '') . '</total>';
+                if (!empty($ppp['situacion_no_fecha_pago'])) {
+                    $xml .= '<situacionNofechaPago>' . $ppp['situacion_no_fecha_pago'] . '</situacionNofechaPago>';
+                }
+                $xml .= '<tipoPago>' . ($ppp['tipo_pago'] ?? '') . '</tipoPago>';
+                if (!empty($ppp['especifique'])) {
+                    $xml .= '<especifique>' . $ppp['especifique'] . '</especifique>';
+                }
+                $xml .= '<tipoMoneda>' . ($ppp['tipo_moneda'] ?? 'USD') . '</tipoMoneda>';
+                $xml .= '<tipoCambio>' . number_format((float)($ppp['tipo_cambio'] ?? 1), 6, '.', '') . '</tipoCambio>';
+                $xml .= '</precioPorPagar>';
+            }
+
+            // Compenso pago
+            $compensosPago = $cove['compensos_pago'] ?? [];
+            foreach ($compensosPago as $cp) {
+                $xml .= '<compensoPago>';
+                $xml .= '<tipoPago>' . ($cp['tipo_pago'] ?? '') . '</tipoPago>';
+                $xml .= '<fecha>' . ($cp['fecha'] ?? date('Y-m-d\TH:i:s')) . '</fecha>';
+                $xml .= '<motivo>' . ($cp['motivo'] ?? '') . '</motivo>';
+                $xml .= '<prestacionMercancia>' . ($cp['prestacion_mercancia'] ?? '') . '</prestacionMercancia>';
+                if (!empty($cp['especifique'])) {
+                    $xml .= '<especifique>' . $cp['especifique'] . '</especifique>';
+                }
+                $xml .= '</compensoPago>';
+            }
+
+            $xml .= '<metodoValoracion>' . ($cove['metodo_valoracion'] ?? $datosManifestacion->metodo_valoracion ?? '') . '</metodoValoracion>';
+
+            // Incrementables
+            $incrementables = $cove['incrementables'] ?? [];
+            foreach ($incrementables as $inc) {
+                $xml .= '<incrementables>';
+                $xml .= '<tipoIncrementable>' . ($inc['tipo_incrementable'] ?? '') . '</tipoIncrementable>';
+                $xml .= '<fechaErogacion>' . ($inc['fecha_erogacion'] ?? date('Y-m-d\TH:i:s')) . '</fechaErogacion>';
+                $xml .= '<importe>' . number_format((float)($inc['importe'] ?? 0), 2, '.', '') . '</importe>';
+                $xml .= '<tipoMoneda>' . ($inc['tipo_moneda'] ?? 'USD') . '</tipoMoneda>';
+                $xml .= '<tipoCambio>' . number_format((float)($inc['tipo_cambio'] ?? 1), 6, '.', '') . '</tipoCambio>';
+                $xml .= '<aCargoImportador>' . ($inc['a_cargo_importador'] ?? 0) . '</aCargoImportador>';
+                $xml .= '</incrementables>';
+            }
+
+            // Decrementables
+            $decrementables = $cove['decrementables'] ?? [];
+            foreach ($decrementables as $dec) {
+                $xml .= '<decrementables>';
+                $xml .= '<tipoDecrementable>' . ($dec['tipo_decrementable'] ?? '') . '</tipoDecrementable>';
+                $xml .= '<fechaErogacion>' . ($dec['fecha_erogacion'] ?? date('Y-m-d\TH:i:s')) . '</fechaErogacion>';
+                $xml .= '<importe>' . number_format((float)($dec['importe'] ?? 0), 2, '.', '') . '</importe>';
+                $xml .= '<tipoMoneda>' . ($dec['tipo_moneda'] ?? 'USD') . '</tipoMoneda>';
+                $xml .= '<tipoCambio>' . number_format((float)($dec['tipo_cambio'] ?? 1), 6, '.', '') . '</tipoCambio>';
+                $xml .= '</decrementables>';
+            }
+
+            $xml .= '</informacionCove>';
         }
 
         // Valor en aduana
         $valorData = $informacionCove->valor_en_aduana ?? [];
-        $valorNode = $xml->addChild('valorAduana');
-        $valorNode->addChild('totalPrecioPagado', $valorData['total_precio_pagado'] ?? '');
-        $valorNode->addChild('totalPrecioPorPagar', $valorData['total_precio_por_pagar'] ?? '');
-        $valorNode->addChild('totalIncrementables', $valorData['total_incrementables'] ?? '');
-        $valorNode->addChild('totalDecrementables', $valorData['total_decrementables'] ?? '');
-        $valorNode->addChild('totalValorAduana', $valorData['total_valor_aduana'] ?? '');
+        $xml .= '<valorEnAduana>';
+        $xml .= '<totalPrecioPagado>' . number_format((float)($valorData['total_precio_pagado'] ?? 0), 2, '.', '') . '</totalPrecioPagado>';
+        $xml .= '<totalPrecioPorPagar>' . number_format((float)($valorData['total_precio_por_pagar'] ?? 0), 2, '.', '') . '</totalPrecioPorPagar>';
+        $xml .= '<totalIncrementables>' . number_format((float)($valorData['total_incrementables'] ?? 0), 2, '.', '') . '</totalIncrementables>';
+        $xml .= '<totalDecrementables>' . number_format((float)($valorData['total_decrementables'] ?? 0), 2, '.', '') . '</totalDecrementables>';
+        $xml .= '<totalValorAduana>' . number_format((float)($valorData['total_valor_aduana'] ?? 0), 2, '.', '') . '</totalValorAduana>';
+        $xml .= '</valorEnAduana>';
 
-        // Sello digital
-        $xml->addChild('selloDigital', $selloDigital);
-        $xml->addChild('certificado', $certificado);
+        $xml .= '</datosManifestacionValor>';
 
-        return $xml->asXML();
+        return $xml;
     }
 
     /**
-     * Enviar XML a VUCEM usando cURL (más robusto que SoapClient)
-     * VUCEM tiene problemas con sus esquemas XSD que causan errores en SoapClient
+     * Enviar envelope SOAP a VUCEM usando cURL
+     * El envelope ya viene construido según el XSD de VUCEM
      */
     private function enviarAVucem(
         MvClientApplicant $applicant,
         MvDatosManifestacion $datosManifestacion,
-        string $xmlManifestacion
+        string $soapEnvelope
     ): array {
         try {
             $endpoint = config('vucem.mv_endpoint');
             $rfcFirmante = strtoupper($applicant->applicant_rfc);
-            
-            // Construir el envelope SOAP con WS-Security
-            $soapEnvelope = $this->buildSoapEnvelope($xmlManifestacion, $rfcFirmante);
 
             Log::info('MVE - Enviando a VUCEM via cURL', [
                 'endpoint' => $endpoint,
@@ -204,7 +327,7 @@ class MveSignService
                 'rfc' => $rfcFirmante
             ]);
 
-            // Enviar con cURL
+            // Enviar con cURL - SOAPAction vacío según WSDL
             $ch = curl_init();
             curl_setopt_array($ch, [
                 CURLOPT_URL => $endpoint,
@@ -217,7 +340,7 @@ class MveSignService
                 CURLOPT_SSL_VERIFYHOST => false,
                 CURLOPT_HTTPHEADER => [
                     'Content-Type: text/xml; charset=utf-8',
-                    'SOAPAction: "registroManifestacion"',
+                    'SOAPAction: ""',  // Vacío según WSDL: <soap:operation soapAction=""/>
                     'Content-Length: ' . strlen($soapEnvelope)
                 ]
             ]);
@@ -247,7 +370,7 @@ class MveSignService
             return $this->procesarRespuestaVucemXml(
                 $applicant,
                 $datosManifestacion,
-                $xmlManifestacion,
+                $soapEnvelope,
                 $response,
                 $httpCode
             );
@@ -263,38 +386,6 @@ class MveSignService
                 'message' => 'Error de conexión con VUCEM: ' . $e->getMessage()
             ];
         }
-    }
-
-    /**
-     * Construir envelope SOAP con WS-Security para VUCEM
-     */
-    private function buildSoapEnvelope(string $xmlManifestacion, string $rfcFirmante): string
-    {
-        $timestamp = gmdate('Y-m-d\TH:i:s\Z');
-        $expires = gmdate('Y-m-d\TH:i:s\Z', strtotime('+5 minutes'));
-
-        return '<?xml version="1.0" encoding="UTF-8"?>
-<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" 
-    xmlns:ws="http://ws.ingresomanifestacion.manifestacion.www.ventanillaunica.gob.mx">
-    <soapenv:Header>
-        <wsse:Security xmlns:wsse="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd" 
-            xmlns:wsu="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd">
-            <wsu:Timestamp wsu:Id="TS-1">
-                <wsu:Created>' . $timestamp . '</wsu:Created>
-                <wsu:Expires>' . $expires . '</wsu:Expires>
-            </wsu:Timestamp>
-            <wsse:UsernameToken wsu:Id="UsernameToken-1">
-                <wsse:Username>' . $rfcFirmante . '</wsse:Username>
-                <wsse:Password Type="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-username-token-profile-1.0#PasswordText"></wsse:Password>
-            </wsse:UsernameToken>
-        </wsse:Security>
-    </soapenv:Header>
-    <soapenv:Body>
-        <ws:registroManifestacion>
-            <request><![CDATA[' . $xmlManifestacion . ']]></request>
-        </ws:registroManifestacion>
-    </soapenv:Body>
-</soapenv:Envelope>';
     }
 
     /**
@@ -368,7 +459,25 @@ class MveSignService
                 $mensaje = $mensaje ?: 'Respuesta recibida pero sin folio. Verifique en portal VUCEM.';
             }
 
-            // Crear acuse
+            // Si hubo error HTTP o la respuesta indica error, NO crear acuse ni marcar como completada
+            if ($status === 'ERROR' || $status === 'RECHAZADO' || $httpCode >= 400) {
+                Log::warning('MVE - Error de VUCEM, no se marca como completada', [
+                    'applicant_id' => $applicant->id,
+                    'http_code' => $httpCode,
+                    'status' => $status,
+                    'mensaje' => $mensaje
+                ]);
+                
+                return [
+                    'success' => false,
+                    'message' => $mensaje ?: "Error HTTP $httpCode al comunicarse con VUCEM",
+                    'folio' => null,
+                    'acuse_id' => null,
+                    'status' => $status
+                ];
+            }
+
+            // Solo crear acuse si la respuesta fue exitosa
             $acuse = MvAcuse::create([
                 'applicant_id' => $applicant->id,
                 'datos_manifestacion_id' => $datosManifestacion->id,
@@ -382,7 +491,7 @@ class MveSignService
                 'fecha_respuesta' => now(),
             ]);
 
-            // Actualizar status de las tablas originales
+            // Solo actualizar status si fue exitoso
             $this->actualizarStatusTablas($applicant->id, 'enviado');
 
             return [
