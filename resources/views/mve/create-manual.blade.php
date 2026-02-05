@@ -1191,7 +1191,7 @@
                                     <input type="text" class="form-input flex-1" id="edocumentFolio" list="edocumentSuggestions" placeholder="INGRESE EL FOLIO eDocument">
                                     <p class="text-xs text-slate-400">
                                         Si no aparece el folio en las sugerencias, use la opción
-                                        <a href="{{ route('edocument.consulta.index') }}" target="_blank" class="font-semibold text-[#003399] hover:underline">Consulta eDocument (VUCEM)</a> para registrarlo.
+                                        <a href="{{ route('cove.consulta.index') }}" target="_blank" class="font-semibold text-[#003399] hover:underline">Consulta eDocument (VUCEM)</a> para registrarlo.
                                     </p>
                                 </div>
                             </div>

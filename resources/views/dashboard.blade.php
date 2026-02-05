@@ -175,24 +175,6 @@
                             </div>
                         </div>
                     </a>
-
-                    {{-- OPCIÓN 2: CONSULTA EDOCUMENT --}}
-                    <a href="{{ route('edocument.consulta.index') }}" class="modern-card group border-t-4 border-t-emerald-600 relative overflow-hidden transition-all hover:shadow-xl">
-                        <div class="card-content p-6">
-                            <div class="icon-box bg-emerald-50 text-emerald-600 w-14 h-14 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-emerald-600 group-hover:text-white transition-all duration-300">
-                                <i data-lucide="file-search" class="w-8 h-8"></i>
-                            </div>
-                            <h3 class="text-xl font-bold text-[#001a4d] mb-2">Consulta eDocument</h3>
-                            <p class="text-slate-500 text-sm leading-relaxed mb-6">
-                                Descarga los archivos PDF digitalizados asociados a un eDocument.
-                            </p>
-                            <div class="flex items-center text-emerald-600 font-bold text-sm mt-auto">
-                                Descargar Documentos 
-                                <i data-lucide="arrow-right" class="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform"></i>
-                            </div>
-                        </div>
-                    </a>
-
                 </div>
             @elseif(auth()->user()->role === 'Usuario')
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">

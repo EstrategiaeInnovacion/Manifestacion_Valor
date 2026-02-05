@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\ConsultarEDocumentRequest;
 use App\Models\EdocumentRegistrado;
 use App\Services\ManifestacionValorService;
-use App\Services\ConsultarEdocumentService;
+use App\Services\ConsultarEdocumentService; // Usamos SOLO el servicio de Valor (XML)
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
@@ -13,59 +13,26 @@ use Illuminate\Support\Facades\Log;
 
 class EDocumentConsultaController extends Controller
 {
-    // ==========================================================
-    // SECCIÓN 1: CONSULTA EDOCUMENT (DIGITALIZACIÓN)
-    // ==========================================================
-    
+    /**
+     * Muestra el formulario de consulta de COVE.
+     */
     public function index()
-    {
-        return $this->renderView('EDOCUMENT');
-    }
-
-    public function consultar(ConsultarEDocumentRequest $request, ManifestacionValorService $mvService)
-    {
-        return $this->processConsultation($request, $mvService, 'EDOCUMENT');
-    }
-
-    // ==========================================================
-    // SECCIÓN 2: CONSULTA COVE (VALOR)
-    // ==========================================================
-
-    public function indexCove()
-    {
-        return $this->renderView('COVE');
-    }
-
-    public function consultarCove(ConsultarEDocumentRequest $request, ManifestacionValorService $mvService)
-    {
-        return $this->processConsultation($request, $mvService, 'COVE');
-    }
-
-    // ==========================================================
-    // LÓGICA COMPARTIDA (PRIVADA)
-    // ==========================================================
-
-    private function renderView($mode)
     {
         $user = Auth::user();
         $solicitantes = $user->clientApplicants()->get();
         
-        // Configuramos la vista dinámicamente según el modo
-        $viewData = [
+        return view('edocument.consulta', [
             'solicitantes' => $solicitantes,
-            'mode' => $mode, 
-            'pageTitle' => $mode === 'COVE' ? 'Consulta de COVE (Valor)' : 'Consulta de eDocument',
-            'pageSubtitle' => $mode === 'COVE' ? 'Valor en Aduana y Mercancías' : 'Digitalización de Documentos',
-            'formRoute' => $mode === 'COVE' ? route('cove.consulta') : route('edocument.consulta'),
-            'description' => $mode === 'COVE' 
-                ? 'Ingresa el eDocument (COVE) para recuperar los valores, mercancías y el XML de respuesta de VUCEM.' 
-                : 'Ingresa el eDocument de digitalización para descargar los archivos PDF asociados.',
-        ];
-
-        return view('edocument.consulta', $viewData);
+            'pageTitle' => 'Consulta de COVE',
+            'pageSubtitle' => 'Recuperación de Valor y Mercancías',
+            'description' => 'Ingresa el eDocument (COVE) para importar los valores y mercancías directamente de VUCEM.',
+        ]);
     }
 
-    private function processConsultation($request, $manifestacionService, $mode)
+    /**
+     * Ejecuta la consulta al Web Service de COVE.
+     */
+    public function consultar(ConsultarEDocumentRequest $request, ManifestacionValorService $mvService)
     {
         try {
             // 1. Validaciones básicas
@@ -73,15 +40,8 @@ class EDocumentConsultaController extends Controller
             $solicitanteId = $request->input('solicitante_id');
             $solicitante = $user->clientApplicants()->find($solicitanteId);
 
-            $rfc = $solicitante->applicant_rfc;
-            $claveWebService = $request->input('clave_webservice');
-
-            if (!$rfc) {
-                return back()->withErrors(['solicitante_id' => 'El solicitante no tiene RFC configurado'])->withInput();
-            }
-            
-            if (!$claveWebService) {
-                return back()->withErrors(['clave_webservice' => 'La clave del web service de VUCEM es obligatoria'])->withInput();
+            if (!$solicitante || !$solicitante->applicant_rfc || !$solicitante->ws_file_upload_key) {
+                return back()->withErrors(['solicitante_id' => 'Solicitante inválido o sin credenciales VUCEM'])->withInput();
             }
 
             // 2. Archivos eFirma
@@ -89,16 +49,18 @@ class EDocumentConsultaController extends Controller
             $llavePrivada = $request->file('llave_privada');
             $passwordLlave = $request->input('contrasena_llave');
 
-            // Si no suben archivos, intentar usar configuración global (si aplica en tu lógica)
-            // Por ahora validamos que sean obligatorios si no hay lógica global
             if (!$certificado || !$llavePrivada || !$passwordLlave) {
-                return back()->withErrors(['certificado' => 'Se requieren los archivos de la e.firma para autenticar la consulta en VUCEM.'])->withInput();
+                return back()->withErrors(['certificado' => 'Se requieren los archivos de la e.firma para desencriptar el COVE.'])->withInput();
             }
 
             // 3. Validación de Folio
-            $folio = $manifestacionService->normalizeEdocumentFolio($request->input('folio_edocument'));
-            $validation = $manifestacionService->validateEdocumentFolio($folio);
-            if (!$validation['valid']) return back()->withErrors(['folio_edocument' => $validation['message']])->withInput();
+            // CORRECCIÓN AQUÍ: Usamos $mvService en lugar de $manifestacionService
+            $folio = $mvService->normalizeEdocumentFolio($request->input('folio_edocument'));
+            $validation = $mvService->validateEdocumentFolio($folio);
+            
+            if (!$validation['valid']) {
+                return back()->withErrors(['folio_edocument' => $validation['message']])->withInput();
+            }
 
             // 4. Preparar archivos temporales
             $tempCertificadoPath = tempnam(sys_get_temp_dir(), 'cert_');
@@ -114,7 +76,7 @@ class EDocumentConsultaController extends Controller
                 $result = $consultarService->consultarEdocument(
                     $folio, 
                     $solicitante->applicant_rfc, 
-                    $claveWebService,
+                    $solicitante->ws_file_upload_key,
                     $tempCertificadoPath,
                     $tempLlavePath,
                     $passwordLlave
@@ -136,7 +98,7 @@ class EDocumentConsultaController extends Controller
                     ]
                 );
                 
-                // 7. Procesar archivos para vista
+                // 7. Procesar archivos XML
                 $filesForView = [];
                 if (!empty($result['archivos'])) {
                     foreach ($result['archivos'] as $archivo) {
@@ -144,29 +106,21 @@ class EDocumentConsultaController extends Controller
                             'name' => $archivo['nombre'],
                             'mime' => $archivo['tipo'],
                             'content' => $archivo['contenido'],
-                            'size' => $archivo['tamano'] ?? strlen(base64_decode($archivo['contenido'] ?? '', true) ?: ''),
                         ];
                     }
                     $filesForView = $this->storeTemporaryFiles($filesForView);
                 }
 
-                // 8. Retornar vista con datos (REUTILIZANDO renderView logic manualmente para mantener variables)
+                // 8. Retornar vista
                 return view('edocument.consulta', [
                     'solicitantes' => $user->clientApplicants()->get(),
                     'solicitante_seleccionado' => $solicitanteId,
                     'folio' => $folio,
                     'result' => $result,
-                    'record' => $record,
                     'files' => $filesForView,
-                    
-                    // Variables dinámicas para mantener el contexto
-                    'mode' => $mode,
-                    'pageTitle' => $mode === 'COVE' ? 'Consulta de COVE (Valor)' : 'Consulta de eDocument',
-                    'pageSubtitle' => $mode === 'COVE' ? 'Valor en Aduana y Mercancías' : 'Digitalización de Documentos',
-                    'formRoute' => $mode === 'COVE' ? route('cove.consulta') : route('edocument.consulta'),
-                    'description' => $mode === 'COVE' 
-                        ? 'Resultados de la consulta de valor y mercancías en VUCEM.' 
-                        : 'Documentos digitalizados recuperados de VUCEM.',
+                    'pageTitle' => 'Consulta de COVE',
+                    'pageSubtitle' => 'Detalle de Valor y Mercancías',
+                    'description' => 'Información recuperada exitosamente de VUCEM.',
                 ]);
                 
             } finally {
@@ -175,7 +129,7 @@ class EDocumentConsultaController extends Controller
             }
             
         } catch (\Exception $e) {
-            Log::error('[CONSULTA] Error:', ['msg' => $e->getMessage()]);
+            Log::error('[COVE] Error:', ['msg' => $e->getMessage()]);
             return back()->withErrors(['folio_edocument' => 'Error del sistema: ' . $e->getMessage()])->withInput();
         }
     }
@@ -185,11 +139,8 @@ class EDocumentConsultaController extends Controller
         $cacheKey = 'edocument_download:' . $token;
         $payload = Cache::get($cacheKey);
 
-        if (!$payload) return back()->withErrors(['download' => 'El enlace de descarga ha expirado. Por favor consulte nuevamente.']);
+        if (!$payload) return back()->withErrors(['download' => 'El archivo ha expirado.']);
 
-        $user = auth()->user();
-        // Validación simple de propiedad (opcionalmente podrías validar user_id si lo guardaste en cache)
-        
         return response()->streamDownload(function () use ($payload) {
             echo base64_decode($payload['content']);
         }, $payload['name'], ['Content-Type' => $payload['mime']]);
@@ -200,9 +151,7 @@ class EDocumentConsultaController extends Controller
         $stored = [];
         foreach ($files as $file) {
             $token = (string) Str::uuid();
-            // Guardar en caché por 60 minutos
             Cache::put('edocument_download:' . $token, [
-                'user_id' => auth()->id(),
                 'name' => $file['name'],
                 'mime' => $file['mime'],
                 'content' => $file['content'],
