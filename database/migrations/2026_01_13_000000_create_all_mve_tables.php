@@ -67,7 +67,9 @@ return new class extends Migration
         Schema::create('mv_datos_manifestacion', function (Blueprint $table) {
             $table->id();
             $table->foreignId('applicant_id')->constrained('mv_client_applicants')->onDelete('cascade');
-            $table->enum('status', ['borrador', 'completado'])->default('borrador');
+            
+            // CORRECCIÓN AQUÍ: Agregados todos los estados necesarios desde el inicio
+            $table->enum('status', ['borrador', 'completado', 'guardado', 'enviado', 'rechazado'])->default('borrador');
             
             // Datos de Manifestación
             $table->text('rfc_importador')->nullable();
@@ -88,7 +90,9 @@ return new class extends Migration
         Schema::create('mv_informacion_cove', function (Blueprint $table) {
             $table->id();
             $table->foreignId('applicant_id')->constrained('mv_client_applicants')->onDelete('cascade');
-            $table->enum('status', ['borrador', 'completado'])->default('borrador');
+            
+            // CORRECCIÓN AQUÍ: Agregados todos los estados necesarios desde el inicio
+            $table->enum('status', ['borrador', 'completado', 'guardado', 'enviado', 'rechazado'])->default('borrador');
             
             // Información COVE
             $table->text('informacion_cove')->nullable(); // JSON encriptado con array de COVEs
@@ -112,7 +116,9 @@ return new class extends Migration
         Schema::create('mv_documentos', function (Blueprint $table) {
             $table->id();
             $table->foreignId('applicant_id')->constrained('mv_client_applicants')->onDelete('cascade');
-            $table->enum('status', ['borrador', 'completado'])->default('borrador');
+            
+            // CORRECCIÓN AQUÍ: Agregados todos los estados necesarios desde el inicio
+            $table->enum('status', ['borrador', 'completado', 'guardado', 'enviado', 'rechazado'])->default('borrador');
             
             // Array de documentos eDocument (para formulario manual)
             $table->text('documentos')->nullable(); // JSON encriptado con array de documentos

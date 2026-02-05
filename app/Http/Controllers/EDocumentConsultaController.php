@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\ConsultarEDocumentRequest;
 use App\Models\EdocumentRegistrado;
 use App\Services\ManifestacionValorService;
-use App\Services\ConsultarEdocumentService; // Usamos SOLO el servicio de Valor (XML)
+use App\Services\ConsultarEdocumentService; 
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
@@ -40,21 +40,24 @@ class EDocumentConsultaController extends Controller
             $solicitanteId = $request->input('solicitante_id');
             $solicitante = $user->clientApplicants()->find($solicitanteId);
 
-            if (!$solicitante || !$solicitante->applicant_rfc || !$solicitante->ws_file_upload_key) {
-                return back()->withErrors(['solicitante_id' => 'Solicitante inválido o sin credenciales VUCEM'])->withInput();
+            // Validar que el solicitante exista y tenga RFC
+            if (!$solicitante || !$solicitante->applicant_rfc) {
+                return back()->withErrors(['solicitante_id' => 'Solicitante inválido o sin RFC configurado'])->withInput();
             }
 
-            // 2. Archivos eFirma
+            // 2. Archivos eFirma y Claves
             $certificado = $request->file('certificado');
             $llavePrivada = $request->file('llave_privada');
             $passwordLlave = $request->input('contrasena_llave');
+            
+            // CAPTURA DE LA NUEVA CLAVE WEB SERVICE DESDE EL FORMULARIO
+            $claveWebService = $request->input('clave_webservice');
 
             if (!$certificado || !$llavePrivada || !$passwordLlave) {
                 return back()->withErrors(['certificado' => 'Se requieren los archivos de la e.firma para desencriptar el COVE.'])->withInput();
             }
 
-            // 3. Validación de Folio
-            // CORRECCIÓN AQUÍ: Usamos $mvService en lugar de $manifestacionService
+            // 3. Validación de Folio usando el servicio
             $folio = $mvService->normalizeEdocumentFolio($request->input('folio_edocument'));
             $validation = $mvService->validateEdocumentFolio($folio);
             
@@ -76,7 +79,7 @@ class EDocumentConsultaController extends Controller
                 $result = $consultarService->consultarEdocument(
                     $folio, 
                     $solicitante->applicant_rfc, 
-                    $solicitante->ws_file_upload_key,
+                    $claveWebService, // <--- AQUÍ SE PASA LA CLAVE MANUAL
                     $tempCertificadoPath,
                     $tempLlavePath,
                     $passwordLlave
@@ -86,7 +89,7 @@ class EDocumentConsultaController extends Controller
                     return back()->withErrors(['folio_edocument' => 'VUCEM: ' . $result['message']])->withInput();
                 }
 
-                // 6. Guardar registro en BD
+                // 6. Guardar registro en BD (caché local del resultado)
                 $record = EdocumentRegistrado::updateOrCreate(
                     ['folio_edocument' => $folio],
                     [
@@ -98,7 +101,7 @@ class EDocumentConsultaController extends Controller
                     ]
                 );
                 
-                // 7. Procesar archivos XML
+                // 7. Procesar archivos XML para la vista
                 $filesForView = [];
                 if (!empty($result['archivos'])) {
                     foreach ($result['archivos'] as $archivo) {
@@ -108,10 +111,11 @@ class EDocumentConsultaController extends Controller
                             'content' => $archivo['contenido'],
                         ];
                     }
+                    // Guardar en caché temporal para descarga
                     $filesForView = $this->storeTemporaryFiles($filesForView);
                 }
 
-                // 8. Retornar vista
+                // 8. Retornar vista con resultados
                 return view('edocument.consulta', [
                     'solicitantes' => $user->clientApplicants()->get(),
                     'solicitante_seleccionado' => $solicitanteId,
@@ -124,6 +128,7 @@ class EDocumentConsultaController extends Controller
                 ]);
                 
             } finally {
+                // Limpieza de archivos temporales
                 if (file_exists($tempCertificadoPath)) @unlink($tempCertificadoPath);
                 if (file_exists($tempLlavePath)) @unlink($tempLlavePath);
             }

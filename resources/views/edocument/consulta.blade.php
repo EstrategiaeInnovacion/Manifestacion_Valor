@@ -15,7 +15,7 @@
                             Consulta VUCEM
                         </span>
                     </div>
-                    {{-- ... (User dropdown igual) ... --}}
+                    
                     <div class="flex items-center gap-6">
                          <div class="text-right hidden sm:block">
                             <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Usuario Conectado</p>
@@ -58,29 +58,39 @@
                 </div>
             @endif
 
-            {{-- FORMULARIO (Siempre apunta a cove.consulta) --}}
+            {{-- FORMULARIO --}}
             <div class="bg-white rounded-2xl shadow-lg border border-slate-200 p-8 mb-8">
                 <form method="POST" action="{{ route('cove.consulta') }}" enctype="multipart/form-data">
                     @csrf
                     <div class="grid grid-cols-1 gap-6">
                         @if(isset($solicitantes) && $solicitantes->count() > 0)
-                            <div>
-                                <label for="solicitante_id" class="block text-sm font-semibold text-slate-700 mb-2">Solicitante</label>
-                                <select name="solicitante_id" id="solicitante_id" class="form-input w-full bg-slate-50" required>
-                                    <option value="">Seleccione...</option>
-                                    @foreach($solicitantes as $solicitante)
-                                        <option value="{{ $solicitante->id }}" {{ old('solicitante_id', $solicitante_seleccionado ?? '') == $solicitante->id ? 'selected' : '' }}>
-                                            {{ $solicitante->applicant_rfc }} - {{ $solicitante->business_name }}
-                                        </option>
-                                    @endforeach
-                                </select>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label for="solicitante_id" class="block text-sm font-semibold text-slate-700 mb-2">Solicitante (RFC)</label>
+                                    <select name="solicitante_id" id="solicitante_id" class="form-input w-full bg-slate-50" required>
+                                        <option value="">Seleccione...</option>
+                                        @foreach($solicitantes as $solicitante)
+                                            <option value="{{ $solicitante->id }}" {{ old('solicitante_id', $solicitante_seleccionado ?? '') == $solicitante->id ? 'selected' : '' }}>
+                                                {{ $solicitante->applicant_rfc }} - {{ $solicitante->business_name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label for="clave_webservice" class="block text-sm font-semibold text-slate-700 mb-2">Contraseña Web Service VUCEM</label>
+                                    <input type="password" name="clave_webservice" id="clave_webservice" 
+                                           class="form-input w-full" 
+                                           placeholder="Contraseña de acceso al portal VUCEM" required />
+                                    <p class="text-[10px] text-slate-400 mt-1">Es la contraseña que usas para entrar al portal, NO la de la FIEL.</p>
+                                </div>
                             </div>
 
                             <div>
                                 <label for="folio_edocument" class="block text-sm font-semibold text-slate-700 mb-2">Folio COVE (eDocument)</label>
                                 <input type="text" name="folio_edocument" id="folio_edocument" 
                                        value="{{ old('folio_edocument', $folio ?? '') }}" 
-                                       class="form-input w-full uppercase font-mono" 
+                                       class="form-input w-full uppercase font-mono border-blue-200 bg-blue-50/30" 
                                        placeholder="Ej. 0000000000000" required />
                             </div>
 
@@ -99,7 +109,7 @@
                                         <input type="file" name="llave_privada" class="file-input w-full text-sm" accept=".key,.pem" required />
                                     </div>
                                     <div class="md:col-span-2">
-                                        <label class="block text-xs font-semibold text-slate-500 mb-2">Contraseña</label>
+                                        <label class="block text-xs font-semibold text-slate-500 mb-2">Contraseña de la Llave Privada</label>
                                         <input type="password" name="contrasena_llave" class="form-input w-full" placeholder="••••••••" required />
                                     </div>
                                 </div>
@@ -112,7 +122,7 @@
                                 </button>
                             </div>
                         @else
-                           <div class="bg-amber-50 p-4 rounded text-amber-800 text-sm">Registre un solicitante primero.</div>
+                           <div class="bg-amber-50 p-4 rounded text-amber-800 text-sm">Registre un solicitante primero en la sección de Solicitantes.</div>
                         @endif
                     </div>
                 </form>
@@ -147,8 +157,11 @@
                             <ul class="divide-y divide-slate-200">
                                 @foreach($files as $file)
                                     <li class="py-3 flex justify-between items-center">
-                                        <span class="text-sm font-mono text-slate-600">{{ $file['name'] }}</span>
-                                        <a href="{{ route('cove.descargar', $file['token']) }}" class="text-blue-600 text-xs font-bold hover:underline">Descargar</a>
+                                        <div class="flex items-center">
+                                            <i data-lucide="file-code" class="w-5 h-5 text-slate-400 mr-3"></i>
+                                            <span class="text-sm font-mono text-slate-600">{{ $file['name'] }}</span>
+                                        </div>
+                                        <a href="{{ route('cove.descargar', $file['token']) }}" class="text-blue-600 text-xs font-bold hover:underline bg-blue-50 px-3 py-1 rounded-md">Descargar</a>
                                     </li>
                                 @endforeach
                             </ul>

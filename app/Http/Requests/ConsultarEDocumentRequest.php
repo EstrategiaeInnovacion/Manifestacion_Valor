@@ -16,6 +16,7 @@ class ConsultarEDocumentRequest extends FormRequest
         return [
             'folio_edocument' => ['required', 'string', 'max:30'],
             'solicitante_id' => ['required', 'exists:mv_client_applicants,id'],
+            'clave_webservice' => ['required', 'string'], // Nuevo campo obligatorio
             'certificado' => ['required', 'file', 'max:4096', 'mimetypes:application/x-x509-ca-cert,application/x-x509-user-cert,application/pkix-cert,application/x-pem-file,application/octet-stream'],
             'llave_privada' => ['required', 'file', 'max:4096'],
             'contrasena_llave' => ['required', 'string', 'max:255'],
@@ -28,6 +29,7 @@ class ConsultarEDocumentRequest extends FormRequest
             'folio_edocument.required' => 'El folio eDocument es obligatorio.',
             'solicitante_id.required' => 'Debe seleccionar un solicitante.',
             'solicitante_id.exists' => 'El solicitante seleccionado no es válido.',
+            'clave_webservice.required' => 'La contraseña del Web Service VUCEM es obligatoria.',
             'certificado.required' => 'El certificado de eFirma es obligatorio.',
             'certificado.file' => 'El certificado debe ser un archivo válido.',
             'llave_privada.required' => 'La llave privada de eFirma es obligatoria.',

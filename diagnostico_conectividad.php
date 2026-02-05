@@ -6,7 +6,7 @@
 
 echo "=== DIAGNÓSTICO ERROR 'Could not connect to host' ===\n\n";
 
-$wsdlUrl = 'https://www.ventanillaunica.gob.mx/ventanilla/ConsultarEdocumentService?wsdl';
+$wsdlUrl = 'https://privados.ventanillaunica.gob.mx:8106/IngresoManifestacionImpl/IngresoManifestacionService';
 $endpointTest = 'https://www.ventanillaunica.gob.mx:8118/ventanilla/ConsultarEdocumentService';
 
 echo "🔍 Analizando problemas de conectividad...\n\n";
