@@ -1029,7 +1029,8 @@ class MveController extends Controller
                     $documentosRecord,
                     Storage::path($certificadoPath),
                     Storage::path($llavePrivadaPath),
-                    $password
+                    $password,
+                    $claveWebservice // <--- CORRECCIÓN APLICADA AQUÍ
                 );
                 
                 // Limpiar archivos temporales
