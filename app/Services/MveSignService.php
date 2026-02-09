@@ -193,39 +193,44 @@ class MveSignService
                 // CAMBIO AQUÍ: formatXmlDate
                 $xml .= '<fechaPago>' . $this->mveService->formatXmlDate($pp['fecha'] ?? $pp['fechaPago'] ?? '') . '</fechaPago>';
                 $xml .= '<total>' . $this->mveService->formatVucemNumber($pp['importe'] ?? $pp['total'] ?? 0) . '</total>';
-                $xml .= '<tipoPago>' . ($pp['tipo_pago'] ?? $pp['formaPago'] ?? '') . '</tipoPago>';
+                $xml .= '<tipoPago>' . ($pp['tipoPago'] ?? $pp['formaPago'] ?? $pp['tipo_pago'] ?? '') . '</tipoPago>';
                 if (!empty($pp['especifique'])) {
                     $xml .= '<especifique>' . htmlspecialchars($pp['especifique'], ENT_XML1) . '</especifique>';
                 }
-                $xml .= '<tipoMoneda>' . ($pp['tipo_moneda'] ?? 'USD') . '</tipoMoneda>';
-                $xml .= '<tipoCambio>' . $this->mveService->formatVucemNumber($pp['tipo_cambio'] ?? 1) . '</tipoCambio>';
+                $xml .= '<tipoMoneda>' . ($pp['tipoMoneda'] ?? $pp['tipo_moneda'] ?? 'USD') . '</tipoMoneda>';
+                $xml .= '<tipoCambio>' . $this->mveService->formatVucemNumber($pp['tipoCambio'] ?? $pp['tipo_cambio'] ?? 1) . '</tipoCambio>';
                 $xml .= '</precioPagado>';
             }
 
-            // Precio Por Pagar - CRÍTICO: USAR formatXmlDate
-            foreach (($cove['precios_por_pagar'] ?? []) as $ppp) {
-                $xml .= '<precioPorPagar>';
-                // CAMBIO AQUÍ: formatXmlDate
-                $xml .= '<fechaPago>' . $this->mveService->formatXmlDate($ppp['fecha'] ?? $ppp['fechaPago'] ?? '') . '</fechaPago>';
-                $xml .= '<total>' . $this->mveService->formatVucemNumber($ppp['importe'] ?? $ppp['total'] ?? 0) . '</total>';
-                if (!empty($ppp['situacion_no_fecha_pago'])) $xml .= '<situacionNofechaPago>' . htmlspecialchars($ppp['situacion_no_fecha_pago'], ENT_XML1) . '</situacionNofechaPago>';
-                $xml .= '<tipoPago>' . ($ppp['tipo_pago'] ?? $ppp['formaPago'] ?? '') . '</tipoPago>';
-                if (!empty($ppp['especifique'])) $xml .= '<especifique>' . htmlspecialchars($ppp['especifique'], ENT_XML1) . '</especifique>';
-                $xml .= '<tipoMoneda>' . ($ppp['tipo_moneda'] ?? 'USD') . '</tipoMoneda>';
-                $xml .= '<tipoCambio>' . $this->mveService->formatVucemNumber($ppp['tipo_cambio'] ?? 1) . '</tipoCambio>';
-                $xml .= '</precioPorPagar>';
+            // Precio Por Pagar - SOLO incluir si tiene datos reales
+            $preciosPorPagar = $cove['precios_por_pagar'] ?? [];
+            if (!empty($preciosPorPagar)) {
+                foreach ($preciosPorPagar as $ppp) {
+                    $xml .= '<precioPorPagar>';
+                    $xml .= '<fechaPago>' . $this->mveService->formatXmlDate($ppp['fecha'] ?? $ppp['fechaPago'] ?? '') . '</fechaPago>';
+                    $xml .= '<total>' . $this->mveService->formatVucemNumber($ppp['importe'] ?? $ppp['total'] ?? 0) . '</total>';
+                    if (!empty($ppp['situacionNofechaPago'] ?? $ppp['situacion_no_fecha_pago'] ?? '')) $xml .= '<situacionNofechaPago>' . htmlspecialchars($ppp['situacionNofechaPago'] ?? $ppp['situacion_no_fecha_pago'], ENT_XML1) . '</situacionNofechaPago>';
+                    $xml .= '<tipoPago>' . ($ppp['tipoPago'] ?? $ppp['formaPago'] ?? $ppp['tipo_pago'] ?? '') . '</tipoPago>';
+                    if (!empty($ppp['especifique'])) $xml .= '<especifique>' . htmlspecialchars($ppp['especifique'], ENT_XML1) . '</especifique>';
+                    $xml .= '<tipoMoneda>' . ($ppp['tipoMoneda'] ?? $ppp['tipo_moneda'] ?? 'USD') . '</tipoMoneda>';
+                    $xml .= '<tipoCambio>' . $this->mveService->formatVucemNumber($ppp['tipoCambio'] ?? $ppp['tipo_cambio'] ?? 1) . '</tipoCambio>';
+                    $xml .= '</precioPorPagar>';
+                }
             }
 
-            // Compensación - CRÍTICO: USAR formatXmlDate
-            foreach (($cove['compensos_pago'] ?? []) as $cp) {
-                $xml .= '<compensoPago>';
-                $xml .= '<tipoPago>' . ($cp['tipo_pago'] ?? $cp['formaPago'] ?? '') . '</tipoPago>';
-                // CAMBIO AQUÍ: formatXmlDate
-                $xml .= '<fecha>' . $this->mveService->formatXmlDate($cp['fecha'] ?? '') . '</fecha>';
-                $xml .= '<motivo>' . htmlspecialchars($cp['motivo'] ?? '', ENT_XML1) . '</motivo>';
-                $xml .= '<prestacionMercancia>' . ($cp['prestacion_mercancia'] ?? '') . '</prestacionMercancia>';
-                if (!empty($cp['especifique'])) $xml .= '<especifique>' . htmlspecialchars($cp['especifique'], ENT_XML1) . '</especifique>';
-                $xml .= '</compensoPago>';
+            // Compensación - SOLO incluir si tiene datos reales
+            // ORDEN CORRECTO según XSD: fecha, motivo, prestacionMercancia, tipoPago
+            $compensosPago = $cove['compensos_pago'] ?? [];
+            if (!empty($compensosPago)) {
+                foreach ($compensosPago as $cp) {
+                    $xml .= '<compensoPago>';
+                    $xml .= '<fecha>' . $this->mveService->formatXmlDate($cp['fecha'] ?? '') . '</fecha>';
+                    $xml .= '<motivo>' . htmlspecialchars($cp['motivo'] ?? '', ENT_XML1) . '</motivo>';
+                    $xml .= '<prestacionMercancia>' . ($cp['prestacionMercancia'] ?? $cp['prestacion_mercancia'] ?? '') . '</prestacionMercancia>';
+                    $xml .= '<tipoPago>' . ($cp['tipoPago'] ?? $cp['formaPago'] ?? $cp['tipo_pago'] ?? '') . '</tipoPago>';
+                    if (!empty($cp['especifique'])) $xml .= '<especifique>' . htmlspecialchars($cp['especifique'], ENT_XML1) . '</especifique>';
+                    $xml .= '</compensoPago>';
+                }
             }
 
             $xml .= '<metodoValoracion>' . ($cove['metodo_valoracion'] ?? $datosManifestacion->metodo_valoracion ?? '') . '</metodoValoracion>';
@@ -236,13 +241,13 @@ class MveSignService
 
             foreach ($incrementables as $inc) {
                 $xml .= '<incrementables>';
-                $xml .= '<tipoIncrementable>' . ($inc['tipo_incrementable'] ?? $inc['incrementable'] ?? '') . '</tipoIncrementable>';
+                $xml .= '<tipoIncrementable>' . ($inc['tipoIncrementable'] ?? $inc['incrementable'] ?? $inc['tipo_incrementable'] ?? '') . '</tipoIncrementable>';
                 // CAMBIO AQUÍ: formatXmlDate
                 $xml .= '<fechaErogacion>' . $this->mveService->formatXmlDate($inc['fechaErogacion'] ?? $inc['fecha_erogacion'] ?? '') . '</fechaErogacion>';
                 $xml .= '<importe>' . $this->mveService->formatVucemNumber($inc['importe'] ?? 0) . '</importe>';
-                $xml .= '<tipoMoneda>' . ($inc['tipo_moneda'] ?? 'USD') . '</tipoMoneda>';
-                $xml .= '<tipoCambio>' . $this->mveService->formatVucemNumber($inc['tipo_cambio'] ?? 1) . '</tipoCambio>';
-                $aCargo = ($inc['a_cargo_importador'] ?? $inc['aCargoImportador'] ?? 0) ? '1' : '0';
+                $xml .= '<tipoMoneda>' . ($inc['tipoMoneda'] ?? $inc['tipo_moneda'] ?? 'USD') . '</tipoMoneda>';
+                $xml .= '<tipoCambio>' . $this->mveService->formatVucemNumber($inc['tipoCambio'] ?? $inc['tipo_cambio'] ?? 1) . '</tipoCambio>';
+                $aCargo = ($inc['aCargoImportador'] ?? $inc['a_cargo_importador'] ?? 0) ? '1' : '0';
                 $xml .= '<aCargoImportador>' . $aCargo . '</aCargoImportador>';
                 $xml .= '</incrementables>';
             }
@@ -250,15 +255,15 @@ class MveSignService
             // Decrementables - CRÍTICO: USAR formatXmlDate
             $decrementables = $cove['decrementables'] ?? $cove['decrementable'] ?? [];
             if (empty($decrementables) && !empty($informacionCove->decrementables)) $decrementables = $informacionCove->decrementables;
-            
+
             foreach ($decrementables as $dec) {
                 $xml .= '<decrementables>';
-                $xml .= '<tipoDecrementable>' . ($dec['tipo_decrementable'] ?? $dec['decrementable'] ?? '') . '</tipoDecrementable>';
+                $xml .= '<tipoDecrementable>' . ($dec['tipoDecrementable'] ?? $dec['decrementable'] ?? $dec['tipo_decrementable'] ?? '') . '</tipoDecrementable>';
                 // CAMBIO AQUÍ: formatXmlDate
                 $xml .= '<fechaErogacion>' . $this->mveService->formatXmlDate($dec['fechaErogacion'] ?? $dec['fecha_erogacion'] ?? '') . '</fechaErogacion>';
                 $xml .= '<importe>' . $this->mveService->formatVucemNumber($dec['importe'] ?? 0) . '</importe>';
-                $xml .= '<tipoMoneda>' . ($dec['tipo_moneda'] ?? 'USD') . '</tipoMoneda>';
-                $xml .= '<tipoCambio>' . $this->mveService->formatVucemNumber($dec['tipo_cambio'] ?? 1) . '</tipoCambio>';
+                $xml .= '<tipoMoneda>' . ($dec['tipoMoneda'] ?? $dec['tipo_moneda'] ?? 'USD') . '</tipoMoneda>';
+                $xml .= '<tipoCambio>' . $this->mveService->formatVucemNumber($dec['tipoCambio'] ?? $dec['tipo_cambio'] ?? 1) . '</tipoCambio>';
                 $xml .= '</decrementables>';
             }
             $xml .= '</informacionCove>';
@@ -324,43 +329,90 @@ class MveSignService
     }
 
     private function procesarRespuestaVucemXml($applicant, $datosManifestacion, $xmlEnviado, $xmlRespuesta, $httpCode): array {
-        $folio = ''; 
-        $status = 'DESCONOCIDO'; 
+        $numeroOperacion = '';
+        $numeroManifestacion = '';
+        $acusePdf = null;
+        $status = 'DESCONOCIDO';
         $mensaje = '';
 
         $xmlClean = preg_replace('/(<\/?)(\w+):([^>]*>)/', '$1$3', $xmlRespuesta);
-        
+
         if ($httpCode >= 200 && $httpCode < 300) {
-            if (preg_match('/<numeroOperacion[^>]*>([^<]+)<\/numeroOperacion>/i', $xmlClean, $m)) $folio = $m[1];
-            elseif (preg_match('/<folio[^>]*>([^<]+)<\/folio>/i', $xmlClean, $m)) $folio = $m[1];
-            
+            // Capturar número de operación (folio interno de VUCEM para tracking)
+            if (preg_match('/<numeroOperacion[^>]*>([^<]+)<\/numeroOperacion>/i', $xmlClean, $m)) {
+                $numeroOperacion = trim($m[1]);
+                Log::info('[MVE] Número de Operación capturado', ['numero_operacion' => $numeroOperacion]);
+            }
+
+            // Capturar Número de Manifestación / eDocument (formato MNVA...) - ESTE ES EL FOLIO REAL
+            if (preg_match('/<numeroManifestacion[^>]*>([^<]+)<\/numeroManifestacion>/i', $xmlClean, $m)) {
+                $numeroManifestacion = trim($m[1]);
+                Log::info('[MVE] Número de Manifestación (eDocument) capturado de respuesta VUCEM', ['numero_manifestacion' => $numeroManifestacion]);
+            } elseif (preg_match('/<eDocument[^>]*>([^<]+)<\/eDocument>/i', $xmlClean, $m)) {
+                $numeroManifestacion = trim($m[1]);
+                Log::info('[MVE] eDocument capturado de respuesta VUCEM', ['eDocument' => $numeroManifestacion]);
+            }
+
+            // Capturar acuse PDF en base64 si viene en la respuesta
+            if (preg_match('/<acusePDF[^>]*>([^<]+)<\/acusePDF>/is', $xmlClean, $m)) {
+                $acusePdf = trim($m[1]);
+                Log::info('[MVE] Acuse PDF capturado en respuesta', ['size' => strlen($acusePdf)]);
+            }
+
+            // Verificar errores
             if (preg_match('/<descripcionError[^>]*>([^<]+)<\/descripcionError>/i', $xmlClean, $m)) {
                 $mensaje = trim($m[1]);
                 $status = 'RECHAZADO';
             }
         }
 
-        if ($folio) {
+        // CRÍTICO: El folio principal debe ser el numeroManifestacion (eDocument) si existe,
+        // ya que es el que se usa para consultas posteriores
+        $folioReal = $numeroManifestacion ?: $numeroOperacion;
+
+        if ($folioReal) {
              MvAcuse::create([
                 'applicant_id' => $applicant->id,
                 'datos_manifestacion_id' => $datosManifestacion->id,
-                'folio_manifestacion' => $folio,
+                'folio_manifestacion' => $folioReal,  // Usar numeroManifestacion como folio principal
+                'numero_cove' => $numeroManifestacion ?: null,  // eDocument/MNVA...
                 'numero_pedimento' => $datosManifestacion->pedimento,
+                'acuse_pdf' => $acusePdf,  // Guardar acuse PDF si viene en respuesta
                 'xml_enviado' => $xmlEnviado,
                 'xml_respuesta' => $xmlRespuesta,
                 'status' => 'ENVIADO',
                 'fecha_envio' => now(),
+                'fecha_respuesta' => now(),
              ]);
-             
+
              $datosManifestacion->update(['status' => 'enviado']);
              MvInformacionCove::where('applicant_id', $applicant->id)->update(['status' => 'enviado']);
 
-             return ['success' => true, 'folio' => $folio, 'message' => 'Manifestación enviada con éxito'];
+             Log::info('[MVE] Manifestación enviada exitosamente', [
+                 'folio_real' => $folioReal,
+                 'numero_manifestacion' => $numeroManifestacion,
+                 'numero_operacion' => $numeroOperacion,
+                 'tiene_acuse_pdf' => !empty($acusePdf)
+             ]);
+
+             return [
+                 'success' => true,
+                 'folio' => $folioReal,
+                 'numero_manifestacion' => $numeroManifestacion,
+                 'numero_operacion' => $numeroOperacion,
+                 'message' => 'Manifestación enviada con éxito. Folio: ' . $folioReal
+             ];
         }
-        
+
         $datosManifestacion->update(['status' => 'rechazado']);
         MvInformacionCove::where('applicant_id', $applicant->id)->update(['status' => 'rechazado']);
-        
+
+        Log::error('[MVE] Error procesando respuesta VUCEM', [
+            'mensaje' => $mensaje,
+            'http_code' => $httpCode,
+            'respuesta_preview' => substr(strip_tags($xmlRespuesta), 0, 500)
+        ]);
+
         // Si no hay mensaje de error explícito, devolvemos todo el XML para verlo en el frontend si es necesario
         return ['success' => false, 'message' => $mensaje ?: 'Error VUCEM (Revisa Logs): ' . strip_tags($xmlRespuesta)];
     }

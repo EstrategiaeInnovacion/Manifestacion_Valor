@@ -320,26 +320,36 @@ class MveController extends Controller
         // Obtener todos los solicitantes del usuario
         $applicantIds = MvClientApplicant::where('user_email', auth()->user()->email)
             ->pluck('id');
-        
+
         // Estados que requieren acción del usuario (borrador, guardado, rechazado)
         $estadosPendientes = ['borrador', 'guardado', 'rechazado'];
-        
+
+        // IMPORTANTE: Excluir applicants que ya tienen una manifestación enviada
+        // Esto previene mostrar secciones huérfanas de manifestaciones completadas
+        $applicantsConMveEnviada = MvDatosManifestacion::whereIn('applicant_id', $applicantIds)
+            ->where('status', 'enviado')
+            ->pluck('applicant_id')
+            ->toArray();
+
+        $applicantIdsPendientes = array_diff($applicantIds->toArray(), $applicantsConMveEnviada);
+
         // Obtener pendientes de todas las secciones (incluyendo guardadas sin enviar y rechazadas)
+        // SOLO de applicants que NO tienen manifestación enviada
         $datosMvPendientes = MvDatosManifestacion::with('applicant')
-            ->whereIn('applicant_id', $applicantIds)
+            ->whereIn('applicant_id', $applicantIdsPendientes)
             ->whereIn('status', $estadosPendientes)
             ->get();
-            
+
         $covePendientes = MvInformacionCove::with('applicant')
-            ->whereIn('applicant_id', $applicantIds)
+            ->whereIn('applicant_id', $applicantIdsPendientes)
             ->whereIn('status', $estadosPendientes)
             ->get();
-            
+
         $documentosPendientes = MvDocumentos::with('applicant')
-            ->whereIn('applicant_id', $applicantIds)
+            ->whereIn('applicant_id', $applicantIdsPendientes)
             ->whereIn('status', $estadosPendientes)
             ->get();
-        
+
         return view('mve.pendientes', compact('datosMvPendientes', 'covePendientes', 'documentosPendientes'));
     }
     
@@ -1037,11 +1047,13 @@ class MveController extends Controller
                 Storage::delete([$certificadoPath, $llavePrivadaPath]);
                 
                 if ($resultado['success']) {
-                    // Actualizar status a 'enviado'
+                    // Actualizar status a 'enviado' en TODAS las secciones
                     $datosManifestacion->update(['status' => 'enviado']);
                     MvInformacionCove::where('applicant_id', $applicantId)
                         ->update(['status' => 'enviado']);
-                    
+                    MvDocumentos::where('applicant_id', $applicantId)
+                        ->update(['status' => 'enviado']);
+
                     return response()->json([
                         'success' => true,
                         'message' => $resultado['message'],
@@ -1051,10 +1063,12 @@ class MveController extends Controller
                         'redirect_url' => isset($resultado['acuse_id']) ? route('mve.acuse', $datosManifestacion->id) : null
                     ]);
                 } else {
-                    // Si VUCEM rechazó, actualizar status a 'rechazado'
+                    // Si VUCEM rechazó, actualizar status a 'rechazado' en TODAS las secciones
                     if (isset($resultado['status']) && $resultado['status'] === 'RECHAZADO') {
                         $datosManifestacion->update(['status' => 'rechazado']);
                         MvInformacionCove::where('applicant_id', $applicantId)
+                            ->update(['status' => 'rechazado']);
+                        MvDocumentos::where('applicant_id', $applicantId)
                             ->update(['status' => 'rechazado']);
                     }
                     
@@ -1269,21 +1283,178 @@ class MveController extends Controller
     public function downloadAcuseXml($manifestacionId)
     {
         $acuse = MvAcuse::where('datos_manifestacion_id', $manifestacionId)->firstOrFail();
-        
+
         // Verificar permisos
         $manifestacion = MvDatosManifestacion::with('applicant')->findOrFail($manifestacionId);
         if ($manifestacion->applicant->user_email !== auth()->user()->email) {
             abort(403, 'No tienes permiso para acceder a este acuse.');
         }
-        
+
         if (!$acuse->xml_respuesta) {
             abort(404, 'No hay XML de respuesta disponible.');
         }
-        
+
         return response($acuse->xml_respuesta)
             ->header('Content-Type', 'application/xml')
             ->header('Content-Disposition', 'attachment; filename="respuesta_mve_' . $acuse->folio_manifestacion . '.xml"')
             ->header('Content-Length', strlen($acuse->xml_respuesta));
+    }
+
+    /**
+     * Limpiar datos huérfanos - Sincronizar status de todas las secciones
+     * Actualiza documentos e información COVE que tienen status inconsistente
+     */
+    public function limpiarDatosHuerfanos()
+    {
+        try {
+            $actualizados = 0;
+
+            // Encontrar todos los applicants con datos_manifestacion enviados
+            $applicantsEnviados = MvDatosManifestacion::where('status', 'enviado')
+                ->pluck('applicant_id')
+                ->unique();
+
+            // Actualizar documentos e info COVE de estos applicants a 'enviado'
+            foreach ($applicantsEnviados as $applicantId) {
+                $updated = MvDocumentos::where('applicant_id', $applicantId)
+                    ->whereIn('status', ['borrador', 'guardado', 'rechazado'])
+                    ->update(['status' => 'enviado']);
+                $actualizados += $updated;
+
+                $updated = MvInformacionCove::where('applicant_id', $applicantId)
+                    ->whereIn('status', ['borrador', 'guardado', 'rechazado'])
+                    ->update(['status' => 'enviado']);
+                $actualizados += $updated;
+            }
+
+            Log::info('[MVE] Limpieza de datos huérfanos completada', [
+                'registros_actualizados' => $actualizados,
+                'applicants_procesados' => count($applicantsEnviados)
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => "Limpieza completada. Se actualizaron {$actualizados} registros huérfanos.",
+                'applicants_procesados' => count($applicantsEnviados)
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('[MVE] Error en limpieza de datos huérfanos', [
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al limpiar datos: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Consultar manifestación en VUCEM para obtener número de MV y acuse sellado
+     */
+    public function consultarManifestacion(Request $request, $acuseId)
+    {
+        try {
+            // Obtener el acuse
+            $acuse = MvAcuse::with(['applicant', 'datosManifestacion'])->findOrFail($acuseId);
+
+            // Verificar permisos
+            if ($acuse->applicant->user_email !== auth()->user()->email) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No tienes permiso para consultar este acuse.'
+                ], 403);
+            }
+
+            // Validar datos de entrada
+            $request->validate([
+                'folio' => 'required|string',
+                'clave_webservice' => 'required|string'
+            ]);
+
+            $folioConsulta = trim($request->input('folio'));
+            $claveWebservice = $request->input('clave_webservice');
+            $rfc = strtoupper($acuse->applicant->applicant_rfc);
+
+            Log::info('[MV_CONSULTA] Iniciando consulta', [
+                'acuse_id' => $acuseId,
+                'folio_consulta' => $folioConsulta,
+                'tipo_folio' => $acuse->numero_cove ? 'numero_mv' : 'numero_operacion',
+                'rfc' => $rfc
+            ]);
+
+            // Usar el servicio de consulta
+            $consultaService = new \App\Services\MveConsultaService();
+            $resultado = $consultaService->consultarManifestacion(
+                $folioConsulta,
+                $rfc,
+                $claveWebservice
+            );
+
+            if ($resultado['success']) {
+                // Actualizar el acuse con los datos obtenidos
+                $consultaService->actualizarAcuseConConsulta($acuse, $resultado);
+
+                // Si obtenemos el número de MV (eDocument), consultar también el acuse de eDocument
+                $acuseEdocument = null;
+                if (!empty($resultado['numero_mv'])) {
+                    Log::info('[MV_CONSULTA] Consultando acuse de eDocument', [
+                        'numero_mv' => $resultado['numero_mv']
+                    ]);
+
+                    $resultadoEdocument = $consultaService->consultarEdocumentAcuse(
+                        $resultado['numero_mv'],
+                        $rfc,
+                        $claveWebservice
+                    );
+
+                    if ($resultadoEdocument['success'] && !empty($resultadoEdocument['acuse_pdf'])) {
+                        $acuseEdocument = $resultadoEdocument['acuse_pdf'];
+
+                        // Actualizar el acuse con el PDF de eDocument si aún no lo tiene
+                        if (empty($acuse->acuse_pdf)) {
+                            $acuse->update(['acuse_pdf' => $acuseEdocument]);
+                            Log::info('[MV_CONSULTA] Acuse eDocument guardado en base de datos');
+                        }
+                    } else {
+                        Log::warning('[MV_CONSULTA] No se pudo obtener acuse de eDocument', [
+                            'error' => $resultadoEdocument['message'] ?? 'Desconocido'
+                        ]);
+                    }
+                }
+
+                return response()->json([
+                    'success' => true,
+                    'message' => $resultado['message'],
+                    'data' => [
+                        'numero_mv' => $resultado['numero_mv'],
+                        'status' => $resultado['status'],
+                        'fecha_registro' => $resultado['fecha_registro'],
+                        'tiene_acuse_pdf' => !empty($resultado['acuse_pdf']) || !empty($acuseEdocument),
+                        'acuse_edocument_obtenido' => !empty($acuseEdocument),
+                        'datos_manifestacion' => $resultado['datos_manifestacion'] ?? null
+                    ]
+                ]);
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => $resultado['message'],
+                    'errores' => $resultado['errores'] ?? []
+                ], 400);
+            }
+
+        } catch (\Exception $e) {
+            Log::error('[MV_CONSULTA] Error en controlador', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al consultar la manifestación: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
 }

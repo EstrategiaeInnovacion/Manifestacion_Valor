@@ -108,6 +108,7 @@ Route::middleware('auth')->group(function () {
     // Rutas para firma y envío a VUCEM mediante AJAX (nuevo flujo)
     Route::post('/mve/firmar-enviar/{applicant}', [MveController::class, 'firmarYEnviarAjax'])->name('mve.firmar-enviar');
     Route::delete('/mve/descartar/{applicant}', [MveController::class, 'descartarManifestacion'])->name('mve.descartar');
+    Route::post('/mve/limpiar-huerfanos', [MveController::class, 'limpiarDatosHuerfanos'])->name('mve.limpiar-huerfanos');
     
     // Rutas legacy para firma (mantener compatibilidad)
     Route::get('/mve/firmar/{manifestacion}', [MveController::class, 'showSign'])->name('mve.firmar');
@@ -115,6 +116,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/mve/acuse/{manifestacion}', [MveController::class, 'showAcuse'])->name('mve.acuse');
     Route::get('/mve/acuse/{manifestacion}/pdf', [MveController::class, 'downloadAcusePdf'])->name('mve.acuse.pdf');
     Route::get('/mve/acuse/{manifestacion}/xml', [MveController::class, 'downloadAcuseXml'])->name('mve.acuse.xml');
+
+    // Ruta para consultar manifestación en VUCEM (obtener número de MV y acuse sellado)
+    Route::post('/mve/consultar/{acuse}', [MveController::class, 'consultarManifestacion'])->name('mve.consultar');
     
     // Rutas para subida de documentos con validación/conversión VUCEM
     Route::post('/documents/upload', [DocumentUploadController::class, 'uploadDocument'])->name('documents.upload');
@@ -139,7 +143,7 @@ Route::get('/test-soap-laravel', function() {
     $soapLoaded = extension_loaded('soap');
     $soapClientExists = class_exists('SoapClient');
     $loadedExts = get_loaded_extensions();
-    
+
     return response()->json([
         'extension_loaded' => $soapLoaded,
         'SoapClient_exists' => $soapClientExists,
@@ -148,4 +152,11 @@ Route::get('/test-soap-laravel', function() {
         'server_api' => php_sapi_name(),
         'loaded_extensions_count' => count($loadedExts),
     ]);
+});
+
+// Temporary route to execute orphaned data cleanup (can be removed after running once)
+Route::get('/mve/ejecutar-limpieza', function() {
+    $controller = new MveController();
+    $response = $controller->limpiarDatosHuerfanos();
+    return $response;
 });

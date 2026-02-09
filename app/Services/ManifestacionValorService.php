@@ -40,6 +40,8 @@ class ManifestacionValorService
         };
 
         // --- 1. DATOS GENERALES ---
+        // IMPORTANTE: El RFC del importador SÍ va al inicio de la cadena original
+        // según documentación oficial de VUCEM
         $addField($datosManifestacion?->rfc_importador ?? $applicant->applicant_rfc);
 
         foreach ($datosManifestacion?->persona_consulta ?? [] as $persona) {
@@ -85,7 +87,7 @@ class ManifestacionValorService
                 // B. Precio Pagado
                 $preciosPagados = $cove['precios_pagados'] ?? $cove['precio_pagado'] ?? [];
                 if (empty($preciosPagados) && !empty($informacionCove->precio_pagado)) $preciosPagados = $informacionCove->precio_pagado;
-                
+
                 foreach ($preciosPagados as $precio) {
                     $addField($this->formatVucemDate($precio['fecha'] ?? $precio['fechaPago'] ?? ''));
                     $addField($this->formatVucemNumber($precio['importe'] ?? $precio['total'] ?? 0));
@@ -95,25 +97,32 @@ class ManifestacionValorService
                     $addField($this->formatVucemNumber($precio['tipoCambio'] ?? 1));
                 }
 
-                // C. Precio Por Pagar
-                foreach ($cove['precios_por_pagar'] ?? [] as $precio) {
-                    $addField($this->formatVucemDate($precio['fecha'] ?? $precio['fechaPago'] ?? ''));
-                    $addField($this->formatVucemNumber($precio['importe'] ?? $precio['total'] ?? 0));
-                    $situacion = $precio['momentoSituacion'] ?? $precio['situacionNofechaPago'] ?? '';
-                    if (!empty($situacion)) $addField($situacion);
-                    $addField($precio['formaPago'] ?? $precio['tipoPago'] ?? '');
-                    if (!empty($precio['especifique'])) $addField($precio['especifique']);
-                    $addField($precio['tipoMoneda'] ?? 'USD');
-                    $addField($this->formatVucemNumber($precio['tipoCambio'] ?? 1));
+                // C. Precio Por Pagar - SOLO incluir si tiene datos reales
+                $preciosPorPagar = $cove['precios_por_pagar'] ?? [];
+                if (!empty($preciosPorPagar)) {
+                    foreach ($preciosPorPagar as $precio) {
+                        $addField($this->formatVucemDate($precio['fecha'] ?? $precio['fechaPago'] ?? ''));
+                        $addField($this->formatVucemNumber($precio['importe'] ?? $precio['total'] ?? 0));
+                        $situacion = $precio['momentoSituacion'] ?? $precio['situacionNofechaPago'] ?? '';
+                        if (!empty($situacion)) $addField($situacion);
+                        $addField($precio['formaPago'] ?? $precio['tipoPago'] ?? '');
+                        if (!empty($precio['especifique'])) $addField($precio['especifique']);
+                        $addField($precio['tipoMoneda'] ?? 'USD');
+                        $addField($this->formatVucemNumber($precio['tipoCambio'] ?? 1));
+                    }
                 }
 
-                // D. Compensación
-                foreach ($cove['compensos_pago'] ?? [] as $compenso) {
-                    $addField($compenso['formaPago'] ?? $compenso['tipoPago'] ?? '');
-                    $addField($this->formatVucemDate($compenso['fecha'] ?? ''));
-                    $addField($compenso['motivo'] ?? '');
-                    $addField($compenso['prestacionMercancia'] ?? '');
-                    if (!empty($compenso['especifique'])) $addField($compenso['especifique']);
+                // D. Compensación - SOLO incluir si tiene datos reales
+                // ORDEN CORRECTO según VUCEM: fecha, motivo, prestacionMercancia, tipoPago
+                $compensosPago = $cove['compensos_pago'] ?? [];
+                if (!empty($compensosPago)) {
+                    foreach ($compensosPago as $compenso) {
+                        $addField($this->formatVucemDate($compenso['fecha'] ?? ''));
+                        $addField($compenso['motivo'] ?? '');
+                        $addField($compenso['prestacionMercancia'] ?? '');
+                        $addField($compenso['formaPago'] ?? $compenso['tipoPago'] ?? '');
+                        if (!empty($compenso['especifique'])) $addField($compenso['especifique']);
+                    }
                 }
 
                 // E. Método Valoración
@@ -158,17 +167,49 @@ class ManifestacionValorService
         $addField($this->formatVucemNumber($valorData['total_decrementables'] ?? 0));
         $addField($this->formatVucemNumber($valorData['total_valor_aduana'] ?? 0));
 
-        return '||' . implode('|', $fields) . '||';
+        // IMPORTANTE: VUCEM usa UN SOLO pipe al inicio y final, NO doble pipe
+        $cadena = '|' . implode('|', $fields) . '|';
+
+        // DEBUG: Log cada campo de la cadena original
+        \Illuminate\Support\Facades\Log::debug('CAMPOS DE LA CADENA ORIGINAL:', [
+            'total_campos' => count($fields),
+            'campos' => $fields,
+            'cadena_completa' => $cadena
+        ]);
+
+        return $cadena;
     }
 
     /**
      * Formato fecha para Cadena Original: d/m/Y (Ej: 19/12/2025)
+     * IMPORTANTE: La cadena original usa formato dd/mm/yyyy según documentación VUCEM
      */
     public function formatVucemDate($date): string
     {
         if (empty($date)) return '';
         try {
-            if (preg_match('/^\d{2}\/\d{2}\/\d{4}$/', $date)) return $date;
+            // Si ya viene en formato dd/mm/yyyy, devolver tal cual
+            if (preg_match('/^\d{2}\/\d{2}\/\d{4}$/', $date)) {
+                return $date;
+            }
+
+            // Si viene en formato ISO con hora (2025-12-19T00:00:00), convertir a dd/mm/yyyy
+            if (preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/', $date)) {
+                $timestamp = strtotime($date);
+                if ($timestamp !== false) {
+                    return date('d/m/Y', $timestamp);
+                }
+            }
+
+            // Si viene en formato ISO sin hora (2025-12-19), convertir a dd/mm/yyyy
+            if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
+                $timestamp = strtotime($date);
+                if ($timestamp !== false) {
+                    return date('d/m/Y', $timestamp);
+                }
+            }
+
+            // Para cualquier otro formato, convertir a dd/mm/yyyy
             $timestamp = is_numeric($date) ? $date : strtotime($date);
             if ($timestamp === false) return $date;
             return date('d/m/Y', $timestamp);
@@ -177,23 +218,35 @@ class ManifestacionValorService
 
     /**
      * Formato fecha para XML.
-     * CORRECCIÓN: VUCEM parece rechazar ISO (Y-m-d). 
-     * Probamos enviando d/m/Y (igual que en la cadena original).
+     * VUCEM requiere formato ISO 8601 completo: Y-m-d\TH:i:s (Ej: 2025-12-19T00:00:00)
      */
     public function formatXmlDate($date): string
     {
         if (empty($date)) return '';
         try {
-            // Si ya viene d/m/Y (ej: 19/12/2025), devolver tal cual
-            if (preg_match('/^\d{2}\/\d{2}\/\d{4}$/', $date)) {
+            // Si ya viene en formato ISO con hora (2025-12-19T00:00:00), devolver tal cual
+            if (preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/', $date)) {
                 return $date;
             }
-            
-            // Si es timestamp o ISO (2025-12-19), convertir a d/m/Y
+
+            // Si ya viene en formato ISO sin hora (2025-12-19), agregar hora
+            if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
+                return $date . 'T00:00:00';
+            }
+
+            // Si viene en formato d/m/Y (19/12/2025), convertir a ISO con hora
+            if (preg_match('/^\d{2}\/\d{2}\/\d{4}$/', $date)) {
+                $timestamp = strtotime($date);
+                if ($timestamp !== false) {
+                    return date('Y-m-d\TH:i:s', $timestamp); // EJ: 2025-12-19T00:00:00
+                }
+            }
+
+            // Si es timestamp o cualquier otro formato, convertir a ISO con hora
             $timestamp = is_numeric($date) ? $date : strtotime($date);
             if ($timestamp === false) return $date;
 
-            return date('d/m/Y', $timestamp); // EJ: 19/12/2025
+            return date('Y-m-d\TH:i:s', $timestamp); // EJ: 2025-12-19T00:00:00
         } catch (\Exception $e) {
             return $date;
         }
