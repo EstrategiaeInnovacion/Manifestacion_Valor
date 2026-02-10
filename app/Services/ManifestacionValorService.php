@@ -16,6 +16,41 @@ class ManifestacionValorService
     }
 
     /**
+     * Valida el formato del folio eDocument/COVE.
+     * Formatos válidos: COVE + 10 alfanuméricos, o 13 dígitos.
+     */
+    public function validateEdocumentFolio(string $folio): array
+    {
+        // Normalizar primero
+        $folio = $this->normalizeEdocumentFolio($folio);
+
+        if (empty($folio)) {
+            return ['valid' => false, 'message' => 'El folio eDocument es requerido.'];
+        }
+
+        if (strlen($folio) < 10) {
+            return ['valid' => false, 'message' => 'El folio eDocument debe tener al menos 10 caracteres.'];
+        }
+
+        // Formato COVE: COVE + 10 alfanuméricos (ej: COVE257VFW2I7)
+        if (preg_match('/^COVE[A-Z0-9]{10}$/', $folio)) {
+            return ['valid' => true, 'message' => 'Folio COVE válido.', 'tipo' => 'COVE'];
+        }
+
+        // Formato eDocument numérico: 13 dígitos (ej: 0433250D59FS5)
+        if (preg_match('/^[A-Z0-9]{13}$/', $folio)) {
+            return ['valid' => true, 'message' => 'Folio eDocument válido.', 'tipo' => 'eDocument'];
+        }
+
+        // Si no coincide con ningún formato conocido, aceptar si tiene entre 10-15 caracteres alfanuméricos
+        if (preg_match('/^[A-Z0-9]{10,15}$/', $folio)) {
+            return ['valid' => true, 'message' => 'Folio válido.', 'tipo' => 'Genérico'];
+        }
+
+        return ['valid' => false, 'message' => 'Formato de folio inválido. Debe ser un COVE (ej: COVE257VFW2I7) o eDocument (13 caracteres alfanuméricos).'];
+    }
+
+    /**
      * Construye la cadena original con formato VUCEM estricto.
      * FECHAS: d/m/Y (Ej: 19/12/2025)
      * NUMEROS: Sin ceros innecesarios a la derecha.

@@ -96,6 +96,10 @@ Route::middleware('auth')->group(function () {
     // Ruta de descarga
     Route::get('/cove/descargar/{token}', [EDocumentConsultaController::class, 'descargar'])->name('cove.descargar');
     
+    // Rutas para consultar y descargar PDF Acuse del COVE
+    Route::post('/cove/acuse-pdf', [EDocumentConsultaController::class, 'consultarAcusePdf'])->name('cove.acuse.consultar');
+    Route::get('/cove/acuse-pdf/{token}', [EDocumentConsultaController::class, 'descargarAcusePdf'])->name('cove.acuse.descargar');
+    
     // Verificación de completitud y guardado final
     Route::get('/mve/check-completion/{applicant}', [MveController::class, 'checkCompletion'])->name('mve.check-completion');
     Route::get('/mve/preview-data/{applicant}', [MveController::class, 'previewData'])->name('mve.preview-data');
