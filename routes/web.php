@@ -117,10 +117,6 @@ Route::middleware('auth')->group(function () {
     Route::get('/mve/acuse/{manifestacion}/pdf', [MveController::class, 'downloadAcusePdf'])->name('mve.acuse.pdf');
     Route::get('/mve/acuse/{manifestacion}/xml', [MveController::class, 'downloadAcuseXml'])->name('mve.acuse.xml');
 
-    Route::get('/mve/acuse/{id}/pdf', [MveController::class, 'downloadAcusePdf'])
-    ->name('mve.acuse.pdf')
-    ->middleware(['auth']);
-
     // Ruta para consultar manifestación en VUCEM (obtener número de MV y acuse sellado)
     Route::post('/mve/consultar/{acuse}', [MveController::class, 'consultarManifestacion'])->name('mve.consultar');
     
