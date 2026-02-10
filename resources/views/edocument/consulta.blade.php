@@ -145,6 +145,78 @@
                         @endif
                     </div>
 
+                    {{-- BOTÓN PARA DESCARGAR PDF ACUSE --}}
+                    @if($result['success'] && isset($folio))
+                        <div class="bg-white rounded-2xl shadow-lg border border-slate-200 p-6">
+                            <h4 class="font-bold text-[#001a4d] mb-4 flex items-center">
+                                <i data-lucide="file-check" class="w-5 h-5 mr-2 text-red-600"></i>
+                                Acuse PDF Sellado
+                            </h4>
+                            <p class="text-sm text-slate-500 mb-4">Descarga el acuse oficial sellado por VUCEM de este COVE.</p>
+                            
+                            <div class="flex items-center gap-4">
+                                @if(isset($acuse_pdf_base64) && $acuse_pdf_base64)
+                                    {{-- PDF disponible --}}
+                                    <button type="button" id="btnDescargarAcusePdf"
+                                       class="inline-flex items-center px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-bold rounded-lg transition-colors">
+                                        <i data-lucide="download" class="w-4 h-4 mr-2"></i>
+                                        Descargar Acuse PDF
+                                    </button>
+                                    <span class="text-sm text-green-600">✓ PDF disponible</span>
+                                @else
+                                    {{-- PDF no disponible --}}
+                                    <span class="text-sm text-amber-600">
+                                        <i data-lucide="alert-circle" class="w-4 h-4 inline mr-1"></i>
+                                        No se pudo obtener el acuse PDF automáticamente. Intente consultar nuevamente.
+                                    </span>
+                                @endif
+                            </div>
+                        </div>
+
+                        {{-- Script para guardar PDF en sessionStorage y descargar --}}
+                        @if(isset($acuse_pdf_base64) && $acuse_pdf_base64)
+                        <script>
+                            (function() {
+                                // Guardar el PDF en sessionStorage (se borra al cerrar la pestaña/actualizar)
+                                const pdfKey = 'cove_acuse_pdf_{{ $folio }}';
+                                const pdfData = {
+                                    base64: '{{ $acuse_pdf_base64 }}',
+                                    folio: '{{ $folio }}',
+                                    timestamp: Date.now()
+                                };
+                                sessionStorage.setItem(pdfKey, JSON.stringify(pdfData));
+                                
+                                // Función para descargar
+                                document.getElementById('btnDescargarAcusePdf').addEventListener('click', function() {
+                                    const stored = sessionStorage.getItem(pdfKey);
+                                    if (!stored) {
+                                        alert('El PDF ha expirado. Por favor, consulte nuevamente.');
+                                        return;
+                                    }
+                                    
+                                    const data = JSON.parse(stored);
+                                    
+                                    // Crear blob y descargar
+                                    const byteCharacters = atob(data.base64);
+                                    const byteNumbers = new Array(byteCharacters.length);
+                                    for (let i = 0; i < byteCharacters.length; i++) {
+                                        byteNumbers[i] = byteCharacters.charCodeAt(i);
+                                    }
+                                    const byteArray = new Uint8Array(byteNumbers);
+                                    const blob = new Blob([byteArray], { type: 'application/pdf' });
+                                    
+                                    // Crear URL y abrir en nueva pestaña
+                                    const url = URL.createObjectURL(blob);
+                                    window.open(url, '_blank');
+                                    
+                                    // Limpiar URL después de un momento
+                                    setTimeout(() => URL.revokeObjectURL(url), 1000);
+                                });
+                            })();
+                        </script>
+                        @endif
+                    @endif
+
                     {{-- DETALLE COVE (Solo si hay data) --}}
                     @if(isset($result['cove_data']) && !empty($result['cove_data']))
                         @include('edocument.partials.cove-details', ['cove' => $result['cove_data']])

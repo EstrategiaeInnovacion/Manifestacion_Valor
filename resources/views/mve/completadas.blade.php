@@ -226,7 +226,7 @@
     <div id="vistaPreviaModal" class="fixed inset-0 z-[1100] hidden">
         <div class="fixed inset-0 bg-black/50" onclick="cerrarVistaPreviaModal()"></div>
         <div class="fixed inset-y-4 inset-x-4 md:inset-x-auto md:left-1/2 md:-translate-x-1/2 md:w-full md:max-w-5xl bg-white rounded-xl shadow-2xl flex flex-col overflow-hidden">
-            <div class="p-6 border-b border-slate-200 bg-gradient-to-r from-[#9D2449] to-[#6D1A34]">
+            <div class="p-6 border-b border-slate-200 bg-gradient-to-r from-slate-600 to-slate-700">
                 <div class="flex items-center justify-between">
                     <div>
                         <h3 class="text-xl font-bold text-white flex items-center">
@@ -470,7 +470,7 @@
                 <!-- Documento Oficial gob.mx -->
                 <div class="bg-white shadow-lg" style="font-family: 'Montserrat', 'Segoe UI', sans-serif;">
                     <!-- Header gob.mx -->
-                    <div class="bg-[#9D2449] text-white px-8 py-6">
+                    <div class="bg-slate-600 text-white px-8 py-6">
                         <div class="text-sm font-light mb-4">gob.mx</div>
                         <h1 class="text-2xl font-bold mb-2">MANIFESTACIÓN DE VALOR</h1>
                         <p class="text-sm font-light">Ventanilla Digital Mexicana de Comercio Exterior</p>
@@ -1020,13 +1020,14 @@
                 const data = await response.json();
 
                 if (data.success) {
-                    mostrarResultadoConsulta('success', data.message, data.data);
-
                     // Guardar datos para vista previa (incluir acuse_id)
                     window.consultaActual = {
                         ...data.data,
                         acuse_id: acuseId
                     };
+
+                    // Mostrar resultado
+                    mostrarResultadoConsulta('success', data.message, { ...data.data, acuse_id: acuseId });
                 } else {
                     mostrarResultadoConsulta('error', data.message, null, data.errores);
                 }
@@ -1069,38 +1070,28 @@
                                                 <span class="ml-2">${data.status}</span>
                                             </div>
                                         ` : ''}
-                                        ${data.tiene_acuse_pdf ? `
-                                            <div class="flex items-center">
-                                                <i data-lucide="file-check" class="w-4 h-4 text-green-600 mr-2"></i>
-                                                <span class="text-green-700">Acuse PDF sellado obtenido</span>
-                                            </div>
-                                        ` : ''}
-                                        ${data.acuse_edocument_obtenido ? `
-                                            <div class="flex items-center">
-                                                <i data-lucide="file-text" class="w-4 h-4 text-blue-600 mr-2"></i>
-                                                <span class="text-blue-700 font-semibold">✓ Acuse eDocument obtenido y guardado</span>
-                                            </div>
-                                        ` : ''}
-                                    </div>
+                                        </div>
                                     ${data.datos_manifestacion ? `
-                                        <div class="flex gap-2 mt-4">
+                                        <div class="flex flex-wrap gap-2 mt-4">
                                             <button onclick="abrirVistaPreviaCompleta()"
-                                                class="flex-1 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition-all flex items-center justify-center">
+                                                class="flex-1 min-w-[140px] px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition-all flex items-center justify-center">
                                                 <i data-lucide="eye" class="w-4 h-4 mr-2"></i>
                                                 Ver Datos Completos
                                             </button>
                                             <button onclick="window.location.reload()"
-                                                class="flex-1 px-4 py-2.5 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg transition-all flex items-center justify-center">
+                                                class="flex-1 min-w-[140px] px-4 py-2.5 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg transition-all flex items-center justify-center">
                                                 <i data-lucide="refresh-cw" class="w-4 h-4 mr-2"></i>
                                                 Actualizar Lista
                                             </button>
                                         </div>
                                     ` : `
-                                        <button onclick="window.location.reload()"
-                                            class="w-full px-4 py-2.5 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg transition-all mt-4 flex items-center justify-center">
-                                            <i data-lucide="refresh-cw" class="w-4 h-4 mr-2"></i>
-                                            Actualizar Lista
-                                        </button>
+                                        <div class="flex flex-wrap gap-2 mt-4">
+                                            <button onclick="window.location.reload()"
+                                                class="flex-1 min-w-[140px] px-4 py-2.5 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg transition-all flex items-center justify-center">
+                                                <i data-lucide="refresh-cw" class="w-4 h-4 mr-2"></i>
+                                                Actualizar Lista
+                                            </button>
+                                        </div>
                                     `}
                                 ` : ''}
                             </div>

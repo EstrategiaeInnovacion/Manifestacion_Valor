@@ -417,6 +417,10 @@ class MveConsultaService
                 foreach ($docMatches as $doc) {
                     $datos['documentos'][] = trim($doc[1]);
                 }
+                // Guardar el primer documento como referencia directa para obtener el acuse
+                if (!empty($datos['documentos'][0])) {
+                    $datos['documento_edocument'] = $datos['documentos'][0];
+                }
             }
 
             // ===== Información COVE =====
@@ -425,8 +429,9 @@ class MveConsultaService
                 $datos['cove'] = trim($m[1]);
             }
 
-            // Pedimento
-            if (preg_match('/<pedimento>(.*?)<\/pedimento>/', $xmlDatos, $m)) {
+            // Pedimento - estructura anidada: <pedimento><pedimento>NUMERO</pedimento>...</pedimento>
+            // Buscar el número de pedimento (el tag interno que solo contiene dígitos)
+            if (preg_match('/<pedimento>(\d+)<\/pedimento>/', $xmlDatos, $m)) {
                 $datos['pedimento_numero'] = trim($m[1]);
             }
             if (preg_match('/<patente>(.*?)<\/patente>/', $xmlDatos, $m)) {
@@ -612,34 +617,48 @@ class MveConsultaService
     public function consultarEdocumentAcuse(string $eDocumentFolio, string $rfc, string $claveWebService): array 
     {
         try {
-            // 1. ENDPOINT EXACTO (Según tu WSDL)
-            // Nota: Incluye el puerto 8107 y la ruta 'ventanilla-acuses-HA'
-            $endpoint = 'https://www.ventanillaunica.gob.mx/ventanilla-acuses-HA/ConsultaAcusesServiceWS?wsdl';
+            // ENDPOINT del servicio (SIN ?wsdl - eso es solo para descargar el WSDL)
+            $endpoint = 'https://www.ventanillaunica.gob.mx/ventanilla-acuses-HA/ConsultaAcusesServiceWS';
 
-            // 2. NAMESPACES CORRECTOS
-            // 'tns' para el servicio y 'oxml' para la petición (según los imports de tu WSDL)
+            // SOAP Action indica la operación a invocar
+            $soapAction = 'http://www.ventanillaunica.gob.mx/ventanilla/ConsultaAcusesService/consultarAcuseEdocument';
+
+            $rfcClean = strtoupper(trim($rfc));
+            $eDocClean = trim($eDocumentFolio);
+
+            // XML Request - Solo consultaAcusesPeticion en el Body (sin wrapper de operación)
+            // La operación se especifica en el header SOAPAction, no como elemento XML
             $xml = '<?xml version="1.0" encoding="UTF-8"?>
 <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" 
-                  xmlns:tns="http://www.ventanillaunica.gob.mx/ws/consulta/acuses/"
                   xmlns:oxml="http://www.ventanillaunica.gob.mx/consulta/acuses/oxml">
    <soapenv:Header>
-      <wsse:Security soapenv:mustUnderstand="1" xmlns:wsse="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd" xmlns:wsu="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd">
-         <wsse:UsernameToken wsu:Id="UsernameToken-1">
-            <wsse:Username>' . strtoupper($rfc) . '</wsse:Username>
+      <wsse:Security soapenv:mustUnderstand="1" 
+                     xmlns:wsse="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd"
+                     xmlns:wsu="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd">
+         <wsse:UsernameToken>
+            <wsse:Username>' . $rfcClean . '</wsse:Username>
             <wsse:Password Type="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-username-token-profile-1.0#PasswordText">' . htmlspecialchars($claveWebService, ENT_XML1) . '</wsse:Password>
          </wsse:UsernameToken>
       </wsse:Security>
    </soapenv:Header>
    <soapenv:Body>
-      <tns:consultarAcuseEdocument>
-         <oxml:consultaAcusesPeticion>
-            <oxml:idEdocument>' . htmlspecialchars($eDocumentFolio, ENT_XML1) . '</oxml:idEdocument>
-         </oxml:consultaAcusesPeticion>
-      </tns:consultarAcuseEdocument>
+      <oxml:consultaAcusesPeticion>
+         <idEdocument>' . htmlspecialchars($eDocClean, ENT_XML1) . '</idEdocument>
+      </oxml:consultaAcusesPeticion>
    </soapenv:Body>
 </soapenv:Envelope>';
 
-            // 3. CONFIGURACIÓN CURL
+            Log::info('[ACUSE_EDOCUMENT] Iniciando consulta', [
+                'idEdocument' => $eDocClean,
+                'rfc' => $rfcClean,
+                'endpoint' => $endpoint,
+                'soapAction' => $soapAction
+            ]);
+
+            // Log del XML para debug
+            Log::debug('[ACUSE_EDOCUMENT] XML Request', ['xml' => $xml]);
+
+            // Enviar petición SOAP
             $ch = curl_init($endpoint);
             curl_setopt_array($ch, [
                 CURLOPT_RETURNTRANSFER => true,
@@ -649,20 +668,25 @@ class MveConsultaService
                 CURLOPT_SSL_VERIFYPEER => false, 
                 CURLOPT_HTTPHEADER => [
                     'Content-Type: text/xml; charset=utf-8',
-                    'SOAPAction: "http://www.ventanillaunica.gob.mx/ventanilla/ConsultaAcusesService/consultarAcuseEdocument"',
+                    'SOAPAction: "' . $soapAction . '"',
+                    'Content-Length: ' . strlen($xml)
                 ]
             ]);
 
             $responseBody = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
             $error = curl_error($ch);
             curl_close($ch);
 
             if ($error) {
-                // Si falla con el puerto 8107, intenta sin el puerto (a veces los firewalls corporativos bloquean puertos raros)
-                Log::warning('[ACUSE_PDF] Falló conexión al puerto 8107, intentando puerto estándar...');
-                // Aquí podrías poner una lógica de reintento sin ":8107"
+                Log::error('[ACUSE_EDOCUMENT] Error cURL', ['error' => $error]);
                 return ['success' => false, 'message' => 'Error de conexión: ' . $error, 'acuse_pdf' => null];
             }
+
+            Log::info('[ACUSE_EDOCUMENT] Respuesta recibida', [
+                'http_code' => $httpCode,
+                'body_length' => strlen($responseBody)
+            ]);
 
             return $this->parseEdocumentAcuseResponse($responseBody, $eDocumentFolio);
 
@@ -672,7 +696,101 @@ class MveConsultaService
     }
 
     /**
-     * Parsear respuesta de consulta de eDocument acuse
+     * Consultar acuse de COVE en VUCEM
+     * 
+     * Usa la operación consultarAcuseCove del servicio ConsultaAcusesServiceWS
+     *
+     * @param string $coveFolio - Número de COVE (formato COVE...)
+     * @param string $rfc - RFC del importador/exportador
+     * @param string $claveWebService - Clave del web service VUCEM
+     * @return array
+     */
+    public function consultarCoveAcuse(string $coveFolio, string $rfc, string $claveWebService): array 
+    {
+        try {
+            $endpoint = 'https://www.ventanillaunica.gob.mx/ventanilla-acuses-HA/ConsultaAcusesServiceWS';
+            $soapAction = 'http://www.ventanillaunica.gob.mx/ventanilla/ConsultaAcusesService/consultarAcuseCove';
+
+            $rfcClean = strtoupper(trim($rfc));
+            $coveClean = trim($coveFolio);
+
+            $xml = '<?xml version="1.0" encoding="UTF-8"?>
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" 
+                  xmlns:oxml="http://www.ventanillaunica.gob.mx/consulta/acuses/oxml">
+   <soapenv:Header>
+      <wsse:Security soapenv:mustUnderstand="1" 
+                     xmlns:wsse="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd"
+                     xmlns:wsu="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd">
+         <wsse:UsernameToken>
+            <wsse:Username>' . $rfcClean . '</wsse:Username>
+            <wsse:Password Type="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-username-token-profile-1.0#PasswordText">' . htmlspecialchars($claveWebService, ENT_XML1) . '</wsse:Password>
+         </wsse:UsernameToken>
+      </wsse:Security>
+   </soapenv:Header>
+   <soapenv:Body>
+      <oxml:consultaAcusesPeticion>
+         <idEdocument>' . htmlspecialchars($coveClean, ENT_XML1) . '</idEdocument>
+      </oxml:consultaAcusesPeticion>
+   </soapenv:Body>
+</soapenv:Envelope>';
+
+            Log::info('[ACUSE_COVE] Iniciando consulta', [
+                'cove' => $coveClean,
+                'rfc' => $rfcClean,
+                'endpoint' => $endpoint,
+                'soapAction' => $soapAction
+            ]);
+
+            Log::debug('[ACUSE_COVE] XML Request', ['xml' => $xml]);
+
+            $ch = curl_init($endpoint);
+            curl_setopt_array($ch, [
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_POST => true,
+                CURLOPT_POSTFIELDS => $xml,
+                CURLOPT_TIMEOUT => 60,
+                CURLOPT_SSL_VERIFYPEER => false, 
+                CURLOPT_HTTPHEADER => [
+                    'Content-Type: text/xml; charset=utf-8',
+                    'SOAPAction: "' . $soapAction . '"',
+                    'Content-Length: ' . strlen($xml)
+                ]
+            ]);
+
+            $responseBody = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $error = curl_error($ch);
+            curl_close($ch);
+
+            if ($error) {
+                Log::error('[ACUSE_COVE] Error cURL', ['error' => $error]);
+                return ['success' => false, 'message' => 'Error de conexión: ' . $error, 'acuse_pdf' => null];
+            }
+
+            Log::info('[ACUSE_COVE] Respuesta recibida', [
+                'http_code' => $httpCode,
+                'body_length' => strlen($responseBody)
+            ]);
+
+            return $this->parseEdocumentAcuseResponse($responseBody, $coveFolio);
+
+        } catch (Exception $e) {
+            return ['success' => false, 'message' => 'Error: ' . $e->getMessage(), 'acuse_pdf' => null];
+        }
+    }
+
+    /**
+     * Parsear respuesta de consulta de acuse eDocument (Manifestación de Valor)
+     *
+     * Response esperado del servicio ConsultaAcusesServiceWS:
+     * <responseConsultaAcuses>
+     *     <code>0</code>              <!-- 0 = éxito -->
+     *     <descripcion>...</descripcion>
+     *     <error>false</error>        <!-- false = sin error -->
+     *     <mensaje>...</mensaje>
+     *     <mensajeErrores>...</mensajeErrores>
+     *     <acuseDocumento>BASE64...</acuseDocumento>  <!-- PDF en Base64 -->
+     * </responseConsultaAcuses>
      *
      * @param string $responseBody
      * @param string $eDocumentFolio
@@ -684,44 +802,99 @@ class MveConsultaService
             'success' => false,
             'message' => '',
             'acuse_pdf' => null,
-            'acuse_xml' => null
+            'code' => null,
+            'descripcion' => null
         ];
 
         try {
-            // Buscar acuse PDF en base64
-            if (preg_match('/<[:\w]*acusePDF>(.*?)<\/[:\w]*acusePDF>/s', $responseBody, $matches)) {
-                $result['acuse_pdf'] = trim($matches[1]);
-                Log::info('[EDOCUMENT_CONSULTA] Acuse PDF encontrado', [
-                    'eDocument' => $eDocumentFolio,
-                    'size' => strlen($result['acuse_pdf'])
-                ]);
+            // Log para debug
+            Log::debug('[ACUSE_EDOCUMENT] Parseando respuesta', [
+                'idEdocument' => $eDocumentFolio,
+                'response_length' => strlen($responseBody),
+                'response_snippet' => substr($responseBody, 0, 1500)
+            ]);
+
+            // Extraer código de respuesta (0 = éxito)
+            if (preg_match('/<[:\w]*code>(.*?)<\/[:\w]*code>/s', $responseBody, $matches)) {
+                $result['code'] = trim($matches[1]);
             }
 
-            // Buscar acuse XML si está disponible
-            if (preg_match('/<[:\w]*acuseXML>(.*?)<\/[:\w]*acuseXML>/s', $responseBody, $matches)) {
-                $result['acuse_xml'] = trim($matches[1]);
-                Log::info('[EDOCUMENT_CONSULTA] Acuse XML encontrado');
+            // Extraer descripción
+            if (preg_match('/<[:\w]*descripcion>(.*?)<\/[:\w]*descripcion>/s', $responseBody, $matches)) {
+                $result['descripcion'] = trim($matches[1]);
             }
 
-            // Verificar si hubo errores
-            if (preg_match('/<[:\w]*descripcionError>(.*?)<\/[:\w]*descripcionError>/i', $responseBody, $matches)) {
-                $result['message'] = trim($matches[1]);
-                Log::warning('[EDOCUMENT_CONSULTA] Error en respuesta VUCEM', [
-                    'error' => $result['message']
+            // Verificar flag de error
+            $hasError = false;
+            if (preg_match('/<[:\w]*error>(.*?)<\/[:\w]*error>/s', $responseBody, $matches)) {
+                $errorValue = strtolower(trim($matches[1]));
+                $hasError = ($errorValue === 'true' || $errorValue === '1');
+            }
+
+            // Extraer mensaje de error si existe
+            if (preg_match('/<[:\w]*mensajeErrores>(.*?)<\/[:\w]*mensajeErrores>/s', $responseBody, $matches)) {
+                $errorMsg = trim($matches[1]);
+                if (!empty($errorMsg)) {
+                    $result['message'] = $errorMsg;
+                }
+            }
+
+            // Extraer mensaje general
+            if (preg_match('/<[:\w]*mensaje>(.*?)<\/[:\w]*mensaje>/s', $responseBody, $matches)) {
+                $mensaje = trim($matches[1]);
+                if (empty($result['message'])) {
+                    $result['message'] = $mensaje;
+                }
+            }
+
+            // Si hay error, registrar y retornar
+            if ($hasError || ($result['code'] !== null && $result['code'] !== '0')) {
+                Log::warning('[ACUSE_EDOCUMENT] Error en respuesta VUCEM', [
+                    'idEdocument' => $eDocumentFolio,
+                    'code' => $result['code'],
+                    'error' => $result['message'],
+                    'descripcion' => $result['descripcion']
                 ]);
+                
+                if (empty($result['message'])) {
+                    $result['message'] = $result['descripcion'] ?? 'Error desconocido en consulta de acuse';
+                }
                 return $result;
             }
 
+            // Buscar acuseDocumento (PDF en Base64) - campo correcto del servicio ConsultaAcuses
+            if (preg_match('/<[:\w]*acuseDocumento>(.*?)<\/[:\w]*acuseDocumento>/s', $responseBody, $matches)) {
+                $base64Pdf = trim($matches[1]);
+                
+                // Limpiar entidades XML (&#xd; = carriage return, &#xa; = line feed, etc.)
+                $base64Pdf = html_entity_decode($base64Pdf, ENT_XML1, 'UTF-8');
+                
+                // Eliminar saltos de línea y espacios que no son válidos en Base64
+                $base64Pdf = preg_replace('/[\r\n\s]+/', '', $base64Pdf);
+                
+                $result['acuse_pdf'] = $base64Pdf;
+                
+                Log::info('[ACUSE_EDOCUMENT] Acuse PDF encontrado y limpiado', [
+                    'idEdocument' => $eDocumentFolio,
+                    'size_base64' => strlen($result['acuse_pdf'])
+                ]);
+            }
+
+            // Verificar resultado
             if (!empty($result['acuse_pdf'])) {
                 $result['success'] = true;
-                $result['message'] = 'Acuse de eDocument obtenido exitosamente';
+                $result['message'] = 'Acuse de Manifestación de Valor obtenido exitosamente';
             } else {
                 $result['message'] = 'No se encontró el acuse PDF para el eDocument: ' . $eDocumentFolio;
+                Log::warning('[ACUSE_EDOCUMENT] Acuse PDF no encontrado en respuesta', [
+                    'idEdocument' => $eDocumentFolio
+                ]);
             }
 
         } catch (Exception $e) {
             $result['message'] = 'Error al procesar respuesta: ' . $e->getMessage();
-            Log::error('[EDOCUMENT_CONSULTA] Error parseando respuesta', [
+            Log::error('[ACUSE_EDOCUMENT] Error parseando respuesta', [
+                'idEdocument' => $eDocumentFolio,
                 'error' => $e->getMessage()
             ]);
         }

@@ -1254,16 +1254,23 @@ class MveController extends Controller
     
     /**
      * Descargar el PDF del acuse (Decodifica el Base64 guardado)
+     * Acepta tanto acuse_id como datos_manifestacion_id
      */
-    public function downloadAcusePdf($manifestacionId)
+    public function downloadAcusePdf($id)
     {
         try {
-            // 1. Buscar el acuse
-            $acuse = MvAcuse::where('datos_manifestacion_id', $manifestacionId)->firstOrFail();
+            // 1. Buscar el acuse - primero intenta por ID directo, luego por datos_manifestacion_id
+            $acuse = MvAcuse::find($id);
+            if (!$acuse) {
+                $acuse = MvAcuse::where('datos_manifestacion_id', $id)->first();
+            }
             
-            // 2. Verificar permisos de seguridad (igual que en los otros métodos)
-            $manifestacion = MvDatosManifestacion::with('applicant')->findOrFail($manifestacionId);
-            if ($manifestacion->applicant->user_email !== auth()->user()->email) {
+            if (!$acuse) {
+                abort(404, 'Acuse no encontrado.');
+            }
+            
+            // 2. Verificar permisos de seguridad
+            if ($acuse->applicant->user_email !== auth()->user()->email) {
                 abort(403, 'No tienes permiso para acceder a este acuse.');
             }
             
@@ -1273,7 +1280,24 @@ class MveController extends Controller
             }
             
             // 4. Decodificar: De texto Base64 a binario PDF
-            $pdfContent = base64_decode($acuse->acuse_pdf);
+            $base64Clean = $acuse->acuse_pdf;
+            
+            // Limpiar posibles entidades XML que hayan quedado guardadas
+            $base64Clean = html_entity_decode($base64Clean, ENT_XML1, 'UTF-8');
+            $base64Clean = preg_replace('/[\r\n\s]+/', '', $base64Clean);
+            
+            $pdfContent = base64_decode($base64Clean, true);
+            
+            // Verificar que el PDF sea válido
+            if ($pdfContent === false || substr($pdfContent, 0, 4) !== '%PDF') {
+                \Log::error('PDF acuse inválido', [
+                    'acuse_id' => $acuse->id,
+                    'base64_length' => strlen($acuse->acuse_pdf),
+                    'decoded_length' => strlen($pdfContent ?? ''),
+                    'starts_with' => substr($pdfContent ?? '', 0, 10)
+                ]);
+                return back()->with('error', 'El archivo PDF está corrupto. Intente consultar el estatus nuevamente.');
+            }
             
             // 5. Generar nombre del archivo (Preferimos el MVE real "MNVA...", si no, el folio de operación)
             $nombreArchivo = 'Acuse_MVE_' . ($acuse->numero_cove ?? $acuse->folio_manifestacion) . '.pdf';
@@ -1448,45 +1472,14 @@ class MveController extends Controller
                 // Actualizar otros datos del acuse con la respuesta (status, fechas, etc.)
                 $consultaService->actualizarAcuseConConsulta($acuse, $resultado);
 
-                // 5. INTENTO DE RECUPERACIÓN DE PDF (Acuse de eDocument)
-                // Ahora que (esperemos) tenemos el número MVE real, buscamos el PDF
-                $acuseEdocument = null;
-                $numeroMvParaPdf = $resultado['numero_mv'] ?? $acuse->numero_cove;
-
-                if (!empty($numeroMvParaPdf)) {
-                    Log::info('[MV_CONSULTA] Intentando descargar PDF para MVE', [
-                        'mve' => $numeroMvParaPdf
-                    ]);
-
-                    $resultadoEdocument = $consultaService->consultarEdocumentAcuse(
-                        $numeroMvParaPdf,
-                        $rfc,
-                        $claveWebservice
-                    );
-
-                    if ($resultadoEdocument['success'] && !empty($resultadoEdocument['acuse_pdf'])) {
-                        $acuseEdocument = $resultadoEdocument['acuse_pdf'];
-
-                        // Guardar el PDF en la base de datos
-                        $acuse->acuse_pdf = $acuseEdocument;
-                        $acuse->save();
-                        Log::info('[MV_CONSULTA] PDF de acuse guardado exitosamente');
-                    } else {
-                        Log::warning('[MV_CONSULTA] No se pudo obtener el PDF aún', [
-                            'motivo' => $resultadoEdocument['message'] ?? 'Desconocido'
-                        ]);
-                    }
-                }
-
                 return response()->json([
                     'success' => true,
                     'message' => 'Consulta exitosa. Estatus: ' . $resultado['status'],
                     'data' => [
-                        'numero_mv' => $resultado['numero_mv'], // El MVE real (MNVA...)
-                        'folio_operacion' => $acuse->folio_manifestacion, // El pequeño
+                        'numero_mv' => $resultado['numero_mv'],
+                        'folio_operacion' => $acuse->folio_manifestacion,
                         'status' => $resultado['status'],
                         'fecha_registro' => $resultado['fecha_registro'],
-                        'tiene_acuse_pdf' => !empty($acuse->acuse_pdf), // Indica al frontend si ya hay PDF
                         'datos_manifestacion' => $resultado['datos_manifestacion'] ?? null
                     ]
                 ]);
