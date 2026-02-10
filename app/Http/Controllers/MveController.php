@@ -1253,28 +1253,41 @@ class MveController extends Controller
     }
     
     /**
-     * Descargar el PDF del acuse
+     * Descargar el PDF del acuse (Decodifica el Base64 guardado)
      */
     public function downloadAcusePdf($manifestacionId)
     {
-        $acuse = MvAcuse::where('datos_manifestacion_id', $manifestacionId)->firstOrFail();
-        
-        // Verificar permisos
-        $manifestacion = MvDatosManifestacion::with('applicant')->findOrFail($manifestacionId);
-        if ($manifestacion->applicant->user_email !== auth()->user()->email) {
-            abort(403, 'No tienes permiso para acceder a este acuse.');
+        try {
+            // 1. Buscar el acuse
+            $acuse = MvAcuse::where('datos_manifestacion_id', $manifestacionId)->firstOrFail();
+            
+            // 2. Verificar permisos de seguridad (igual que en los otros métodos)
+            $manifestacion = MvDatosManifestacion::with('applicant')->findOrFail($manifestacionId);
+            if ($manifestacion->applicant->user_email !== auth()->user()->email) {
+                abort(403, 'No tienes permiso para acceder a este acuse.');
+            }
+            
+            // 3. Verificar si realmente tenemos el archivo
+            if (empty($acuse->acuse_pdf)) {
+                return back()->with('error', 'El archivo PDF aún no está disponible. Por favor, haga clic en "Consultar Estatus" primero para recuperarlo de VUCEM.');
+            }
+            
+            // 4. Decodificar: De texto Base64 a binario PDF
+            $pdfContent = base64_decode($acuse->acuse_pdf);
+            
+            // 5. Generar nombre del archivo (Preferimos el MVE real "MNVA...", si no, el folio de operación)
+            $nombreArchivo = 'Acuse_MVE_' . ($acuse->numero_cove ?? $acuse->folio_manifestacion) . '.pdf';
+            
+            // 6. Entregar al navegador para descarga
+            return response($pdfContent)
+                ->header('Content-Type', 'application/pdf')
+                ->header('Content-Disposition', 'attachment; filename="' . $nombreArchivo . '"')
+                ->header('Content-Length', strlen($pdfContent));
+
+        } catch (\Exception $e) {
+            \Log::error('Error al descargar PDF acuse: ' . $e->getMessage());
+            return back()->with('error', 'Ocurrió un error al procesar el archivo.');
         }
-        
-        if (!$acuse->acuse_pdf) {
-            abort(404, 'No hay PDF de acuse disponible.');
-        }
-        
-        $content = base64_decode($acuse->acuse_pdf);
-        
-        return response($content)
-            ->header('Content-Type', 'application/pdf')
-            ->header('Content-Disposition', 'attachment; filename="acuse_mve_' . $acuse->folio_manifestacion . '.pdf"')
-            ->header('Content-Length', strlen($content));
     }
     
     /**
@@ -1351,15 +1364,15 @@ class MveController extends Controller
     }
 
     /**
-     * Consultar manifestación en VUCEM para obtener número de MV y acuse sellado
+     * Consultar manifestación en VUCEM para obtener número de MV (MNVA) y acuse PDF
+     * Soluciona el problema de tener solo el Número de Operación (folio pequeño).
      */
     public function consultarManifestacion(Request $request, $acuseId)
     {
         try {
-            // Obtener el acuse
+            // 1. Obtener el acuse y verificar permisos
             $acuse = MvAcuse::with(['applicant', 'datosManifestacion'])->findOrFail($acuseId);
 
-            // Verificar permisos
             if ($acuse->applicant->user_email !== auth()->user()->email) {
                 return response()->json([
                     'success' => false,
@@ -1367,24 +1380,47 @@ class MveController extends Controller
                 ], 403);
             }
 
-            // Validar datos de entrada
-            $request->validate([
-                'folio' => 'required|string',
-                'clave_webservice' => 'required|string'
-            ]);
+            // 2. Determinar qué folio usar para la consulta
+            // Prioridad 1: Si el usuario lo escribe manualmente (corrección de errores)
+            if ($request->has('folio') && !empty($request->input('folio'))) {
+                $folioConsulta = trim($request->input('folio'));
+            } 
+            // Prioridad 2: Si ya tenemos el Número de MVE (MNVA...), usarlo para intentar bajar el PDF de nuevo
+            elseif (!empty($acuse->numero_cove)) {
+                $folioConsulta = $acuse->numero_cove;
+            } 
+            // Prioridad 3: Usar el "Folio Pequeño" (Número de Operación) que nos dio VUCEM al registrar
+            else {
+                $folioConsulta = $acuse->folio_manifestacion;
+            }
 
-            $folioConsulta = trim($request->input('folio'));
+            // Validar que tengamos algo que consultar
+            if (empty($folioConsulta)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No hay folio de operación ni número de MVE para consultar.'
+                ], 400);
+            }
+
+            // Obtener credenciales (del request o usar las guardadas si fuera necesario)
             $claveWebservice = $request->input('clave_webservice');
+            if (empty($claveWebservice)) {
+                 return response()->json([
+                    'success' => false,
+                    'message' => 'La clave Web Service es obligatoria para consultar.'
+                ], 422);
+            }
+
             $rfc = strtoupper($acuse->applicant->applicant_rfc);
 
-            Log::info('[MV_CONSULTA] Iniciando consulta', [
+            Log::info('[MV_CONSULTA] Iniciando consulta inteligente', [
                 'acuse_id' => $acuseId,
-                'folio_consulta' => $folioConsulta,
-                'tipo_folio' => $acuse->numero_cove ? 'numero_mv' : 'numero_operacion',
+                'folio_usado' => $folioConsulta,
+                'tipo_origen' => !empty($acuse->numero_cove) ? 'MVE Existente' : 'Operación (Folio Pequeño)',
                 'rfc' => $rfc
             ]);
 
-            // Usar el servicio de consulta
+            // 3. Ejecutar la consulta a VUCEM
             $consultaService = new \App\Services\MveConsultaService();
             $resultado = $consultaService->consultarManifestacion(
                 $folioConsulta,
@@ -1393,18 +1429,37 @@ class MveController extends Controller
             );
 
             if ($resultado['success']) {
-                // Actualizar el acuse con los datos obtenidos
+                // 4. LÓGICA CRÍTICA: Conversión de Folio Pequeño a MVE Real
+                // Si la consulta nos devuelve un 'numero_mv' y nosotros NO lo teníamos (o era diferente)
+                if (!empty($resultado['numero_mv']) && $acuse->numero_cove !== $resultado['numero_mv']) {
+                    Log::info('[MV_CONSULTA] ¡Éxito! Folio de operación convertido a MVE Real', [
+                        'operacion' => $folioConsulta,
+                        'nuevo_mve' => $resultado['numero_mv']
+                    ]);
+                    
+                    // Guardamos el MVE real en la base de datos
+                    $acuse->numero_cove = $resultado['numero_mv'];
+                    $acuse->save();
+                    
+                    // Actualizamos el folio de consulta para el siguiente paso (PDF)
+                    $folioConsulta = $resultado['numero_mv']; 
+                }
+
+                // Actualizar otros datos del acuse con la respuesta (status, fechas, etc.)
                 $consultaService->actualizarAcuseConConsulta($acuse, $resultado);
 
-                // Si obtenemos el número de MV (eDocument), consultar también el acuse de eDocument
+                // 5. INTENTO DE RECUPERACIÓN DE PDF (Acuse de eDocument)
+                // Ahora que (esperemos) tenemos el número MVE real, buscamos el PDF
                 $acuseEdocument = null;
-                if (!empty($resultado['numero_mv'])) {
-                    Log::info('[MV_CONSULTA] Consultando acuse de eDocument', [
-                        'numero_mv' => $resultado['numero_mv']
+                $numeroMvParaPdf = $resultado['numero_mv'] ?? $acuse->numero_cove;
+
+                if (!empty($numeroMvParaPdf)) {
+                    Log::info('[MV_CONSULTA] Intentando descargar PDF para MVE', [
+                        'mve' => $numeroMvParaPdf
                     ]);
 
                     $resultadoEdocument = $consultaService->consultarEdocumentAcuse(
-                        $resultado['numero_mv'],
+                        $numeroMvParaPdf,
                         $rfc,
                         $claveWebservice
                     );
@@ -1412,31 +1467,32 @@ class MveController extends Controller
                     if ($resultadoEdocument['success'] && !empty($resultadoEdocument['acuse_pdf'])) {
                         $acuseEdocument = $resultadoEdocument['acuse_pdf'];
 
-                        // Actualizar el acuse con el PDF de eDocument si aún no lo tiene
-                        if (empty($acuse->acuse_pdf)) {
-                            $acuse->update(['acuse_pdf' => $acuseEdocument]);
-                            Log::info('[MV_CONSULTA] Acuse eDocument guardado en base de datos');
-                        }
+                        // Guardar el PDF en la base de datos
+                        $acuse->acuse_pdf = $acuseEdocument;
+                        $acuse->save();
+                        Log::info('[MV_CONSULTA] PDF de acuse guardado exitosamente');
                     } else {
-                        Log::warning('[MV_CONSULTA] No se pudo obtener acuse de eDocument', [
-                            'error' => $resultadoEdocument['message'] ?? 'Desconocido'
+                        Log::warning('[MV_CONSULTA] No se pudo obtener el PDF aún', [
+                            'motivo' => $resultadoEdocument['message'] ?? 'Desconocido'
                         ]);
                     }
                 }
 
                 return response()->json([
                     'success' => true,
-                    'message' => $resultado['message'],
+                    'message' => 'Consulta exitosa. Estatus: ' . $resultado['status'],
                     'data' => [
-                        'numero_mv' => $resultado['numero_mv'],
+                        'numero_mv' => $resultado['numero_mv'], // El MVE real (MNVA...)
+                        'folio_operacion' => $acuse->folio_manifestacion, // El pequeño
                         'status' => $resultado['status'],
                         'fecha_registro' => $resultado['fecha_registro'],
-                        'tiene_acuse_pdf' => !empty($resultado['acuse_pdf']) || !empty($acuseEdocument),
-                        'acuse_edocument_obtenido' => !empty($acuseEdocument),
+                        'tiene_acuse_pdf' => !empty($acuse->acuse_pdf), // Indica al frontend si ya hay PDF
                         'datos_manifestacion' => $resultado['datos_manifestacion'] ?? null
                     ]
                 ]);
+
             } else {
+                // VUCEM respondió con error o "No encontrado"
                 return response()->json([
                     'success' => false,
                     'message' => $resultado['message'],
@@ -1445,14 +1501,14 @@ class MveController extends Controller
             }
 
         } catch (\Exception $e) {
-            Log::error('[MV_CONSULTA] Error en controlador', [
+            Log::error('[MV_CONSULTA] Error crítico en controlador', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
 
             return response()->json([
                 'success' => false,
-                'message' => 'Error al consultar la manifestación: ' . $e->getMessage()
+                'message' => 'Error interno al consultar la manifestación: ' . $e->getMessage()
             ], 500);
         }
     }

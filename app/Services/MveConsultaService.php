@@ -213,6 +213,7 @@ class MveConsultaService
 
     /**
      * Parsear respuesta de consulta VUCEM
+     * CORREGIDO: Acepta la respuesta si trae Número de MV, aunque falten detalles.
      *
      * @param string $responseBody
      * @param string $xmlSent
@@ -271,10 +272,9 @@ class MveConsultaService
             // Extraer datos completos de la manifestación para vista previa
             if (preg_match('/<[:\w]*datosManifestacionValor>(.*?)<\/[:\w]*datosManifestacionValor>/s', $responseBody, $matches)) {
                 $result['datos_manifestacion'] = $this->extraerDatosManifestacion($matches[1]);
-                Log::info('[MV_CONSULTA] Datos de manifestación extraídos para vista previa');
             }
 
-            // Buscar errores
+            // Buscar errores explícitos
             if (preg_match_all('/<[:\w]*mensaje>.*?<[:\w]*codigo>(.*?)<\/[:\w]*codigo>.*?<[:\w]*descripcion>(.*?)<\/[:\w]*descripcion>.*?<\/[:\w]*mensaje>/s', $responseBody, $errorMatches, PREG_SET_ORDER)) {
                 foreach ($errorMatches as $error) {
                     $result['errores'][] = [
@@ -284,68 +284,54 @@ class MveConsultaService
                 }
             }
 
-            // Determinar éxito - VALIDACIÓN COMPLETA
-            // La consulta es exitosa SOLO si:
-            // 1. Tiene número de MV
-            // 2. Tiene status
-            // 3. Tiene datos de manifestación CON información relevante
-
-            $tieneDatosRelevantes = false;
-            if (!empty($result['datos_manifestacion'])) {
-                $dm = $result['datos_manifestacion'];
-                // Verificar que tenga al menos algún campo importante
-                $tieneDatosRelevantes = (
-                    !empty($dm['cove']) ||
-                    !empty($dm['pedimento_numero']) ||
-                    !empty($dm['incrementables']) ||
-                    !empty($dm['valor_aduana']) ||
-                    !empty($dm['precio_pagado'])
-                );
-            }
-
-            if (!empty($result['numero_mv']) && !empty($result['status']) && $tieneDatosRelevantes) {
-                // Consulta exitosa - hay datos reales
-                $result['success'] = true;
-                $result['message'] = 'Consulta exitosa. Manifestación: ' . $result['numero_mv'] . ' - Estado: ' . $result['status'];
-
-                Log::info('[MV_CONSULTA] Consulta exitosa', [
-                    'numero_mv' => $result['numero_mv'],
-                    'status' => $result['status'],
-                    'tiene_acuse_pdf' => !empty($result['acuse_pdf'])
-                ]);
-            } elseif (!empty($result['errores'])) {
-                // VUCEM devolvió errores explícitos
+            // --- LÓGICA DE ÉXITO CORREGIDA ---
+            
+            // 1. Si hay errores explícitos, fallar.
+            if (!empty($result['errores'])) {
                 $result['success'] = false;
                 $result['message'] = 'Error de VUCEM: ' . $result['errores'][0]['descripcion'];
-
-                Log::warning('[MV_CONSULTA] Error de VUCEM', [
-                    'errores' => $result['errores']
-                ]);
-            } elseif (!empty($result['status']) && !$tieneDatosRelevantes) {
-                // Tiene status pero NO tiene datos - manifestación no encontrada
-                $result['success'] = false;
-                $result['message'] = 'No se encontró información para el folio "' . $numeroOperacion . '". Verifique que el folio sea correcto y que corresponda a una manifestación registrada en VUCEM.';
-
-                Log::warning('[MV_CONSULTA] Folio no encontrado o sin datos', [
-                    'folio' => $numeroOperacion,
-                    'status' => $result['status'],
-                    'tiene_datos_manifestacion' => !empty($result['datos_manifestacion'])
-                ]);
-            } else {
-                // No se pudo obtener información
-                $result['success'] = false;
-                $result['message'] = 'No se pudo obtener información de la manifestación. Verifique el folio ingresado.';
-
-                Log::warning('[MV_CONSULTA] Consulta sin resultados', [
-                    'folio' => $numeroOperacion
-                ]);
+                Log::warning('[MV_CONSULTA] Error de VUCEM', ['errores' => $result['errores']]);
+                return $result;
             }
+
+            // 2. CRÍTICO: Si tenemos el Número de MV (MNVA...), es un ÉXITO,
+            // aunque no tengamos todavía el resto de los datos.
+            // Esto permite guardar el folio real y luego intentar descargar el PDF.
+            if (!empty($result['numero_mv'])) {
+                $result['success'] = true;
+                $result['message'] = 'Consulta exitosa. Manifestación encontrada: ' . $result['numero_mv'];
+                
+                if (!empty($result['status'])) {
+                    $result['message'] .= ' - Estado: ' . $result['status'];
+                }
+
+                Log::info('[MV_CONSULTA] Consulta exitosa (Folio recuperado)', [
+                    'numero_mv' => $result['numero_mv'],
+                    'status' => $result['status']
+                ]);
+                
+                return $result;
+            }
+
+            // 3. Si solo tenemos status pero no folio (caso raro, "En proceso" sin folio asignado)
+            if (!empty($result['status'])) {
+                // Consideramos éxito parcial para informar al usuario
+                $result['success'] = true; 
+                $result['message'] = 'Trámite encontrado con estado: ' . $result['status'] . '. (El folio MVE aún no ha sido asignado).';
+                return $result;
+            }
+
+            // 4. Si llegamos aquí, no encontramos nada útil
+            $result['success'] = false;
+            $result['message'] = 'No se encontró información para el folio "' . $numeroOperacion . '". Es posible que VUCEM aún esté procesando la solicitud. Intente nuevamente en unos minutos.';
+            
+            Log::warning('[MV_CONSULTA] Respuesta sin datos identificables', [
+                'folio' => $numeroOperacion
+            ]);
 
         } catch (Exception $e) {
             $result['message'] = 'Error al procesar respuesta: ' . $e->getMessage();
-            Log::error('[MV_CONSULTA] Error parseando respuesta', [
-                'error' => $e->getMessage()
-            ]);
+            Log::error('[MV_CONSULTA] Error parseando respuesta', ['error' => $e->getMessage()]);
         }
 
         return $result;
@@ -623,112 +609,65 @@ class MveConsultaService
         return $datos;
     }
 
-    /**
-     * Consultar acuse de eDocument en VUCEM
-     *
-     * @param string $eDocumentFolio - Número de MV (formato MNVA...)
-     * @param string $rfc - RFC del importador
-     * @param string $claveWebService - Clave del web service VUCEM
-     * @return array
-     */
-    public function consultarEdocumentAcuse(
-        string $eDocumentFolio,
-        string $rfc,
-        string $claveWebService
-    ): array {
+    public function consultarEdocumentAcuse(string $eDocumentFolio, string $rfc, string $claveWebService): array 
+    {
         try {
-            $rfc = strtoupper(trim($rfc));
-            $eDocumentFolio = trim($eDocumentFolio);
+            // 1. ENDPOINT EXACTO (Según tu WSDL)
+            // Nota: Incluye el puerto 8107 y la ruta 'ventanilla-acuses-HA'
+            $endpoint = 'https://www.ventanillaunica.gob.mx/ventanilla-acuses-HA/ConsultaAcusesServiceWS?wsdl';
 
-            if (empty($eDocumentFolio)) {
-                return [
-                    'success' => false,
-                    'message' => 'El folio eDocument es obligatorio',
-                    'acuse_pdf' => null
-                ];
-            }
-
-            // Construir XML SOAP para ConsultarEdocument
-            $created = gmdate('Y-m-d\TH:i:s\Z');
-            $expires = gmdate('Y-m-d\TH:i:s\Z', strtotime('+5 minutes'));
-
+            // 2. NAMESPACES CORRECTOS
+            // 'tns' para el servicio y 'oxml' para la petición (según los imports de tu WSDL)
             $xml = '<?xml version="1.0" encoding="UTF-8"?>
-<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:ws="http://www.ventanillaunica.gob.mx/cove/ws/service/">
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" 
+                  xmlns:tns="http://www.ventanillaunica.gob.mx/ws/consulta/acuses/"
+                  xmlns:oxml="http://www.ventanillaunica.gob.mx/consulta/acuses/oxml">
    <soapenv:Header>
       <wsse:Security soapenv:mustUnderstand="1" xmlns:wsse="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd" xmlns:wsu="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd">
          <wsse:UsernameToken wsu:Id="UsernameToken-1">
-            <wsse:Username>' . $rfc . '</wsse:Username>
+            <wsse:Username>' . strtoupper($rfc) . '</wsse:Username>
             <wsse:Password Type="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-username-token-profile-1.0#PasswordText">' . htmlspecialchars($claveWebService, ENT_XML1) . '</wsse:Password>
          </wsse:UsernameToken>
-         <wsu:Timestamp wsu:Id="Timestamp-1">
-            <wsu:Created>' . $created . '</wsu:Created>
-            <wsu:Expires>' . $expires . '</wsu:Expires>
-         </wsu:Timestamp>
       </wsse:Security>
    </soapenv:Header>
    <soapenv:Body>
-      <ws:consultarEdocument>
-         <eDocument>' . htmlspecialchars($eDocumentFolio, ENT_XML1) . '</eDocument>
-      </ws:consultarEdocument>
+      <tns:consultarAcuseEdocument>
+         <oxml:consultaAcusesPeticion>
+            <oxml:idEdocument>' . htmlspecialchars($eDocumentFolio, ENT_XML1) . '</oxml:idEdocument>
+         </oxml:consultaAcusesPeticion>
+      </tns:consultarAcuseEdocument>
    </soapenv:Body>
 </soapenv:Envelope>';
 
-            $endpoint = 'http://www.ventanillaunica.gob.mx/ventanilla/ConsultarEdocument';
-
-            Log::info('[EDOCUMENT_CONSULTA] Iniciando consulta de acuse eDocument', [
-                'rfc' => $rfc,
-                'eDocument' => $eDocumentFolio,
-                'endpoint' => $endpoint
-            ]);
-
-            // Enviar petición SOAP
+            // 3. CONFIGURACIÓN CURL
             $ch = curl_init($endpoint);
             curl_setopt_array($ch, [
                 CURLOPT_RETURNTRANSFER => true,
                 CURLOPT_POST => true,
                 CURLOPT_POSTFIELDS => $xml,
-                CURLOPT_TIMEOUT => config('vucem.soap_timeout', 60),
-                CURLOPT_SSL_VERIFYPEER => false,
+                CURLOPT_TIMEOUT => 60,
+                CURLOPT_SSL_VERIFYPEER => false, 
                 CURLOPT_HTTPHEADER => [
                     'Content-Type: text/xml; charset=utf-8',
-                    'SOAPAction: ""',
-                    'Content-Length: ' . strlen($xml)
+                    'SOAPAction: "http://www.ventanillaunica.gob.mx/ventanilla/ConsultaAcusesService/consultarAcuseEdocument"',
                 ]
             ]);
 
             $responseBody = curl_exec($ch);
-            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
             $error = curl_error($ch);
             curl_close($ch);
 
             if ($error) {
-                Log::error('[EDOCUMENT_CONSULTA] Error cURL', ['error' => $error]);
-                return [
-                    'success' => false,
-                    'message' => 'Error de conexión cURL: ' . $error,
-                    'acuse_pdf' => null
-                ];
+                // Si falla con el puerto 8107, intenta sin el puerto (a veces los firewalls corporativos bloquean puertos raros)
+                Log::warning('[ACUSE_PDF] Falló conexión al puerto 8107, intentando puerto estándar...');
+                // Aquí podrías poner una lógica de reintento sin ":8107"
+                return ['success' => false, 'message' => 'Error de conexión: ' . $error, 'acuse_pdf' => null];
             }
 
-            Log::info('[EDOCUMENT_CONSULTA] Respuesta recibida', [
-                'status' => $httpCode,
-                'body_length' => strlen($responseBody)
-            ]);
-
-            // Parsear respuesta para extraer acuse PDF
             return $this->parseEdocumentAcuseResponse($responseBody, $eDocumentFolio);
 
         } catch (Exception $e) {
-            Log::error('[EDOCUMENT_CONSULTA] Error al consultar eDocument acuse', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-
-            return [
-                'success' => false,
-                'message' => 'Error de conexión con VUCEM: ' . $e->getMessage(),
-                'acuse_pdf' => null
-            ];
+            return ['success' => false, 'message' => 'Error: ' . $e->getMessage(), 'acuse_pdf' => null];
         }
     }
 

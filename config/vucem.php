@@ -158,7 +158,7 @@ return [
     'mv_endpoint' => env('VUCEM_MV_ENDPOINT', 'https://privados.ventanillaunica.gob.mx/IngresoManifestacionImpl/IngresoManifestacionService'),
     'mv_wsdl' => env('VUCEM_MV_WSDL', 'https://privados.ventanillaunica.gob.mx/IngresoManifestacionImpl/IngresoManifestacionService?wsdl'),
     
-    'mv_consulta_endpoint' => env('VUCEM_MV_CONSULTA_ENDPOINT', 'https://privados.ventanillaunica.gob.mx/ConsultaManifestacionImpl/ConsultaManifestacionService'),
+    'mv_consulta_endpoint' => env('VUCEM_MV_CONSULTA_ENDPOINT', 'https://privados.ventanillaunica.gob.mx/ConsultaManifestacionImpl/ConsultaManifestacionService?wsdl'),
     'mv_consulta_wsdl' => env('VUCEM_MV_CONSULTA_WSDL', 'https://privados.ventanillaunica.gob.mx/ConsultaManifestacionImpl/ConsultaManifestacionService?wsdl'),
     
     'soap_timeout' => env('VUCEM_SOAP_TIMEOUT', 60),
