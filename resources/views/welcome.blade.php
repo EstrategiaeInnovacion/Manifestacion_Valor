@@ -11,9 +11,11 @@
 
         @vite(['resources/css/app.css', 'resources/css/welcome.css', 'resources/js/app.js', 'resources/js/welcome.js'])
     </head>
-    <body class="bg-[#F8FAFC] dark:bg-[#0a0a0a] text-[#1e293b] min-h-screen flex flex-col">
+    {{-- ELIMINADO: dark:bg-[#0a0a0a] --}}
+    <body class="bg-[#F8FAFC] text-[#1e293b] min-h-screen flex flex-col">
         
-        <header class="w-full bg-white dark:bg-[#161615] border-b border-slate-200 dark:border-slate-800 px-8 py-4">
+        {{-- ELIMINADO: dark:bg-[#161615] dark:border-slate-800 --}}
+        <header class="w-full bg-white border-b border-slate-200 px-8 py-4">
             <div class="max-w-7xl mx-auto flex justify-between items-center">
                 <div class="flex items-center">
                     <a href="/">
@@ -27,16 +29,19 @@
         </header>
 
         <main class="flex-grow flex items-center justify-center p-6 lg:p-12">
-            <div class="max-w-6xl w-full grid lg:grid-cols-2 bg-white dark:bg-[#161615] rounded-[3.5rem] shadow-2xl overflow-hidden border border-slate-100 dark:border-slate-800">
+            {{-- ELIMINADO: dark:bg-[#161615] dark:border-slate-800 --}}
+            <div class="max-w-6xl w-full grid lg:grid-cols-2 bg-white rounded-[3.5rem] shadow-2xl overflow-hidden border border-slate-100">
                 
                 <div class="p-12 lg:p-24 flex flex-col justify-center">
                     <div class="w-12 h-1.5 bg-[#003399] mb-8 rounded-full"></div>
 
-                    <h2 class="text-6xl font-black text-[#001a4d] dark:text-white mb-6 leading-[1.1] tracking-tight">
+                    {{-- ELIMINADO: dark:text-white --}}
+                    <h2 class="text-6xl font-black text-[#001a4d] mb-6 leading-[1.1] tracking-tight">
                         Manifestación <br><span class="text-[#003399]">de Valor.</span>
                     </h2>
                     
-                    <p class="text-slate-500 dark:text-slate-400 mb-12 text-xl leading-relaxed max-w-md">
+                    {{-- ELIMINADO: dark:text-slate-400 --}}
+                    <p class="text-slate-500 mb-12 text-xl leading-relaxed max-w-md">
                         Plataforma inteligente para la gestión de documentos de valor aduanal y control de operaciones internacionales.
                     </p>
 
