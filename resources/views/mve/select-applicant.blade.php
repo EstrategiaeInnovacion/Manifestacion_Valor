@@ -1,4 +1,5 @@
-<x-app-layout>
+﻿<x-app-layout>
+    <x-slot name="title">Seleccionar Solicitante</x-slot>
     @vite(['resources/css/mve-select.css', 'resources/js/mve-select.js'])
 
     <div class="min-h-screen bg-[#F8FAFC]">

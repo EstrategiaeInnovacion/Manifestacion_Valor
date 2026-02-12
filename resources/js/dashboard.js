@@ -72,3 +72,86 @@ document.addEventListener('keydown', function(e) {
         closeMveModal();
     }
 });
+
+// ========== SOPORTE MODAL ==========
+window.openSupportModal = function() {
+    const modal = document.getElementById('supportModal');
+    if (modal) {
+        // Reset form state
+        document.getElementById('supportForm').classList.remove('hidden');
+        document.getElementById('supportSuccess').classList.add('hidden');
+        document.getElementById('supportForm').reset();
+        document.getElementById('charCount').textContent = '0';
+        
+        modal.classList.add('active');
+        document.body.style.overflow = 'hidden';
+        setTimeout(() => lucide.createIcons(), 50);
+    }
+};
+
+window.closeSupportModal = function() {
+    const modal = document.getElementById('supportModal');
+    if (modal) {
+        modal.classList.remove('active');
+        document.body.style.overflow = '';
+    }
+};
+
+// Character counter for description
+document.addEventListener('DOMContentLoaded', function() {
+    const desc = document.getElementById('supportDescription');
+    const counter = document.getElementById('charCount');
+    if (desc && counter) {
+        desc.addEventListener('input', () => {
+            counter.textContent = desc.value.length;
+        });
+    }
+});
+
+// Submit support form via AJAX
+window.submitSupportForm = async function(e) {
+    e.preventDefault();
+    
+    const form = document.getElementById('supportForm');
+    const btn = document.getElementById('supportSubmitBtn');
+    const formData = new FormData(form);
+    
+    btn.classList.add('loading');
+    btn.innerHTML = '<span class="spinner"></span> Enviando...';
+    
+    try {
+        const response = await fetch('/support/send', {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'Accept': 'application/json',
+            },
+            body: formData,
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            form.classList.add('hidden');
+            document.getElementById('supportSuccess').classList.remove('hidden');
+            setTimeout(() => lucide.createIcons(), 50);
+        } else {
+            alert(data.message || 'Error al enviar el ticket.');
+            btn.classList.remove('loading');
+            btn.innerHTML = '<i data-lucide="send" class="w-4 h-4 btn-icon"></i> Enviar Ticket';
+            lucide.createIcons();
+        }
+    } catch (error) {
+        alert('Error de conexión. Intenta nuevamente.');
+        btn.classList.remove('loading');
+        btn.innerHTML = '<i data-lucide="send" class="w-4 h-4 btn-icon"></i> Enviar Ticket';
+        lucide.createIcons();
+    }
+};
+
+// Close support modal with ESC
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeSupportModal();
+    }
+});

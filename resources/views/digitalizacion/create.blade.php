@@ -1,4 +1,5 @@
-<x-app-layout>
+﻿<x-app-layout>
+    <x-slot name="title">Digitalización de Documentos</x-slot>
     {{-- Estilos específicos para esta vista (opcional, si usas vite puedes agregarlos ahí) --}}
     <style>
         .file-drop-zone:hover { border-color: #003399; background-color: #f0f9ff; }

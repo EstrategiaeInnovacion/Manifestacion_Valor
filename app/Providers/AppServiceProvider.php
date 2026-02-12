@@ -2,6 +2,9 @@
 
 namespace App\Providers;
 
+use App\Models\MvClientApplicant;
+use App\Policies\ApplicantPolicy;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -11,7 +14,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+    //
     }
 
     /**
@@ -19,6 +22,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        // Registrar policy para MvClientApplicant (nombre no sigue convención automática)
+        Gate::policy(MvClientApplicant::class , ApplicantPolicy::class);
     }
 }

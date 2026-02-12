@@ -1,8 +1,9 @@
-@php
+﻿@php
     use App\Constants\VucemCatalogs;
 @endphp
 
 <x-app-layout>
+    <x-slot name="title">Nueva Manifestación de Valor</x-slot>
     @vite(['resources/css/mve-manual.css', 'resources/js/mve-manual.js'])
 
     {{-- Data attributes para JavaScript --}}

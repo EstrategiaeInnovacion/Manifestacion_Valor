@@ -98,14 +98,16 @@ class DocumentUploadController extends Controller
                 'validation_details' => $result['validation_details']
             ]);
 
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        }
+        catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
                 'success' => false,
                 'error' => 'Datos de entrada inválidos',
                 'validation_errors' => $e->errors()
             ], 422);
 
-        } catch (\Exception $e) {
+        }
+        catch (\Exception $e) {
             Log::error('DocumentUploadController: Error subiendo documento', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
@@ -113,7 +115,7 @@ class DocumentUploadController extends Controller
 
             return response()->json([
                 'success' => false,
-                'error' => 'Error interno del servidor: ' . $e->getMessage()
+                'error' => 'Error interno del servidor. Por favor, intente nuevamente.'
             ], 500);
         }
     }
@@ -139,25 +141,26 @@ class DocumentUploadController extends Controller
                 ->orderBy('created_at', 'desc')
                 ->get()
                 ->map(function ($doc) {
-                    return [
-                        'id' => $doc->id,
-                        'name' => $doc->document_name,
-                        'filename' => $doc->original_filename,
-                        'size' => $doc->file_size,
-                        'size_formatted' => $this->formatFileSize($doc->file_size),
-                        'was_converted' => $doc->was_converted,
-                        'is_vucem_compliant' => $doc->is_vucem_compliant,
-                        'upload_date' => $doc->created_at->format('d/m/Y H:i'),
-                        'uploaded_by' => $doc->uploaded_by
-                    ];
-                });
+                return [
+                'id' => $doc->id,
+                'name' => $doc->document_name,
+                'filename' => $doc->original_filename,
+                'size' => $doc->file_size,
+                'size_formatted' => $this->formatFileSize($doc->file_size),
+                'was_converted' => $doc->was_converted,
+                'is_vucem_compliant' => $doc->is_vucem_compliant,
+                'upload_date' => $doc->created_at->format('d/m/Y H:i'),
+                'uploaded_by' => $doc->uploaded_by
+                ];
+            });
 
             return response()->json([
                 'success' => true,
                 'documents' => $documents
             ]);
 
-        } catch (\Exception $e) {
+        }
+        catch (\Exception $e) {
             Log::error('DocumentUploadController: Error obteniendo documentos', [
                 'applicant_id' => $applicantId,
                 'error' => $e->getMessage()
@@ -201,7 +204,8 @@ class DocumentUploadController extends Controller
                 'message' => 'Documento eliminado exitosamente'
             ]);
 
-        } catch (\Exception $e) {
+        }
+        catch (\Exception $e) {
             Log::error('DocumentUploadController: Error eliminando documento', [
                 'document_id' => $documentId,
                 'error' => $e->getMessage()
@@ -248,7 +252,8 @@ class DocumentUploadController extends Controller
                 ->header('Content-Disposition', 'attachment; filename="' . $document->original_filename . '"')
                 ->header('Content-Length', strlen($decodedContent));
 
-        } catch (\Exception $e) {
+        }
+        catch (\Exception $e) {
             Log::error('DocumentUploadController: Error descargando documento', [
                 'document_id' => $documentId,
                 'error' => $e->getMessage()
@@ -295,7 +300,8 @@ class DocumentUploadController extends Controller
                 ->header('Content-Disposition', 'inline; filename="' . $document->original_filename . '"')
                 ->header('Content-Length', strlen($decodedContent));
 
-        } catch (\Exception $e) {
+        }
+        catch (\Exception $e) {
             Log::error('DocumentUploadController: Error visualizando documento', [
                 'document_id' => $documentId,
                 'error' => $e->getMessage()
@@ -320,7 +326,7 @@ class DocumentUploadController extends Controller
             ]);
 
             $file = $request->file('pdf_file');
-            
+
             // Guardar temporalmente
             $tempPath = $file->store('tmp/validation');
             $fullTempPath = Storage::path($tempPath);
@@ -336,15 +342,16 @@ class DocumentUploadController extends Controller
                 'is_valid' => $validationResult['is_valid'],
                 'errors' => $validationResult['errors'],
                 'details' => $validationResult['details'],
-                'message' => $validationResult['is_valid'] 
-                    ? 'El archivo cumple con los requisitos VUCEM' 
-                    : 'El archivo requiere conversión para cumplir con VUCEM'
+                'message' => $validationResult['is_valid']
+                ? 'El archivo cumple con los requisitos VUCEM'
+                : 'El archivo requiere conversión para cumplir con VUCEM'
             ]);
 
-        } catch (\Exception $e) {
+        }
+        catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'error' => 'Error validando archivo: ' . $e->getMessage()
+                'error' => 'Error al validar el archivo. Por favor, intente nuevamente.'
             ], 500);
         }
     }
@@ -356,11 +363,14 @@ class DocumentUploadController extends Controller
     {
         if ($bytes >= 1073741824) {
             return number_format($bytes / 1073741824, 2) . ' GB';
-        } elseif ($bytes >= 1048576) {
+        }
+        elseif ($bytes >= 1048576) {
             return number_format($bytes / 1048576, 2) . ' MB';
-        } elseif ($bytes >= 1024) {
+        }
+        elseif ($bytes >= 1024) {
             return number_format($bytes / 1024, 2) . ' KB';
-        } else {
+        }
+        else {
             return $bytes . ' bytes';
         }
     }

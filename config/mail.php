@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 return [
 
@@ -109,6 +109,8 @@ return [
     | used globally for all emails that are sent by your application.
     |
     */
+
+    'support_address' => env('SUPPORT_EMAIL', 'soporte@tuempresa.com'),
 
     'from' => [
         'address' => env('MAIL_FROM_ADDRESS', 'hello@example.com'),

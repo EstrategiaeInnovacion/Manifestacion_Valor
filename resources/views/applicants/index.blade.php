@@ -1,4 +1,5 @@
-<x-app-layout>
+﻿<x-app-layout>
+    <x-slot name="title">Solicitantes</x-slot>
     @vite(['resources/css/applicants-list.css', 'resources/js/applicants-list.js'])
 
     <div class="min-h-screen bg-[#F8FAFC]">

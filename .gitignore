@@ -22,3 +22,20 @@
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+# Archivos de e.firma y certificados (NUNCA commitear)
+/pruebaEfirma/
+*.cer
+*.key
+*.pem
+CONTRASEÑA.txt
+
+# Archivos temporales de firma
+storage/app/temp/
+
+# Base de datos local
+database/*.sqlite
+database/*.sqlite-journal
+
+# Backups de vistas
+*.backup

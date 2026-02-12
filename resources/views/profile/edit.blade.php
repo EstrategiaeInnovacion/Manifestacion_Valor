@@ -1,4 +1,5 @@
-<x-app-layout>
+﻿<x-app-layout>
+    <x-slot name="title">Mi Perfil</x-slot>
     @vite(['resources/css/profile.css', 'resources/js/profile.js'])
 
     <div class="min-h-screen bg-[#F8FAFC]">

@@ -1,4 +1,5 @@
-<x-app-layout>
+﻿<x-app-layout>
+    <x-slot name="title">Agregar Usuario</x-slot>
     @vite(['resources/css/add-user.css', 'resources/js/add-user.js'])
 
     <div class="min-h-screen bg-[#F8FAFC]">

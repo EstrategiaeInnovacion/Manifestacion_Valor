@@ -1,4 +1,5 @@
 <x-app-layout>
+    <x-slot name="title">Dashboard</x-slot>
     @vite(['resources/css/dashboard.css', 'resources/js/dashboard.js'])
 
     <div class="min-h-screen bg-[#F8FAFC]">
@@ -217,6 +218,34 @@
                 </div>
             </div>
 
+        
+            {{-- SECCIÓN 3: SOPORTE & AYUDA --}}
+            <div class="mt-12">
+                <div class="flex items-center gap-4 mb-6">
+                    <div class="h-8 w-1 bg-amber-500"></div>
+                    <h3 class="text-xl font-bold text-slate-700 uppercase tracking-widest">Soporte & Ayuda</h3>
+                    <div class="h-px flex-grow bg-slate-200"></div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    {{-- TARJETA: SOPORTE --}}
+                    <button type="button" onclick="openSupportModal()" class="modern-card group border-t-4 border-t-amber-500 text-left w-full">
+                        <div class="card-content">
+                            <div class="icon-box bg-amber-50 text-amber-600 group-hover:bg-amber-500 group-hover:text-white transition-all duration-500">
+                                <i data-lucide="headset" class="w-8 h-8"></i>
+                            </div>
+                            <h3 class="text-xl font-bold text-[#001a4d] mt-6">Contactar Soporte</h3>
+                            <p class="text-slate-500 text-sm mt-3 leading-relaxed">
+                                ¿Tienes algún problema o sugerencia? Envíanos un mensaje y te contactaremos.
+                            </p>
+                            <div class="mt-8 flex items-center text-amber-600 font-bold text-sm">
+                                Enviar Ticket
+                                <i data-lucide="send" class="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform"></i>
+                            </div>
+                        </div>
+                    </button>
+                </div>
+            </div>
         </main>
 
         {{-- Modal para elegir tipo de MVE (SE MANTIENE IGUAL) --}}
@@ -270,6 +299,105 @@
                             @if($mveCompletadasCount > 0)
                                 <div class="mve-badge mve-badge-success">{{ $mveCompletadasCount }}</div>
                             @endif
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- Modal de Soporte --}}
+        <div id="supportModal" class="mve-modal">
+            <div class="mve-modal-overlay" onclick="closeSupportModal()"></div>
+            <div class="mve-modal-content" style="max-width:560px;">
+                <div class="mve-modal-header">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center">
+                            <i data-lucide="headset" class="w-5 h-5 text-amber-600"></i>
+                        </div>
+                        <h3 class="text-2xl font-black text-[#001a4d]">Soporte Técnico</h3>
+                    </div>
+                    <button type="button" onclick="closeSupportModal()" class="mve-modal-close">
+                        <i data-lucide="x" class="w-6 h-6"></i>
+                    </button>
+                </div>
+                
+                <div class="mve-modal-body">
+                    <form id="supportForm" onsubmit="submitSupportForm(event)">
+                        @csrf
+                        
+                        {{-- Info del usuario (readonly) --}}
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Nombre</label>
+                                <div class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-600 font-medium">
+                                    {{ auth()->user()->full_name }}
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Correo</label>
+                                <div class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-600 font-medium truncate">
+                                    {{ auth()->user()->email }}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        {{-- Categoría --}}
+                        <div class="mb-5">
+                            <label for="supportCategory" class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Categoría</label>
+                            <select id="supportCategory" name="category" required
+                                class="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm text-[#001a4d] font-medium focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all outline-none appearance-none cursor-pointer">
+                                <option value="" disabled selected>Selecciona una categoría...</option>
+                                <option value="Error en el sistema">Error en el sistema</option>
+                                <option value="Problema con e.firma">Problema con e.firma</option>
+                                <option value="Problema con VUCEM">Problema con VUCEM</option>
+                                <option value="Solicitud de cambio">Solicitud de cambio</option>
+                                <option value="Duda general">Duda general</option>
+                                <option value="Otro">Otro</option>
+                            </select>
+                        </div>
+
+                        {{-- Asunto --}}
+                        <div class="mb-5">
+                            <label for="supportSubject" class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Asunto</label>
+                            <input type="text" id="supportSubject" name="subject" required maxlength="255"
+                                placeholder="Describe brevemente el caso..."
+                                class="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm text-[#001a4d] font-medium focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all outline-none placeholder:text-slate-300">
+                        </div>
+
+                        {{-- Descripción --}}
+                        <div class="mb-6">
+                            <label for="supportDescription" class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Descripción</label>
+                            <textarea id="supportDescription" name="description" required maxlength="5000" rows="5"
+                                placeholder="Explica con detalle tu caso o solicitud..."
+                                class="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm text-[#001a4d] font-medium focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all outline-none placeholder:text-slate-300 resize-none"></textarea>
+                            <p class="text-xs text-slate-400 mt-1.5 text-right"><span id="charCount">0</span>/5000</p>
+                        </div>
+
+                        {{-- Botones --}}
+                        <div class="flex items-center justify-end gap-3">
+                            <button type="button" onclick="closeSupportModal()"
+                                class="px-6 py-3 text-sm font-bold text-slate-500 hover:text-slate-700 transition-colors rounded-xl">
+                                Cancelar
+                            </button>
+                            <button type="submit" id="supportSubmitBtn"
+                                class="px-8 py-3 bg-[#001a4d] hover:bg-[#003399] text-white font-bold text-sm rounded-xl transition-all shadow-lg flex items-center gap-2">
+                                <i data-lucide="send" class="w-4 h-4 btn-icon"></i>
+                                <span class="spinner" style="display:none;width:16px;height:16px;border:2px solid rgba(255,255,255,0.3);border-radius:50%;border-top-color:#fff;animation:spin 0.6s linear infinite;"></span>
+                                Enviar Ticket
+                            </button>
+                        </div>
+                    </form>
+
+                    {{-- Success state --}}
+                    <div id="supportSuccess" class="hidden text-center py-8">
+                        <div class="w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <i data-lucide="check-circle" class="w-8 h-8 text-emerald-500"></i>
+                        </div>
+                        <h4 class="text-xl font-bold text-[#001a4d] mb-2">¡Ticket Enviado!</h4>
+                        <p class="text-slate-500 text-sm mb-6">Nos pondremos en contacto contigo pronto.</p>
+                        <button type="button" onclick="closeSupportModal()"
+                            class="px-8 py-3 bg-[#001a4d] hover:bg-[#003399] text-white font-bold text-sm rounded-xl transition-all shadow-lg">
+                            Cerrar
                         </button>
                     </div>
                 </div>

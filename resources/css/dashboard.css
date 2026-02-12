@@ -302,3 +302,151 @@
         box-shadow: 0 6px 16px rgba(239, 68, 68, 0.6);
     }
 }
+
+/* Support card accent */
+.modern-card.border-t-amber-500:hover {
+    border-color: #f59e0b;
+}
+
+/* Support form select styling */
+#supportCategory {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+    background-position: right 12px center;
+    background-repeat: no-repeat;
+    background-size: 20px;
+}
+
+/* Support form focus ring override to amber */
+#supportForm input:focus,
+#supportForm select:focus,
+#supportForm textarea:focus {
+    box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.3);
+    border-color: #f59e0b;
+}
+
+/* Support submit button loading state */
+#supportSubmitBtn.loading {
+    opacity: 0.7;
+    pointer-events: none;
+}
+
+#supportSubmitBtn .spinner {
+    display: none;
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-radius: 50%;
+    border-top-color: #fff;
+    animation: spin 0.6s linear infinite;
+}
+
+#supportSubmitBtn.loading .spinner {
+    display: block;
+}
+
+#supportSubmitBtn.loading .btn-icon {
+    display: none;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+
+/* ========== RESPONSIVE FIXES ========== */
+
+/* Modal responsive - prevent overflow */
+.mve-modal-content {
+    max-height: 90vh;
+    overflow-y: auto;
+    margin: auto;
+}
+
+/* Mobile adjustments */
+@media (max-width: 640px) {
+    .mve-modal {
+        padding: 0.5rem;
+    }
+
+    .mve-modal-content {
+        border-radius: 1.25rem;
+        max-height: 95vh;
+    }
+
+    .mve-modal-header {
+        padding: 1.25rem 1.5rem;
+    }
+
+    .mve-modal-header h3 {
+        font-size: 1.25rem;
+    }
+
+    .mve-modal-body {
+        padding: 1.25rem 1.5rem;
+    }
+
+    .mve-option-card {
+        padding: 1.25rem;
+    }
+
+    .mve-option-icon {
+        width: 56px;
+        height: 56px;
+        margin-bottom: 1rem;
+    }
+
+    .modern-card {
+        padding: 1.5rem;
+        border-radius: 1.25rem;
+    }
+
+    .icon-box {
+        width: 48px;
+        height: 48px;
+        border-radius: 1rem;
+    }
+}
+
+/* Tablet adjustments */
+@media (max-width: 768px) {
+    .mve-modal-header {
+        padding: 1.5rem 1.75rem;
+    }
+    
+    .mve-modal-body {
+        padding: 1.5rem 1.75rem;
+    }
+}
+
+
+/* Scrollbar inside modal - clip to rounded corners */
+.mve-modal-content {
+    overflow: hidden;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.mve-modal-body {
+    overflow-y: auto;
+    flex: 1;
+    min-height: 0;
+}
+
+/* Thin scrollbar styling */
+.mve-modal-body::-webkit-scrollbar {
+    width: 6px;
+}
+
+.mve-modal-body::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.mve-modal-body::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 3px;
+}
+
+.mve-modal-body::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
