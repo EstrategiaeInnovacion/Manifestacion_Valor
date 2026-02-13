@@ -1,4 +1,4 @@
-﻿<x-app-layout>
+<x-app-layout>
     <x-slot name="title">Consulta de COVE</x-slot>
     @vite(['resources/css/mve-create.css', 'resources/js/edocument-consulta.js'])
 

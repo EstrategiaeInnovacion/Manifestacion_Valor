@@ -294,4 +294,166 @@ class ManifestacionValorService
         if (!is_numeric($clean)) return '0';
         return (string)(float)$clean;
     }
+
+    /**
+     * Parsea el contenido de un Archivo M (pedimento) y extrae los datos relevantes para la MVE.
+     * El Archivo M tiene un formato de registros fijos donde cada línea inicia con un código de 3 dígitos.
+     *
+     * Códigos de registro principales:
+     * - 500: Encabezado del pedimento (contiene RFC importador/exportador)
+     * - 501: Datos generales del pedimento
+     * - 505: Datos del proveedor/comprador
+     * - 510: Partida de mercancía
+     * - 551: Vinculación
+     * - 552: Incrementables/Decrementables
+     */
+    public function parseArchivoMForMV(string $content): array
+    {
+        $result = [
+            'datos_manifestacion' => [
+                'rfc_importador' => null,
+                'nombre_importador' => null,
+                'tipo_operacion' => null,
+                'clave_pedimento' => null,
+                'aduana_entrada' => null,
+                'numero_pedimento' => null,
+                'fecha_entrada' => null,
+            ],
+            'informacion_cove' => [],
+            'pedimentos' => [],
+            'proveedores' => [],
+            'mercancias' => [],
+            'vinculacion' => null,
+            'incrementables' => [],
+            'decrementables' => [],
+        ];
+
+        // Normalizar saltos de línea
+        $content = str_replace(["\r\n", "\r"], "\n", $content);
+        $lines = explode("\n", $content);
+
+        foreach ($lines as $line) {
+            $line = trim($line);
+            if (strlen($line) < 3) continue;
+
+            $codigo = substr($line, 0, 3);
+            $datos = substr($line, 3);
+
+            switch ($codigo) {
+                case '500':
+                    // Encabezado: Tipo operación (1), RFC (13), Nombre (40+)
+                    $result['datos_manifestacion']['tipo_operacion'] = trim(substr($datos, 0, 1));
+                    $result['datos_manifestacion']['rfc_importador'] = trim(substr($datos, 1, 13));
+                    $result['datos_manifestacion']['nombre_importador'] = trim(substr($datos, 14, 40));
+                    break;
+
+                case '501':
+                    // Datos generales: Aduana (3), Patente (4), Año (2), Número (7), Clave pedimento (2)
+                    $aduana = trim(substr($datos, 0, 3));
+                    $patente = trim(substr($datos, 3, 4));
+                    $anio = trim(substr($datos, 7, 2));
+                    $numero = trim(substr($datos, 9, 7));
+                    $clavePedimento = trim(substr($datos, 16, 2));
+
+                    $result['datos_manifestacion']['aduana_entrada'] = $aduana;
+                    $result['datos_manifestacion']['clave_pedimento'] = $clavePedimento;
+                    $result['datos_manifestacion']['numero_pedimento'] = "{$anio}-{$patente}-{$numero}";
+
+                    // Fecha de entrada (posición puede variar según versión del archivo)
+                    if (strlen($datos) > 50) {
+                        $fechaStr = trim(substr($datos, 50, 8)); // AAAAMMDD
+                        if (strlen($fechaStr) === 8 && is_numeric($fechaStr)) {
+                            $result['datos_manifestacion']['fecha_entrada'] = 
+                                substr($fechaStr, 6, 2) . '/' . 
+                                substr($fechaStr, 4, 2) . '/' . 
+                                substr($fechaStr, 0, 4);
+                        }
+                    }
+                    break;
+
+                case '505':
+                    // Proveedor: ID fiscal (30), Nombre (40), País (3)
+                    $proveedor = [
+                        'id_fiscal' => trim(substr($datos, 0, 30)),
+                        'nombre' => trim(substr($datos, 30, 40)),
+                        'pais' => trim(substr($datos, 70, 3)),
+                    ];
+                    if (!empty($proveedor['id_fiscal']) || !empty($proveedor['nombre'])) {
+                        $result['proveedores'][] = $proveedor;
+                    }
+                    break;
+
+                case '510':
+                    // Partida de mercancía
+                    $mercancia = [
+                        'secuencia' => trim(substr($datos, 0, 5)),
+                        'fraccion' => trim(substr($datos, 5, 8)),
+                        'descripcion' => trim(substr($datos, 20, 80)),
+                        'cantidad' => $this->parseNumeroArchivoM(substr($datos, 100, 14)),
+                        'unidad' => trim(substr($datos, 114, 2)),
+                        'valor_dolares' => $this->parseNumeroArchivoM(substr($datos, 130, 14)),
+                        'valor_aduana' => $this->parseNumeroArchivoM(substr($datos, 144, 14)),
+                    ];
+                    if (!empty($mercancia['fraccion'])) {
+                        $result['mercancias'][] = $mercancia;
+                    }
+                    break;
+
+                case '551':
+                    // Vinculación: Clave (1)
+                    // 0 = No existe vinculación
+                    // 1 = Sí existe vinculación
+                    $claveVinculacion = trim(substr($datos, 0, 1));
+                    $result['vinculacion'] = $claveVinculacion === '1' ? 'SI' : 'NO';
+                    break;
+
+                case '552':
+                    // Incrementables/Decrementables
+                    $tipoAjuste = trim(substr($datos, 0, 1)); // I = Incrementable, D = Decrementable
+                    $claveConcepto = trim(substr($datos, 1, 3));
+                    $importe = $this->parseNumeroArchivoM(substr($datos, 4, 14));
+
+                    $ajuste = [
+                        'clave' => $claveConcepto,
+                        'importe' => $importe,
+                    ];
+
+                    if ($tipoAjuste === 'I') {
+                        $result['incrementables'][] = $ajuste;
+                    } elseif ($tipoAjuste === 'D') {
+                        $result['decrementables'][] = $ajuste;
+                    }
+                    break;
+            }
+        }
+
+        // Calcular totales si hay mercancías
+        if (!empty($result['mercancias'])) {
+            $totalValorAduana = 0;
+            foreach ($result['mercancias'] as $mercancia) {
+                $totalValorAduana += floatval($mercancia['valor_aduana'] ?? 0);
+            }
+            $result['datos_manifestacion']['total_valor_aduana'] = $totalValorAduana;
+        }
+
+        return $result;
+    }
+
+    /**
+     * Parsea un número del formato del Archivo M (puede tener signo al final y decimales implícitos)
+     */
+    private function parseNumeroArchivoM(?string $valor): float
+    {
+        if (empty($valor)) return 0.0;
+        
+        $valor = trim($valor);
+        if (empty($valor)) return 0.0;
+
+        // Remover caracteres no numéricos excepto punto y signo
+        $valor = preg_replace('/[^0-9.\-]/', '', $valor);
+        
+        if (!is_numeric($valor)) return 0.0;
+        
+        return floatval($valor);
+    }
 }

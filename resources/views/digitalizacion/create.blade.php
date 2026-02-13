@@ -1,4 +1,4 @@
-﻿<x-app-layout>
+<x-app-layout>
     <x-slot name="title">Digitalización de Documentos</x-slot>
     {{-- Estilos específicos para esta vista (opcional, si usas vite puedes agregarlos ahí) --}}
     <style>

@@ -1,4 +1,4 @@
-﻿<x-app-layout>
+<x-app-layout>
     <x-slot name="title">Cargar Archivo MVE</x-slot>
     @vite(['resources/css/mve-upload.css', 'resources/js/mve-upload.js'])
 

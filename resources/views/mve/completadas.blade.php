@@ -1,4 +1,4 @@
-﻿<x-app-layout>
+<x-app-layout>
     <x-slot name="title">MVE Completadas</x-slot>
     @vite(['resources/css/users-list.css'])
 

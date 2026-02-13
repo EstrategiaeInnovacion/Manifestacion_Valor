@@ -1,4 +1,4 @@
-﻿@php
+@php
     use App\Constants\VucemCatalogs;
 @endphp
 

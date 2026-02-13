@@ -1,4 +1,4 @@
-﻿<x-app-layout>
+<x-app-layout>
     <x-slot name="title">MVE Pendientes</x-slot>
     @vite(['resources/css/users-list.css', 'resources/js/mve-pendientes.js'])
 

@@ -1,4 +1,4 @@
-﻿<x-app-layout>
+<x-app-layout>
     <x-slot name="title">Detalle del Solicitante</x-slot>
     @vite(['resources/css/applicant-form.css', 'resources/js/applicant-form.js'])
 
