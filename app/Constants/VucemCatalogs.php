@@ -375,4 +375,15 @@ class VucemCatalogs
         '85-0' => '85-0 - AEROPUERTO INTERNACIONAL FELIPE ÁNGELES, SANTA LUCÍA, ZUMPANGO, ESTADO DE MÉXICO.',
     ];
 
+    /**
+     * Tipos de Documento aceptados por VUCEM para digitalización.
+     */
+    public static $tiposDocumento = [
+        '466' => 'Factura Comercial',
+        '112' => 'Acta Constitutiva',
+        '368' => 'Otros (Documento Universal)',
+        '479' => 'Lista de Empaque',
+        '441' => 'Oficios omitidos por autoridad',
+        '4'   => 'Identificación Oficial',
+    ];
 }

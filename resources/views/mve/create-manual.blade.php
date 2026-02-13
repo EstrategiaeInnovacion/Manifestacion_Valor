@@ -29,6 +29,9 @@
          data-compenso-pago='@json(optional($informacionCove)->compenso_pago ?? [])'
          data-valor-aduana='@json(optional($informacionCove)->valor_en_aduana)'
          data-documentos='@json(isset($datosExtraidos) ? $datosExtraidos["documentos"] : (optional($documentos)->documentos ?? []))'
+         data-tipos-documento='@json($tiposDocumento ?? [])'
+         data-has-vucem-credentials='{{ $applicant->hasVucemCredentials() ? "true" : "false" }}'
+         data-has-webservice-key='{{ $applicant->hasWebserviceKey() ? "true" : "false" }}'
          data-incoterm-archivo-m="{{ isset($datosExtraidos) && isset($datosExtraidos['informacion_cove'][0]) ? ($datosExtraidos['informacion_cove'][0]['incoterm'] ?? '') : '' }}"
          data-vinculacion-archivo-m="{{ isset($datosExtraidos) ? ($datosExtraidos['vinculacion'] ?? '') : '' }}"
          data-desde-archivo-m="{{ isset($datosExtraidos) ? 'true' : 'false' }}">
@@ -1162,7 +1165,7 @@
                     </div>
                 </div>
 
-            {{-- 4. Documentos (eDocument) --}}
+            {{-- 4. Documentos (eDocument) - Digitalización Integrada --}}
             <div class="mve-section-card">
                     <div class="mve-card-header">
                         <div class="mve-card-icon bg-amber-50 text-amber-600">
@@ -1170,66 +1173,185 @@
                         </div>
                         <div>
                             <h3 class="mve-card-title">DOCUMENTOS (eDocument)</h3>
-                            <p class="mve-card-description">Asocia folios eDocument para el envío a VUCEM</p>
+                            <p class="mve-card-description">Digitaliza y asocia documentos a VUCEM para el envío de la manifestación</p>
                         </div>
                     </div>
                     <div class="mve-card-body">
-                        <form class="mve-form">
+                        <form class="mve-form" id="formDigitalizacion" enctype="multipart/form-data">
+
+                            {{-- Nombre del documento --}}
                             <div class="form-group">
                                 <label class="form-label">
-                                    TIPO DE DOCUMENTO
+                                    NOMBRE DEL DOCUMENTO
                                     <span class="text-red-500">*</span>
                                 </label>
-                                <input type="text" class="form-input" id="documentType" placeholder="Ej. Factura, Contrato, etc.">
+                                <input type="text" class="form-input" id="documentName" placeholder="Ej. Factura Comercial 2026-001" maxlength="45">
+                                <p class="text-xs text-slate-400 mt-1">Máximo 45 caracteres. Este nombre se registrará en VUCEM.</p>
                             </div>
 
+                            {{-- Tipo de documento VUCEM --}}
                             <div class="form-group">
                                 <label class="form-label">
-                                    FOLIO eDocument
+                                    TIPO DE DOCUMENTO VUCEM
                                     <span class="text-red-500">*</span>
                                 </label>
-                                <div class="flex flex-col gap-2">
-                                    <input type="text" class="form-input flex-1" id="edocumentFolio" list="edocumentSuggestions" placeholder="INGRESE EL FOLIO eDocument">
-                                    <p class="text-xs text-slate-400">
-                                        Si no aparece el folio en las sugerencias, use la opción
-                                        <a href="{{ route('cove.consulta.index') }}" target="_blank" class="font-semibold text-[#003399] hover:underline">Consulta eDocument (VUCEM)</a> para registrarlo.
-                                    </p>
+                                <select class="form-input" id="documentTypeSelect">
+                                    <option value="">Seleccione tipo de documento...</option>
+                                    @foreach($tiposDocumento as $id => $nombre)
+                                        <option value="{{ $id }}">{{ $nombre }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+
+                            {{-- Carga de archivo PDF --}}
+                            <div class="form-group">
+                                <label class="form-label">
+                                    ARCHIVO PDF
+                                    <span class="text-red-500">*</span>
+                                </label>
+                                <input type="file" class="form-input" id="pdfFileInput" accept=".pdf">
+                                <p class="text-xs text-slate-400 mt-1">Solo archivos PDF (máx. 20MB). Se convertirá automáticamente al formato VUCEM si es necesario.</p>
+                            </div>
+
+                            {{-- Status de validación del PDF --}}
+                            <div id="pdfValidationStatus" class="hidden mb-4">
+                                {{-- Se llena dinámicamente por JS --}}
+                            </div>
+
+                            {{-- RFC Consulta (opcional) --}}
+                            <div class="form-group">
+                                <label class="form-label">
+                                    RFC DE CONSULTA (OPCIONAL)
+                                </label>
+                                <input type="text" class="form-input" id="rfcConsultaDigit" placeholder="Solo si es Agente Aduanal" maxlength="13">
+                                <p class="text-xs text-slate-400 mt-1">Déjelo vacío si el trámite es propio. Solo para agentes aduanales.</p>
+                            </div>
+
+                            {{-- Sección de firma manual (solo si NO tiene credenciales almacenadas) --}}
+                            <div id="digitFirmaManualSection" class="{{ $applicant->hasVucemCredentials() && $applicant->hasWebserviceKey() ? 'hidden' : '' }}">
+                                <div class="p-5 bg-slate-50 rounded-xl border border-slate-200 border-dashed mb-4">
+                                    <h4 class="text-sm font-bold text-slate-700 mb-4 flex items-center">
+                                        <i data-lucide="key" class="w-4 h-4 mr-2 text-amber-600"></i>
+                                        Firma Electrónica para Digitalización
+                                    </h4>
+                                    <p class="text-xs text-slate-500 mb-4">Para digitalizar y enviar el documento a VUCEM, se requiere firmar con su e.firma (FIEL).</p>
+
+                                    @if(!$applicant->hasWebserviceKey())
+                                    <div class="form-group">
+                                        <label class="form-label text-xs">Contraseña Web Service VUCEM</label>
+                                        <input type="password" class="form-input" id="digitClaveWS" placeholder="Contraseña del portal VUCEM">
+                                    </div>
+                                    @endif
+
+                                    @if(!$applicant->hasVucemCredentials())
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div class="form-group">
+                                            <label class="form-label text-xs">Certificado (.cer)</label>
+                                            <input type="file" class="form-input text-sm" id="digitCertFile" accept=".cer,.crt,.pem">
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label text-xs">Llave Privada (.key)</label>
+                                            <input type="file" class="form-input text-sm" id="digitKeyFile" accept=".key,.pem">
+                                        </div>
+                                        <div class="form-group md:col-span-2">
+                                            <label class="form-label text-xs">Contraseña de la Llave Privada</label>
+                                            <input type="password" class="form-input" id="digitKeyPassword" placeholder="••••••••">
+                                        </div>
+                                    </div>
+                                    @endif
                                 </div>
                             </div>
 
-                            <datalist id="edocumentSuggestions">
-                                @foreach($edocumentSuggestions ?? [] as $folioSuggestion)
-                                    <option value="{{ $folioSuggestion }}"></option>
-                                @endforeach
-                            </datalist>
+                            {{-- Badge de credenciales detectadas --}}
+                            @if($applicant->hasVucemCredentials() && $applicant->hasWebserviceKey())
+                            <div class="rounded-xl border border-green-200 bg-green-50 p-4 mb-4">
+                                <div class="flex items-center gap-3">
+                                    <div class="flex-shrink-0 w-8 h-8 rounded-full bg-green-100 flex items-center justify-center">
+                                        <i data-lucide="shield-check" class="w-4 h-4 text-green-600"></i>
+                                    </div>
+                                    <div>
+                                        <p class="text-sm font-bold text-green-800">Firma electrónica configurada</p>
+                                        <p class="text-xs text-green-600">Los sellos y clave WS se usarán automáticamente para firmar y digitalizar.</p>
+                                    </div>
+                                </div>
+                            </div>
+                            @elseif($applicant->hasVucemCredentials() || $applicant->hasWebserviceKey())
+                            <div class="rounded-xl border border-amber-200 bg-amber-50 p-4 mb-4">
+                                <div class="flex items-center gap-3">
+                                    <div class="flex-shrink-0 w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center">
+                                        <i data-lucide="alert-triangle" class="w-4 h-4 text-amber-600"></i>
+                                    </div>
+                                    <div>
+                                        <p class="text-sm font-bold text-amber-800">Credenciales parciales</p>
+                                        <p class="text-xs text-amber-600">Complete los campos manuales faltantes arriba para poder digitalizar.</p>
+                                    </div>
+                                </div>
+                            </div>
+                            @endif
 
+                            {{-- Botón Digitalizar --}}
                             <div class="form-actions-inline">
-                                <button type="button" id="btnAddEdocument" class="btn-add" onclick="addEdocument()">
-                                    Agregar folio
+                                <button type="button" id="btnDigitalizar" onclick="digitalizarDocumento()" class="btn-add flex items-center gap-2">
+                                    <i data-lucide="upload-cloud" class="w-4 h-4"></i>
+                                    Digitalizar y Enviar a VUCEM
                                 </button>
                             </div>
 
-                            {{-- Tabla de documentos eDocument --}}
+                            <hr class="my-6 border-slate-200">
+
+                            {{-- Tabla de documentos digitalizados --}}
+                            <h4 class="text-sm font-bold text-slate-700 mb-3 flex items-center">
+                                <i data-lucide="list" class="w-4 h-4 mr-2 text-slate-500"></i>
+                                Documentos Asociados
+                            </h4>
                             <div class="table-container">
                                 <table class="mve-table">
                                     <thead>
                                         <tr>
                                             <th>TIPO DE DOCUMENTO</th>
                                             <th>FOLIO eDocument</th>
-                                            <th>Fecha</th>
-                                            <th>Acciones</th>
+                                            <th>NOMBRE</th>
+                                            <th>FECHA</th>
+                                            <th>ACCIONES</th>
                                         </tr>
                                     </thead>
                                     <tbody id="edocumentsTableBody">
                                         <tr>
-                                            <td colspan="4" class="table-empty">
+                                            <td colspan="5" class="table-empty">
                                                 <i data-lucide="inbox" class="w-8 h-8 text-slate-300"></i>
-                                                <p class="text-sm text-slate-400 mt-2">NO HAY FOLIOS eDocument ASOCIADOS</p>
+                                                <p class="text-sm text-slate-400 mt-2">NO HAY DOCUMENTOS ASOCIADOS</p>
                                             </td>
                                         </tr>
                                     </tbody>
                                 </table>
                             </div>
+
+                            {{-- Agregar folio manualmente (fallback) --}}
+                            <details class="mt-4">
+                                <summary class="text-xs text-slate-400 cursor-pointer hover:text-slate-600">
+                                    ¿Ya tiene un folio eDocument? Agregar manualmente
+                                </summary>
+                                <div class="mt-3 p-4 bg-slate-50 rounded-lg border border-slate-200">
+                                    <div class="form-row gap-4">
+                                        <div class="form-group flex-1">
+                                            <label class="form-label text-xs">Tipo de Documento</label>
+                                            <input type="text" class="form-input" id="documentType" placeholder="Ej. Factura">
+                                        </div>
+                                        <div class="form-group flex-1">
+                                            <label class="form-label text-xs">Folio eDocument</label>
+                                            <input type="text" class="form-input" id="edocumentFolio" list="edocumentSuggestions" placeholder="Folio">
+                                        </div>
+                                    </div>
+                                    <datalist id="edocumentSuggestions">
+                                        @foreach($edocumentSuggestions ?? [] as $folioSuggestion)
+                                            <option value="{{ $folioSuggestion }}"></option>
+                                        @endforeach
+                                    </datalist>
+                                    <button type="button" id="btnAddEdocument" class="btn-add mt-2" onclick="addEdocument()">
+                                        Agregar folio manual
+                                    </button>
+                                </div>
+                            </details>
 
                             {{-- Botón Guardar Sección --}}
                             <div class="form-actions-save">

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\MvClientApplicant;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class ApplicantController extends Controller
 {
@@ -33,22 +34,47 @@ class ApplicantController extends Controller
         $validated = $request->validate([
             'applicant_rfc' => ['required', 'string', 'max:13', 'unique:mv_client_applicants,applicant_rfc'],
             'business_name' => ['required', 'string', 'max:255'],
-            'main_economic_activity' => ['required', 'string'],
-            'country' => ['required', 'string', 'max:100'],
-            'postal_code' => ['required', 'string', 'max:10'],
-            'state' => ['required', 'string', 'max:100'],
-            'municipality' => ['required', 'string', 'max:100'],
-            'locality' => ['nullable', 'string', 'max:100'],
-            'neighborhood' => ['required', 'string', 'max:100'],
-            'street' => ['required', 'string', 'max:255'],
-            'exterior_number' => ['required', 'string', 'max:20'],
-            'interior_number' => ['nullable', 'string', 'max:20'],
-            'area_code' => ['required', 'string', 'max:5'],
-            'phone' => ['required', 'string', 'max:20'],
+            'vucem_key_file' => ['nullable', 'file', 'max:10240'],
+            'vucem_cert_file' => ['nullable', 'file', 'max:10240'],
+            'vucem_password' => ['nullable', 'string', 'max:255'],
+            'vucem_webservice_key' => ['nullable', 'string', 'max:500'],
+            'privacy_consent' => ['nullable', 'accepted'],
         ]);
 
-        $validated['user_email'] = auth()->user()->email;
-        MvClientApplicant::create($validated);
+        $data = [
+            'user_email' => auth()->user()->email,
+            'applicant_rfc' => $validated['applicant_rfc'],
+            'business_name' => $validated['business_name'],
+        ];
+
+        // Procesar archivos VUCEM si se proporcionaron
+        if ($request->hasFile('vucem_key_file')) {
+            $data['vucem_key_file'] = base64_encode(
+                file_get_contents($request->file('vucem_key_file')->getRealPath())
+            );
+        }
+
+        if ($request->hasFile('vucem_cert_file')) {
+            $data['vucem_cert_file'] = base64_encode(
+                file_get_contents($request->file('vucem_cert_file')->getRealPath())
+            );
+        }
+
+        if (!empty($validated['vucem_password'])) {
+            $data['vucem_password'] = $validated['vucem_password'];
+        }
+
+        if (!empty($validated['vucem_webservice_key'])) {
+            $data['vucem_webservice_key'] = $validated['vucem_webservice_key'];
+        }
+
+        // Consentimiento de privacidad
+        if ($request->has('privacy_consent')) {
+            $data['privacy_consent'] = true;
+            $data['privacy_consent_at'] = now();
+        }
+
+        MvClientApplicant::create($data);
 
         return redirect()->route('applicants.index')
             ->with('success', 'Solicitante registrado exitosamente.');
@@ -79,21 +105,59 @@ class ApplicantController extends Controller
         $validated = $request->validate([
             'applicant_rfc' => ['required', 'string', 'max:13', 'unique:mv_client_applicants,applicant_rfc,' . $applicant->id],
             'business_name' => ['required', 'string', 'max:255'],
-            'main_economic_activity' => ['required', 'string'],
-            'country' => ['required', 'string', 'max:100'],
-            'postal_code' => ['required', 'string', 'max:10'],
-            'state' => ['required', 'string', 'max:100'],
-            'municipality' => ['required', 'string', 'max:100'],
-            'locality' => ['nullable', 'string', 'max:100'],
-            'neighborhood' => ['required', 'string', 'max:100'],
-            'street' => ['required', 'string', 'max:255'],
-            'exterior_number' => ['required', 'string', 'max:20'],
-            'interior_number' => ['nullable', 'string', 'max:20'],
-            'area_code' => ['required', 'string', 'max:5'],
-            'phone' => ['required', 'string', 'max:20'],
+            'vucem_key_file' => ['nullable', 'file', 'max:10240'],
+            'vucem_cert_file' => ['nullable', 'file', 'max:10240'],
+            'vucem_password' => ['nullable', 'string', 'max:255'],
+            'vucem_webservice_key' => ['nullable', 'string', 'max:500'],
+            'privacy_consent' => ['nullable', 'accepted'],
         ]);
 
-        $applicant->update($validated);
+        $data = [
+            'applicant_rfc' => $validated['applicant_rfc'],
+            'business_name' => $validated['business_name'],
+        ];
+
+        // Procesar archivos VUCEM si se proporcionaron (reemplazan los existentes)
+        if ($request->hasFile('vucem_key_file')) {
+            $data['vucem_key_file'] = base64_encode(
+                file_get_contents($request->file('vucem_key_file')->getRealPath())
+            );
+        }
+
+        if ($request->hasFile('vucem_cert_file')) {
+            $data['vucem_cert_file'] = base64_encode(
+                file_get_contents($request->file('vucem_cert_file')->getRealPath())
+            );
+        }
+
+        // Si se envía contraseña vacía y se pide eliminar, limpiar
+        if ($request->has('clear_vucem_password') && $request->input('clear_vucem_password')) {
+            $data['vucem_password'] = null;
+        } elseif (!empty($validated['vucem_password'])) {
+            $data['vucem_password'] = $validated['vucem_password'];
+        }
+
+        if ($request->has('clear_vucem_webservice') && $request->input('clear_vucem_webservice')) {
+            $data['vucem_webservice_key'] = null;
+        } elseif (!empty($validated['vucem_webservice_key'])) {
+            $data['vucem_webservice_key'] = $validated['vucem_webservice_key'];
+        }
+
+        // Si solicita eliminar archivos
+        if ($request->has('clear_vucem_key') && $request->input('clear_vucem_key')) {
+            $data['vucem_key_file'] = null;
+        }
+        if ($request->has('clear_vucem_cert') && $request->input('clear_vucem_cert')) {
+            $data['vucem_cert_file'] = null;
+        }
+
+        // Consentimiento de privacidad
+        if ($request->has('privacy_consent') && !$applicant->privacy_consent) {
+            $data['privacy_consent'] = true;
+            $data['privacy_consent_at'] = now();
+        }
+
+        $applicant->update($data);
 
         return redirect()->route('applicants.index')
             ->with('success', 'Solicitante actualizado exitosamente.');

@@ -559,6 +559,9 @@ const EDOCUMENT_STATUS = {
     INVALID: 'INVALID'
 };
 
+// Variable para almacenar el PDF validado pendiente de digitalización
+let pdfValidado = null;
+
 function normalizeEdocumentFolio(folio) {
     if (!folio) {
         return '';
@@ -677,6 +680,7 @@ window.addEdocument = function() {
 
     addEdocumentToTable({
         tipo_documento: documentType,
+        nombre_documento: '',
         folio_edocument: folio,
         estado_vucem: EDOCUMENT_STATUS.VALID,
         created_at: new Date().toISOString()
@@ -702,16 +706,22 @@ function addEdocumentToTable(documentData) {
         ? new Date(documentData.created_at).toLocaleString('es-MX')
         : new Date().toLocaleString('es-MX');
 
+    // Obtener nombre legible del tipo de documento
+    const tiposDocMap = JSON.parse(document.getElementById('mveManualData')?.getAttribute('data-tipos-documento') || '{}');
+    const tipoNombre = tiposDocMap[documentData.tipo_documento] || documentData.tipo_documento || '';
+
     const row = document.createElement('tr');
     row.className = 'table-row';
     row.dataset.edocumentRow = 'true';
     row.dataset.edocumentFolio = documentData.folio_edocument || '';
     row.dataset.edocumentType = documentData.tipo_documento || '';
+    row.dataset.edocumentName = documentData.nombre_documento || '';
     row.dataset.edocumentCreatedAt = documentData.created_at || '';
 
     row.innerHTML = `
-        <td class="table-cell">${documentData.tipo_documento || ''}</td>
-        <td class="table-cell">${documentData.folio_edocument || ''}</td>
+        <td class="table-cell">${tipoNombre}</td>
+        <td class="table-cell font-mono text-xs">${documentData.folio_edocument || ''}</td>
+        <td class="table-cell">${documentData.nombre_documento || ''}</td>
         <td class="table-cell">${createdAt}</td>
         <td class="table-cell text-center">
             <div class="flex items-center justify-center gap-2">
@@ -778,11 +788,217 @@ window.removeEdocumentRow = function(button) {
             <tr>
                 <td colspan="5" class="table-empty">
                     <i data-lucide="inbox" class="w-8 h-8 text-slate-300"></i>
-                    <p class="text-sm text-slate-400 mt-2">NO HAY FOLIOS eDocument ASOCIADOS</p>
+                    <p class="text-sm text-slate-400 mt-2">NO HAY DOCUMENTOS ASOCIADOS</p>
                 </td>
             </tr>
         `;
         setTimeout(() => lucide.createIcons(), 50);
+    }
+};
+
+// ============================================
+// VALIDACIÓN Y DIGITALIZACIÓN DE PDF
+// ============================================
+
+// Listener para validar PDF al seleccionar archivo
+document.addEventListener('DOMContentLoaded', function() {
+    const pdfInput = document.getElementById('pdfFileInput');
+    if (pdfInput) {
+        pdfInput.addEventListener('change', async function(e) {
+            const file = e.target.files[0];
+            const statusDiv = document.getElementById('pdfValidationStatus');
+            pdfValidado = null; // Reset
+
+            if (!file) {
+                statusDiv.classList.add('hidden');
+                return;
+            }
+
+            // Validar que es PDF
+            if (!file.name.toLowerCase().endsWith('.pdf')) {
+                statusDiv.innerHTML = `<div class="rounded-lg border border-red-200 bg-red-50 p-3 flex items-center gap-2">
+                    <i data-lucide="x-circle" class="w-4 h-4 text-red-500"></i>
+                    <span class="text-sm text-red-700">Solo se aceptan archivos PDF.</span>
+                </div>`;
+                statusDiv.classList.remove('hidden');
+                lucide.createIcons();
+                return;
+            }
+
+            // Validar tamaño (20MB max)
+            if (file.size > 20 * 1024 * 1024) {
+                statusDiv.innerHTML = `<div class="rounded-lg border border-red-200 bg-red-50 p-3 flex items-center gap-2">
+                    <i data-lucide="x-circle" class="w-4 h-4 text-red-500"></i>
+                    <span class="text-sm text-red-700">El archivo excede 20MB. Máximo permitido: 20MB.</span>
+                </div>`;
+                statusDiv.classList.remove('hidden');
+                lucide.createIcons();
+                return;
+            }
+
+            // Mostrar estado de carga
+            statusDiv.innerHTML = `<div class="rounded-lg border border-blue-200 bg-blue-50 p-3 flex items-center gap-2">
+                <span class="inline-block w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></span>
+                <span class="text-sm text-blue-700">Validando formato VUCEM...</span>
+            </div>`;
+            statusDiv.classList.remove('hidden');
+
+            // Enviar a validar
+            try {
+                const formData = new FormData();
+                formData.append('archivo', file);
+                
+                const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                const response = await fetch('/mve/validar-pdf', {
+                    method: 'POST',
+                    headers: { 'X-CSRF-TOKEN': csrfToken },
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    pdfValidado = {
+                        file_content: result.file_content,
+                        original_name: result.original_name,
+                        was_converted: result.was_converted,
+                        final_size: result.final_size
+                    };
+
+                    const sizeKB = (result.final_size / 1024).toFixed(1);
+                    const convertMsg = result.was_converted 
+                        ? `<span class="text-amber-600 text-xs ml-2">(Convertido a formato VUCEM)</span>` 
+                        : `<span class="text-green-600 text-xs ml-2">(Formato VUCEM nativo)</span>`;
+
+                    statusDiv.innerHTML = `<div class="rounded-lg border border-green-200 bg-green-50 p-3 flex items-center gap-2">
+                        <i data-lucide="check-circle" class="w-4 h-4 text-green-500"></i>
+                        <span class="text-sm text-green-700">PDF válido para VUCEM (${sizeKB} KB) ${convertMsg}</span>
+                    </div>`;
+                } else {
+                    statusDiv.innerHTML = `<div class="rounded-lg border border-red-200 bg-red-50 p-3 flex items-center gap-2">
+                        <i data-lucide="x-circle" class="w-4 h-4 text-red-500"></i>
+                        <span class="text-sm text-red-700">${result.message || 'Error al procesar PDF'}</span>
+                    </div>`;
+                }
+            } catch (err) {
+                statusDiv.innerHTML = `<div class="rounded-lg border border-red-200 bg-red-50 p-3 flex items-center gap-2">
+                    <i data-lucide="x-circle" class="w-4 h-4 text-red-500"></i>
+                    <span class="text-sm text-red-700">Error de conexión al validar PDF.</span>
+                </div>`;
+            }
+            lucide.createIcons();
+        });
+    }
+});
+
+/**
+ * Digitaliza el documento: firma y envía a VUCEM via AJAX.
+ * Recibe el folio eDocument y lo agrega a la tabla.
+ */
+window.digitalizarDocumento = async function() {
+    const nombreDoc = document.getElementById('documentName')?.value?.trim();
+    const tipoDocSelect = document.getElementById('documentTypeSelect');
+    const tipoDocId = tipoDocSelect?.value;
+    const rfcConsulta = document.getElementById('rfcConsultaDigit')?.value?.trim() || '';
+
+    // Validaciones
+    if (!nombreDoc) {
+        showNotification('Ingrese el nombre del documento.', 'warning');
+        return;
+    }
+    if (!tipoDocId) {
+        showNotification('Seleccione el tipo de documento.', 'warning');
+        return;
+    }
+    if (!pdfValidado || !pdfValidado.file_content) {
+        showNotification('Cargue y espere a que se valide el archivo PDF.', 'warning');
+        return;
+    }
+
+    const applicantId = document.querySelector('[data-applicant-id]').getAttribute('data-applicant-id');
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    const dataEl = document.getElementById('mveManualData');
+    const hasStoredCreds = dataEl?.getAttribute('data-has-vucem-credentials') === 'true';
+    const hasStoredWs = dataEl?.getAttribute('data-has-webservice-key') === 'true';
+
+    // Construir FormData
+    const formData = new FormData();
+    formData.append('tipo_documento', tipoDocId);
+    formData.append('nombre_documento', nombreDoc);
+    formData.append('file_content', pdfValidado.file_content);
+    formData.append('rfc_consulta', rfcConsulta);
+
+    // Credenciales manuales (solo si no están almacenadas)
+    if (!hasStoredWs) {
+        const claveWS = document.getElementById('digitClaveWS')?.value;
+        if (!claveWS) {
+            showNotification('Ingrese la Contraseña del Web Service VUCEM.', 'warning');
+            return;
+        }
+        formData.append('clave_webservice', claveWS);
+    }
+
+    if (!hasStoredCreds) {
+        const certFile = document.getElementById('digitCertFile')?.files[0];
+        const keyFile = document.getElementById('digitKeyFile')?.files[0];
+        const keyPass = document.getElementById('digitKeyPassword')?.value;
+
+        if (!certFile || !keyFile || !keyPass) {
+            showNotification('Ingrese los archivos de firma electrónica (.cer, .key) y la contraseña.', 'warning');
+            return;
+        }
+        formData.append('certificado', certFile);
+        formData.append('llave_privada', keyFile);
+        formData.append('contrasena_llave', keyPass);
+    }
+
+    // Deshabilitar botón y mostrar loading
+    const btnDigit = document.getElementById('btnDigitalizar');
+    const originalHTML = btnDigit.innerHTML;
+    btnDigit.disabled = true;
+    btnDigit.innerHTML = '<span class="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span> Enviando a VUCEM...';
+
+    try {
+        const response = await fetch(`/mve/digitalizar-documento/${applicantId}`, {
+            method: 'POST',
+            headers: { 'X-CSRF-TOKEN': csrfToken },
+            body: formData
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            // Agregar a la tabla
+            const tipoNombre = tipoDocSelect.options[tipoDocSelect.selectedIndex]?.text || tipoDocId;
+            addEdocumentToTable({
+                tipo_documento: tipoDocId,
+                nombre_documento: nombreDoc,
+                folio_edocument: result.eDocument,
+                created_at: new Date().toISOString()
+            });
+
+            showNotification(`¡Éxito! Folio eDocument: ${result.eDocument}`, 'success');
+
+            // Limpiar campos
+            document.getElementById('documentName').value = '';
+            document.getElementById('documentTypeSelect').value = '';
+            document.getElementById('pdfFileInput').value = '';
+            document.getElementById('rfcConsultaDigit').value = '';
+            document.getElementById('pdfValidationStatus').classList.add('hidden');
+            pdfValidado = null;
+
+            // Auto-guardar documentos
+            await saveDocumentos();
+        } else {
+            showNotification(result.message || 'Error al digitalizar documento.', 'error');
+        }
+    } catch (error) {
+        console.error('[DIGITALIZAR] Error:', error);
+        showNotification('Error de conexión al enviar a VUCEM.', 'error');
+    } finally {
+        btnDigit.disabled = false;
+        btnDigit.innerHTML = originalHTML;
+        lucide.createIcons();
     }
 };
 
@@ -2815,6 +3031,7 @@ window.saveDocumentos = async function() {
     docRows.forEach(row => {
         documentos.push({
             tipo_documento: row.dataset.edocumentType || '',
+            nombre_documento: row.dataset.edocumentName || '',
             folio_edocument: row.dataset.edocumentFolio || '',
             created_at: row.dataset.edocumentCreatedAt || ''
         });

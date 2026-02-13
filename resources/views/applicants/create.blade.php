@@ -60,7 +60,7 @@
                 </a>
                 
                 <h2 class="text-4xl font-black text-[#001a4d] tracking-tight">Registrar <span class="text-[#003399]">Solicitante</span></h2>
-                <p class="text-slate-500 mt-2">Complete los datos fiscales del solicitante para MV en VUCEM</p>
+                <p class="text-slate-500 mt-2">Complete los datos del solicitante para operaciones en VUCEM</p>
             </div>
 
             @if ($errors->any())
@@ -78,10 +78,12 @@
             @endif
 
             <div class="form-card">
-                <form method="POST" action="{{ route('applicants.store') }}">
+                <form method="POST" action="{{ route('applicants.store') }}" enctype="multipart/form-data">
                     @csrf
 
-                    {{-- Datos del Solicitante --}}
+                    {{-- ═══════════════════════════════════════════════════════ --}}
+                    {{-- SECCIÓN 1: Datos del Solicitante (obligatorios)        --}}
+                    {{-- ═══════════════════════════════════════════════════════ --}}
                     <div class="form-section">
                         <h3 class="form-section-title">
                             <i data-lucide="user-check" class="w-5 h-5"></i>
@@ -98,117 +100,164 @@
 
                         <div class="form-row">
                             <div class="form-group">
-                                <label for="applicant_rfc" class="form-label">RFC del Solicitante</label>
+                                <label for="applicant_rfc" class="form-label">RFC del Solicitante <span class="text-red-500">*</span></label>
                                 <input type="text" id="applicant_rfc" name="applicant_rfc" value="{{ old('applicant_rfc') }}" 
                                        class="form-input" maxlength="13" placeholder="XAXX010101000" required>
                             </div>
 
                             <div class="form-group">
-                                <label for="business_name" class="form-label">Razón Social</label>
+                                <label for="business_name" class="form-label">Razón Social <span class="text-red-500">*</span></label>
                                 <input type="text" id="business_name" name="business_name" value="{{ old('business_name') }}" 
                                        class="form-input" placeholder="Nombre o Razón Social" required>
                             </div>
                         </div>
+                    </div>
+
+                    {{-- ═══════════════════════════════════════════════════════ --}}
+                    {{-- SECCIÓN 2: Sellos VUCEM (opcionales)                   --}}
+                    {{-- ═══════════════════════════════════════════════════════ --}}
+                    <div class="form-section">
+                        <h3 class="form-section-title">
+                            <i data-lucide="shield-check" class="w-5 h-5"></i>
+                            Sellos VUCEM
+                            <span class="text-xs font-normal text-slate-400 ml-2">(Opcional)</span>
+                        </h3>
+
+                        <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
+                            <div class="flex gap-3">
+                                <i data-lucide="info" class="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5"></i>
+                                <div class="text-sm text-blue-800">
+                                    <p class="font-semibold mb-1">Información sobre Sellos VUCEM</p>
+                                    <p>Si proporciona los sellos VUCEM (.key, .cer), la contraseña y/o la clave de Web Service, estos se guardarán 
+                                    <strong>encriptados</strong> en la base de datos y se cargarán automáticamente cuando realice operaciones de 
+                                    <strong>Manifestación de Valor</strong>, <strong>Digitalización de Documentos</strong> y <strong>Consulta de COVE</strong>.</p>
+                                    <p class="mt-2">Si no los proporciona aquí, deberá ingresarlos manualmente cada vez que realice una operación.</p>
+                                </div>
+                            </div>
+                        </div>
 
                         <div class="form-row">
-                            <div class="form-group full-width">
-                                <label for="main_economic_activity" class="form-label">Actividad Económica Preponderante</label>
-                                <textarea id="main_economic_activity" name="main_economic_activity" class="form-input" 
-                                          rows="3" placeholder="Descripción de la actividad económica principal" required>{{ old('main_economic_activity') }}</textarea>
+                            <div class="form-group">
+                                <label for="vucem_key_file" class="form-label">
+                                    <i data-lucide="key" class="w-4 h-4 inline-block mr-1"></i>
+                                    Archivo .key (Sello VUCEM)
+                                </label>
+                                <input type="file" id="vucem_key_file" name="vucem_key_file" 
+                                       class="form-input file-input" accept=".key">
+                                <p class="text-xs text-slate-500 mt-1">Archivo de llave privada del sello VUCEM</p>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="vucem_cert_file" class="form-label">
+                                    <i data-lucide="file-badge" class="w-4 h-4 inline-block mr-1"></i>
+                                    Archivo .cer (Certificado VUCEM)
+                                </label>
+                                <input type="file" id="vucem_cert_file" name="vucem_cert_file" 
+                                       class="form-input file-input" accept=".cer,.cert,.crt">
+                                <p class="text-xs text-slate-500 mt-1">Archivo de certificado del sello VUCEM</p>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="vucem_password" class="form-label">
+                                    <i data-lucide="lock" class="w-4 h-4 inline-block mr-1"></i>
+                                    Contraseña del Sello
+                                </label>
+                                <div class="relative">
+                                    <input type="password" id="vucem_password" name="vucem_password" 
+                                           class="form-input pr-10" placeholder="Contraseña del sello VUCEM">
+                                    <button type="button" onclick="togglePassword('vucem_password')" 
+                                            class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                                        <i data-lucide="eye" class="w-4 h-4" id="vucem_password_icon"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="vucem_webservice_key" class="form-label">
+                                    <i data-lucide="globe" class="w-4 h-4 inline-block mr-1"></i>
+                                    Clave Web Service VUCEM
+                                </label>
+                                <div class="relative">
+                                    <input type="password" id="vucem_webservice_key" name="vucem_webservice_key" 
+                                           class="form-input pr-10" placeholder="Clave de Web Service">
+                                    <button type="button" onclick="togglePassword('vucem_webservice_key')" 
+                                            class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                                        <i data-lucide="eye" class="w-4 h-4" id="vucem_webservice_key_icon"></i>
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    {{-- Domicilio Fiscal --}}
+                    {{-- ═══════════════════════════════════════════════════════ --}}
+                    {{-- SECCIÓN 3: Aviso de Privacidad y Consentimiento       --}}
+                    {{-- ═══════════════════════════════════════════════════════ --}}
                     <div class="form-section">
                         <h3 class="form-section-title">
-                            <i data-lucide="map-pin" class="w-5 h-5"></i>
-                            Domicilio Fiscal
+                            <i data-lucide="file-text" class="w-5 h-5"></i>
+                            Aviso de Privacidad y Consentimiento
                         </h3>
 
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="country" class="form-label">País</label>
-                                <input type="text" id="country" name="country" value="{{ old('country', 'México') }}" 
-                                       class="form-input" placeholder="México" required>
-                            </div>
+                        <div class="bg-slate-50 border border-slate-200 rounded-xl p-5 mb-4 max-h-64 overflow-y-auto">
+                            <h4 class="font-bold text-[#001a4d] text-sm mb-3">AVISO DE PRIVACIDAD Y AUTORIZACIÓN PARA EL TRATAMIENTO DE DATOS SENSIBLES</h4>
+                            
+                            <p class="text-xs text-slate-700 mb-3">
+                                De conformidad con lo establecido en la Ley Federal de Protección de Datos Personales en Posesión de los Particulares 
+                                y su Reglamento, se informa al usuario que el presente sistema recopila y almacena la siguiente información sensible:
+                            </p>
+                            
+                            <ul class="text-xs text-slate-700 mb-3 list-disc list-inside space-y-1">
+                                <li><strong>Sellos digitales VUCEM</strong> (archivos .key y .cer)</li>
+                                <li><strong>Contraseña</strong> asociada a los sellos digitales</li>
+                                <li><strong>Clave de Web Service</strong> para conexión con VUCEM</li>
+                            </ul>
 
-                            <div class="form-group">
-                                <label for="postal_code" class="form-label">Código Postal</label>
-                                <input type="text" id="postal_code" name="postal_code" value="{{ old('postal_code') }}" 
-                                       class="form-input" maxlength="10" placeholder="12345" required>
-                            </div>
+                            <p class="text-xs text-slate-700 mb-3">
+                                <strong>Finalidad del tratamiento:</strong> Esta información se almacena con el único propósito de facilitar al usuario 
+                                la ejecución de las siguientes operaciones ante la Ventanilla Única de Comercio Exterior Mexicano (VUCEM):
+                            </p>
+
+                            <ul class="text-xs text-slate-700 mb-3 list-disc list-inside space-y-1">
+                                <li><strong>Manifestación de Valor</strong> — Firma y envío electrónico de manifestaciones de valor en aduana.</li>
+                                <li><strong>Digitalización de Documentos</strong> — Registro y firma de documentos electrónicos (eDocuments) ante VUCEM.</li>
+                                <li><strong>Consulta de COVE</strong> — Consulta de Comprobantes de Valor Electrónico registrados en VUCEM.</li>
+                            </ul>
+
+                            <p class="text-xs text-slate-700 mb-3">
+                                <strong>Medidas de seguridad:</strong> Toda la información sensible se almacena bajo <strong>encriptación AES-256-CBC</strong> 
+                                en la base de datos del sistema. Los datos no son visibles en formato legible y solo se desencriptan temporalmente 
+                                al momento de ejecutar las operaciones mencionadas. En ningún caso se comparte esta información con terceros.
+                            </p>
+
+                            <p class="text-xs text-slate-700 mb-3">
+                                <strong>Derechos ARCO:</strong> El usuario tiene derecho a Acceder, Rectificar, Cancelar u Oponerse al tratamiento 
+                                de sus datos personales en cualquier momento. Puede eliminar sus sellos VUCEM desde la sección de edición del solicitante 
+                                o solicitando la eliminación de su cuenta.
+                            </p>
+
+                            <p class="text-xs text-slate-700 font-semibold">
+                                Al marcar la casilla de consentimiento a continuación, el usuario declara que ha leído y comprende este aviso de privacidad, 
+                                y autoriza expresamente al sistema para almacenar de forma encriptada los sellos VUCEM, contraseña y clave de Web Service 
+                                para las operaciones indicadas.
+                            </p>
                         </div>
 
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="state" class="form-label">Estado</label>
-                                <input type="text" id="state" name="state" value="{{ old('state') }}" 
-                                       class="form-input" placeholder="Estado" required>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="municipality" class="form-label">Municipio</label>
-                                <input type="text" id="municipality" name="municipality" value="{{ old('municipality') }}" 
-                                       class="form-input" placeholder="Municipio" required>
-                            </div>
-                        </div>
-
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="locality" class="form-label">Localidad (Opcional)</label>
-                                <input type="text" id="locality" name="locality" value="{{ old('locality') }}" 
-                                       class="form-input" placeholder="Localidad">
-                            </div>
-
-                            <div class="form-group">
-                                <label for="neighborhood" class="form-label">Colonia</label>
-                                <input type="text" id="neighborhood" name="neighborhood" value="{{ old('neighborhood') }}" 
-                                       class="form-input" placeholder="Colonia" required>
-                            </div>
-                        </div>
-
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="street" class="form-label">Calle</label>
-                                <input type="text" id="street" name="street" value="{{ old('street') }}" 
-                                       class="form-input" placeholder="Nombre de la calle" required>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="exterior_number" class="form-label">No. Exterior</label>
-                                <input type="text" id="exterior_number" name="exterior_number" value="{{ old('exterior_number') }}" 
-                                       class="form-input" placeholder="123" required>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="interior_number" class="form-label">No. Interior (Opcional)</label>
-                                <input type="text" id="interior_number" name="interior_number" value="{{ old('interior_number') }}" 
-                                       class="form-input" placeholder="A">
-                            </div>
-                        </div>
-                    </div>
-
-                    {{-- Datos de Contacto --}}
-                    <div class="form-section">
-                        <h3 class="form-section-title">
-                            <i data-lucide="phone" class="w-5 h-5"></i>
-                            Datos de Contacto
-                        </h3>
-
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="area_code" class="form-label">Lada</label>
-                                <input type="text" id="area_code" name="area_code" value="{{ old('area_code') }}" 
-                                       class="form-input" maxlength="5" placeholder="55" required>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="phone" class="form-label">Teléfono</label>
-                                <input type="text" id="phone" name="phone" value="{{ old('phone') }}" 
-                                       class="form-input" maxlength="20" placeholder="12345678" required>
-                            </div>
-                        </div>
+                        <label class="flex items-start gap-3 cursor-pointer p-3 rounded-lg hover:bg-slate-50 transition-colors">
+                            <input type="checkbox" name="privacy_consent" value="1" id="privacy_consent"
+                                   class="mt-1 h-5 w-5 rounded border-slate-300 text-[#003399] focus:ring-[#003399]"
+                                   {{ old('privacy_consent') ? 'checked' : '' }}>
+                            <span class="text-sm text-slate-700">
+                                <strong>Acepto y autorizo</strong> el almacenamiento encriptado de mis sellos VUCEM, contraseña y clave de Web Service 
+                                para las operaciones de Manifestación de Valor, Digitalización de Documentos y Consulta de COVE. 
+                                He leído y comprendido el aviso de privacidad anterior.
+                            </span>
+                        </label>
+                        <p class="text-xs text-slate-400 mt-2 ml-8">
+                            <i data-lucide="info" class="w-3 h-3 inline-block mr-1"></i>
+                            Este consentimiento es necesario solo si proporciona sellos VUCEM. Los campos RFC y Razón Social no requieren consentimiento adicional.
+                        </p>
                     </div>
 
                     <div class="form-actions">
@@ -225,4 +274,34 @@
             </div>
         </main>
     </div>
+
+    <script>
+        function togglePassword(fieldId) {
+            const input = document.getElementById(fieldId);
+            const icon = document.getElementById(fieldId + '_icon');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.setAttribute('data-lucide', 'eye-off');
+            } else {
+                input.type = 'password';
+                icon.setAttribute('data-lucide', 'eye');
+            }
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        }
+
+        // Validar que si se suben archivos VUCEM, se necesita consentimiento
+        document.querySelector('form').addEventListener('submit', function(e) {
+            const keyFile = document.getElementById('vucem_key_file').files.length > 0;
+            const certFile = document.getElementById('vucem_cert_file').files.length > 0;
+            const password = document.getElementById('vucem_password').value.trim() !== '';
+            const wsKey = document.getElementById('vucem_webservice_key').value.trim() !== '';
+            const consent = document.getElementById('privacy_consent').checked;
+
+            if ((keyFile || certFile || password || wsKey) && !consent) {
+                e.preventDefault();
+                alert('Para guardar los sellos VUCEM debe aceptar el aviso de privacidad y consentimiento.');
+                document.getElementById('privacy_consent').focus();
+            }
+        });
+    </script>
 </x-app-layout>

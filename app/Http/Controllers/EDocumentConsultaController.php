@@ -32,10 +32,40 @@ class EDocumentConsultaController extends Controller
     }
 
     /**
+     * API: Verifica si un solicitante tiene credenciales VUCEM almacenadas.
+     */
+    public function checkCredentials(int $applicant)
+    {
+        $user = Auth::user();
+        $solicitante = $user->clientApplicants()->find($applicant);
+
+        if (!$solicitante) {
+            return response()->json(['found' => false], 404);
+        }
+
+        return response()->json([
+            'found' => true,
+            'has_credentials' => $solicitante->hasVucemCredentials(),
+            'has_webservice_key' => $solicitante->hasWebserviceKey(),
+        ]);
+    }
+
+    /**
      * Ejecuta la consulta al Web Service de COVE.
+     * Si el solicitante tiene credenciales almacenadas, las usa automáticamente.
+     * Si no, requiere los archivos manuales del formulario.
      */
     public function consultar(ConsultarEDocumentRequest $request, ManifestacionValorService $mvService)
     {
+        Log::info('[COVE] ====== CONSULTAR METHOD REACHED ======', [
+            'solicitante_id' => $request->input('solicitante_id'),
+            'folio' => $request->input('folio_edocument'),
+            'has_cert_file' => $request->hasFile('certificado'),
+            'has_key_file' => $request->hasFile('llave_privada'),
+            'has_clave_ws' => $request->filled('clave_webservice'),
+            'has_contrasena' => $request->filled('contrasena_llave'),
+        ]);
+
         try {
             // 1. Validaciones básicas
             $user = Auth::user();
@@ -47,33 +77,62 @@ class EDocumentConsultaController extends Controller
                 return back()->withErrors(['solicitante_id' => 'Solicitante inválido o sin RFC configurado'])->withInput();
             }
 
-            // 2. Archivos eFirma y Claves
-            $certificado = $request->file('certificado');
-            $llavePrivada = $request->file('llave_privada');
-            $passwordLlave = $request->input('contrasena_llave');
-            
-            // CAPTURA DE LA NUEVA CLAVE WEB SERVICE DESDE EL FORMULARIO
-            $claveWebService = $request->input('clave_webservice');
+            // 2. Determinar origen de credenciales: almacenadas o manuales
+            $useStoredCredentials = $solicitante->hasVucemCredentials() && !$request->hasFile('certificado');
+            $useStoredWebserviceKey = $solicitante->hasWebserviceKey() && !$request->filled('clave_webservice');
 
-            if (!$certificado || !$llavePrivada || !$passwordLlave) {
-                return back()->withErrors(['certificado' => 'Se requieren los archivos de la e.firma para desencriptar el COVE.'])->withInput();
+            // Clave Web Service
+            $claveWebService = $useStoredWebserviceKey
+                ? $solicitante->vucem_webservice_key
+                : $request->input('clave_webservice');
+
+            if (empty($claveWebService)) {
+                return back()->withErrors(['clave_webservice' => 'Se requiere la clave del Web Service VUCEM.'])->withInput();
             }
 
-            // 3. Validación de Folio usando el servicio
-            $folio = $mvService->normalizeEdocumentFolio($request->input('folio_edocument'));
-            $validation = $mvService->validateEdocumentFolio($folio);
-            
-            if (!$validation['valid']) {
-                return back()->withErrors(['folio_edocument' => $validation['message']])->withInput();
-            }
-
-            // 4. Preparar archivos temporales
+            // 3. Archivos eFirma: almacenados o manuales
             $tempCertificadoPath = tempnam(sys_get_temp_dir(), 'cert_');
             $tempLlavePath = tempnam(sys_get_temp_dir(), 'key_');
-            
+            $passwordLlave = null;
+
             try {
-                file_put_contents($tempCertificadoPath, $certificado->get());
-                file_put_contents($tempLlavePath, $llavePrivada->get());
+                if ($useStoredCredentials) {
+                    // Usar credenciales almacenadas (desencriptadas automáticamente por Laravel)
+                    $certContent = base64_decode($solicitante->vucem_cert_file);
+                    $keyContent = base64_decode($solicitante->vucem_key_file);
+                    $passwordLlave = $solicitante->vucem_password;
+
+                    if (!$certContent || !$keyContent || !$passwordLlave) {
+                        return back()->withErrors(['certificado' => 'Las credenciales almacenadas están incompletas. Actualícelas en el módulo de Solicitantes.'])->withInput();
+                    }
+
+                    file_put_contents($tempCertificadoPath, $certContent);
+                    file_put_contents($tempLlavePath, $keyContent);
+                    
+                    Log::info('[COVE] Usando credenciales almacenadas', ['solicitante_id' => $solicitanteId]);
+                } else {
+                    // Usar archivos manuales del formulario
+                    $certificado = $request->file('certificado');
+                    $llavePrivada = $request->file('llave_privada');
+                    $passwordLlave = $request->input('contrasena_llave');
+
+                    if (!$certificado || !$llavePrivada || !$passwordLlave) {
+                        return back()->withErrors(['certificado' => 'Se requieren los archivos de la e.firma para desencriptar el COVE.'])->withInput();
+                    }
+
+                    file_put_contents($tempCertificadoPath, $certificado->get());
+                    file_put_contents($tempLlavePath, $llavePrivada->get());
+                    
+                    Log::info('[COVE] Usando credenciales manuales', ['solicitante_id' => $solicitanteId]);
+                }
+
+                // 4. Validación de Folio usando el servicio
+                $folio = $mvService->normalizeEdocumentFolio($request->input('folio_edocument'));
+                $validation = $mvService->validateEdocumentFolio($folio);
+                
+                if (!$validation['valid']) {
+                    return back()->withErrors(['folio_edocument' => $validation['message']])->withInput();
+                }
 
                 // 5. Llamar al Servicio VUCEM
                 $consultarService = app(ConsultarEdocumentService::class);
@@ -81,7 +140,7 @@ class EDocumentConsultaController extends Controller
                 $result = $consultarService->consultarEdocument(
                     $folio, 
                     $solicitante->applicant_rfc, 
-                    $claveWebService, // <--- AQUÍ SE PASA LA CLAVE MANUAL
+                    $claveWebService,
                     $tempCertificadoPath,
                     $tempLlavePath,
                     $passwordLlave
@@ -202,7 +261,7 @@ class EDocumentConsultaController extends Controller
         $request->validate([
             'solicitante_id' => 'required|exists:mv_client_applicants,id',
             'folio_cove' => 'required|string|min:10',
-            'clave_webservice' => 'required|string',
+            'clave_webservice' => 'nullable|string',
         ]);
 
         try {
@@ -214,7 +273,15 @@ class EDocumentConsultaController extends Controller
             }
 
             $folioCove = strtoupper(trim($request->folio_cove));
-            $claveWebService = $request->clave_webservice;
+            
+            // Usar clave almacenada si no se envió manual
+            $claveWebService = $request->filled('clave_webservice')
+                ? $request->clave_webservice
+                : ($solicitante->hasWebserviceKey() ? $solicitante->vucem_webservice_key : null);
+
+            if (empty($claveWebService)) {
+                return response()->json(['success' => false, 'message' => 'Se requiere la clave del Web Service'], 400);
+            }
 
             // Usar el servicio MveConsultaService para consultar el PDF acuse
             $consultaService = app(MveConsultaService::class);

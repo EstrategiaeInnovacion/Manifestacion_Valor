@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Models\MvClientApplicant;
 use Illuminate\Foundation\Http\FormRequest;
 
 class ConsultarEDocumentRequest extends FormRequest
@@ -13,13 +14,39 @@ class ConsultarEDocumentRequest extends FormRequest
 
     public function rules(): array
     {
+        \Illuminate\Support\Facades\Log::info('[COVE] FormRequest rules() called', [
+            'solicitante_id' => $this->input('solicitante_id'),
+            'all_inputs' => array_keys($this->all()),
+        ]);
+
+        // Verificar si el solicitante tiene credenciales almacenadas
+        $solicitante = null;
+        if ($this->filled('solicitante_id')) {
+            $solicitante = auth()->user()->clientApplicants()->find($this->input('solicitante_id'));
+        }
+
+        $hasStoredCredentials = $solicitante && $solicitante->hasVucemCredentials();
+        $hasStoredWebserviceKey = $solicitante && $solicitante->hasWebserviceKey();
+
         return [
             'folio_edocument' => ['required', 'string', 'max:30'],
             'solicitante_id' => ['required', 'exists:mv_client_applicants,id'],
-            'clave_webservice' => ['required', 'string'], // Nuevo campo obligatorio
-            'certificado' => ['required', 'file', 'max:4096', 'mimetypes:application/x-x509-ca-cert,application/x-x509-user-cert,application/pkix-cert,application/x-pem-file,application/octet-stream'],
-            'llave_privada' => ['required', 'file', 'max:4096'],
-            'contrasena_llave' => ['required', 'string', 'max:255'],
+            // Si tiene clave WS almacenada y no se envía manual, no es requerida
+            'clave_webservice' => [$hasStoredWebserviceKey ? 'nullable' : 'required', 'string'],
+            // Si tiene sellos almacenados, los archivos manuales son opcionales
+            'certificado' => [
+                $hasStoredCredentials ? 'nullable' : 'required',
+                'file', 'max:4096',
+                'mimetypes:application/x-x509-ca-cert,application/x-x509-user-cert,application/pkix-cert,application/x-pem-file,application/octet-stream',
+            ],
+            'llave_privada' => [
+                $hasStoredCredentials ? 'nullable' : 'required',
+                'file', 'max:4096',
+            ],
+            'contrasena_llave' => [
+                $hasStoredCredentials ? 'nullable' : 'required',
+                'string', 'max:255',
+            ],
         ];
     }
 

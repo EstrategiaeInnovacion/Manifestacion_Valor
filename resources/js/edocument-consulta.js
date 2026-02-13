@@ -84,6 +84,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const form = document.querySelector('form');
     if (form) {
         form.addEventListener('submit', function(e) {
+            console.log('[COVE DEBUG] Form submit event fired');
+            
             const folioInput = document.getElementById('folio_edocument');
             const certificadoInput = document.querySelector('input[name="certificado"]');
             const llaveInput = document.querySelector('input[name="llave_privada"]');
@@ -97,29 +99,47 @@ document.addEventListener('DOMContentLoaded', function() {
                 hasErrors = true;
             }
             
-            // Validate certificate file
-            if (!certificadoInput || certificadoInput.files.length === 0) {
-                showFieldError(certificadoInput, 'El archivo de certificado es requerido');
-                hasErrors = true;
+            // Validate certificate file (only if the eFirma section is visible)
+            const efirmaSection = document.getElementById('efirma-manual-section');
+            const efirmaVisible = efirmaSection && !efirmaSection.classList.contains('hidden');
+            console.log('[COVE DEBUG] efirma visible:', efirmaVisible);
+
+            if (efirmaVisible) {
+                if (!certificadoInput || certificadoInput.files.length === 0) {
+                    showFieldError(certificadoInput, 'El archivo de certificado es requerido');
+                    hasErrors = true;
+                }
+                
+                // Validate private key file
+                if (!llaveInput || llaveInput.files.length === 0) {
+                    showFieldError(llaveInput, 'El archivo de llave privada es requerido');
+                    hasErrors = true;
+                }
+                
+                // Validate password  
+                if (!passwordInput || !passwordInput.value.trim()) {
+                    showFieldError(passwordInput, 'La contraseña de la llave privada es requerida. Esta es la contraseña que configuró cuando obtuvo su eFirma del SAT.');
+                    hasErrors = true;
+                }
             }
+
+            // Validate webservice key (only if WS section is visible)
+            const wsSection = document.getElementById('ws-manual-section');
+            const wsVisible = wsSection && !wsSection.classList.contains('hidden');
+            const wsInput = document.getElementById('clave_webservice');
             
-            // Validate private key file
-            if (!llaveInput || llaveInput.files.length === 0) {
-                showFieldError(llaveInput, 'El archivo de llave privada es requerido');
-                hasErrors = true;
-            }
-            
-            // Validate password  
-            if (!passwordInput || !passwordInput.value.trim()) {
-                showFieldError(passwordInput, 'La contraseña de la llave privada es requerida. Esta es la contraseña que configuró cuando obtuvo su eFirma del SAT.');
+            if (wsVisible && (!wsInput || !wsInput.value.trim())) {
+                showFieldError(wsInput, 'La contraseña del Web Service VUCEM es requerida');
                 hasErrors = true;
             }
             
             if (hasErrors) {
+                console.log('[COVE DEBUG] Validation errors found, preventing submit');
                 e.preventDefault();
                 return false;
             }
             
+            console.log('[COVE DEBUG] No errors, form will submit. Action:', form.action);
             // Show loading state
             showLoadingState();
         });

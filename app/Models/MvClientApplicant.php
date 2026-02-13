@@ -16,40 +16,58 @@ class MvClientApplicant extends Model
         'user_email',
         'applicant_rfc',
         'business_name',
-        'main_economic_activity',
-        'country',
-        'postal_code',
-        'state',
-        'municipality',
-        'locality',
-        'neighborhood',
-        'street',
-        'exterior_number',
-        'interior_number',
-        'area_code',
-        'phone',
+        'vucem_key_file',
+        'vucem_cert_file',
+        'vucem_password',
+        'vucem_webservice_key',
+        'privacy_consent',
+        'privacy_consent_at',
     ];
 
     /**
      * Los atributos que deben ser encriptados.
      * Laravel automáticamente encripta al guardar y desencripta al leer.
+     * Los archivos .key y .cert se guardan como base64 encriptado.
+     * La contraseña y clave de webservice también se encriptan.
      */
     protected $casts = [
         'applicant_rfc' => 'encrypted',
         'business_name' => 'encrypted',
-        'main_economic_activity' => 'encrypted',
-        'country' => 'encrypted',
-        'postal_code' => 'encrypted',
-        'state' => 'encrypted',
-        'municipality' => 'encrypted',
-        'locality' => 'encrypted',
-        'neighborhood' => 'encrypted',
-        'street' => 'encrypted',
-        'exterior_number' => 'encrypted',
-        'interior_number' => 'encrypted',
-        'area_code' => 'encrypted',
-        'phone' => 'encrypted',
+        'vucem_key_file' => 'encrypted',
+        'vucem_cert_file' => 'encrypted',
+        'vucem_password' => 'encrypted',
+        'vucem_webservice_key' => 'encrypted',
+        'privacy_consent' => 'boolean',
+        'privacy_consent_at' => 'datetime',
     ];
+
+    /**
+     * Atributos ocultos en serialización (seguridad).
+     */
+    protected $hidden = [
+        'vucem_key_file',
+        'vucem_cert_file',
+        'vucem_password',
+        'vucem_webservice_key',
+    ];
+
+    /**
+     * Verifica si el solicitante tiene credenciales VUCEM configuradas.
+     */
+    public function hasVucemCredentials(): bool
+    {
+        return !empty($this->vucem_key_file) 
+            && !empty($this->vucem_cert_file) 
+            && !empty($this->vucem_password);
+    }
+
+    /**
+     * Verifica si tiene clave de webservice configurada.
+     */
+    public function hasWebserviceKey(): bool
+    {
+        return !empty($this->vucem_webservice_key);
+    }
 
     /**
      * Relación: El solicitante pertenece a un Usuario (Representante).

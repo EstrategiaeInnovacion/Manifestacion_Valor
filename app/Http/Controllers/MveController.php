@@ -14,6 +14,8 @@ use App\Constants\VucemCatalogs;
 use App\Services\ManifestacionValorService;
 use App\Services\MveSignService;
 use App\Services\EFirmaService;
+use App\Services\DigitalizarDocumentoService;
+use App\Services\DocumentUploadService;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -69,6 +71,9 @@ class MveController extends Controller
         $edocumentSuggestions = EdocumentRegistrado::orderByDesc('fecha_ultima_consulta')
             ->limit(50)
             ->pluck('folio_edocument');
+
+        // Tipos de documento VUCEM para digitalización
+        $tiposDocumento = VucemCatalogs::$tiposDocumento;
         
         return view('mve.create-manual', compact(
             'applicant', 
@@ -82,7 +87,8 @@ class MveController extends Controller
             'datosManifestacion',
             'informacionCove',
             'documentos',
-            'edocumentSuggestions'
+            'edocumentSuggestions',
+            'tiposDocumento'
         ));
     }
     
@@ -517,6 +523,7 @@ class MveController extends Controller
         $validator = Validator::make($request->all(), [
             'documentos' => 'nullable|array',
             'documentos.*.tipo_documento' => 'nullable|string|max:255',
+            'documentos.*.nombre_documento' => 'nullable|string|max:255',
             'documentos.*.folio_edocument' => 'nullable|string|max:30',
         ]);
 
@@ -549,6 +556,7 @@ class MveController extends Controller
 
             $normalizedDocuments[] = [
                 'tipo_documento' => trim($documento['tipo_documento'] ?? $documento['nombre'] ?? ''),
+                'nombre_documento' => trim($documento['nombre_documento'] ?? ''),
                 'folio_edocument' => $folio,
                 'created_at' => $documento['created_at'] ?? now()->toDateTimeString(),
                 'updated_at' => now()->toDateTimeString(),
@@ -576,6 +584,163 @@ class MveController extends Controller
             'message' => 'Documentos guardados exitosamente',
             'section_id' => $documentos->id
         ]);
+    }
+
+    /**
+     * Valida un PDF contra los requisitos de VUCEM (AJAX).
+     * Si no cumple, intenta convertirlo automáticamente.
+     * Retorna el contenido base64 listo para digitalizar.
+     */
+    public function validarPdf(Request $request)
+    {
+        $request->validate([
+            'archivo' => ['required', 'file', 'mimes:pdf', 'max:20480'],
+        ]);
+
+        try {
+            $pdfService = app(DocumentUploadService::class);
+            $resultado = $pdfService->processUploadedPdf($request->file('archivo'));
+
+            if (!$resultado['success']) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Error al procesar PDF: ' . ($resultado['error'] ?? 'Formato no válido'),
+                ], 422);
+            }
+
+            return response()->json([
+                'success' => true,
+                'was_converted' => $resultado['was_converted'],
+                'is_vucem_valid' => $resultado['is_vucem_valid'],
+                'original_name' => $resultado['original_name'],
+                'final_size' => $resultado['final_size'],
+                'file_content' => $resultado['file_content'], // base64
+                'message' => $resultado['message'],
+            ]);
+        } catch (\Exception $e) {
+            Log::error('[VALIDAR_PDF] Error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al procesar el archivo: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Digitaliza un documento y lo envía a VUCEM.
+     * Usa credenciales almacenadas si están disponibles,
+     * o las recibidas manualmente en el request.
+     */
+    public function digitalizarDocumento(Request $request, $applicantId)
+    {
+        $applicant = MvClientApplicant::findOrFail($applicantId);
+
+        if ($applicant->user_email !== auth()->user()->email) {
+            return response()->json(['success' => false, 'message' => 'Sin permiso.'], 403);
+        }
+
+        $request->validate([
+            'tipo_documento' => 'required|string',
+            'nombre_documento' => 'required|string|max:45',
+            'file_content' => 'required|string', // base64 del PDF ya validado
+            'rfc_consulta' => 'nullable|string|max:13',
+            // Campos manuales (opcionales si tiene credenciales almacenadas)
+            'clave_webservice' => 'nullable|string',
+            'certificado' => 'nullable|file',
+            'llave_privada' => 'nullable|file',
+            'contrasena_llave' => 'nullable|string',
+        ]);
+
+        try {
+            $rfc = $applicant->applicant_rfc;
+            $email = auth()->user()->email;
+            $rfcConsulta = $request->rfc_consulta ? strtoupper(trim($request->rfc_consulta)) : '';
+
+            // Determinar credenciales: almacenadas vs manuales
+            $useStoredCreds = $applicant->hasVucemCredentials() && !$request->hasFile('certificado');
+            $useStoredWs = $applicant->hasWebserviceKey() && !$request->filled('clave_webservice');
+
+            $claveWebService = $useStoredWs
+                ? $applicant->vucem_webservice_key
+                : $request->input('clave_webservice');
+
+            if (empty($claveWebService)) {
+                return response()->json(['success' => false, 'message' => 'Se requiere la clave del Web Service VUCEM.'], 422);
+            }
+
+            // Preparar archivos de firma
+            $tempCertPath = tempnam(sys_get_temp_dir(), 'cert_');
+            $tempKeyPath = tempnam(sys_get_temp_dir(), 'key_');
+            $passwordLlave = null;
+
+            try {
+                if ($useStoredCreds) {
+                    $certContent = base64_decode($applicant->vucem_cert_file);
+                    $keyContent = base64_decode($applicant->vucem_key_file);
+                    $passwordLlave = $applicant->vucem_password;
+
+                    if (!$certContent || !$keyContent || !$passwordLlave) {
+                        return response()->json(['success' => false, 'message' => 'Credenciales almacenadas incompletas.'], 422);
+                    }
+
+                    file_put_contents($tempCertPath, $certContent);
+                    file_put_contents($tempKeyPath, $keyContent);
+                    Log::info('[DIGITALIZAR] Usando credenciales almacenadas', ['applicant' => $applicantId]);
+                } else {
+                    if (!$request->hasFile('certificado') || !$request->hasFile('llave_privada') || !$request->filled('contrasena_llave')) {
+                        return response()->json(['success' => false, 'message' => 'Se requieren los archivos de firma electrónica.'], 422);
+                    }
+                    file_put_contents($tempCertPath, $request->file('certificado')->get());
+                    file_put_contents($tempKeyPath, $request->file('llave_privada')->get());
+                    $passwordLlave = $request->input('contrasena_llave');
+                    Log::info('[DIGITALIZAR] Usando credenciales manuales', ['applicant' => $applicantId]);
+                }
+
+                // Llamar al servicio de digitalización
+                $digitalizarService = app(DigitalizarDocumentoService::class);
+                $resultado = $digitalizarService->digitalizarDocumento(
+                    $rfc,
+                    $claveWebService,
+                    $request->input('tipo_documento'),
+                    $request->input('nombre_documento'),
+                    $request->input('file_content'), // base64 ya procesado
+                    $tempCertPath,
+                    $tempKeyPath,
+                    $passwordLlave,
+                    $email,
+                    $rfcConsulta
+                );
+
+                if (!$resultado['success']) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => $resultado['message'] ?? 'Error al digitalizar.',
+                    ], 422);
+                }
+
+                // Guardar folio en edocuments_registrados
+                EdocumentRegistrado::updateOrCreate(
+                    ['folio_edocument' => $resultado['eDocument']],
+                    [
+                        'existe_en_vucem' => true,
+                        'fecha_ultima_consulta' => now(),
+                        'response_message' => 'Digitalizado para ' . $rfc . ' (Tipo ' . $request->input('tipo_documento') . ')',
+                    ]
+                );
+
+                return response()->json([
+                    'success' => true,
+                    'eDocument' => $resultado['eDocument'],
+                    'message' => $resultado['mensaje'] ?? 'Documento digitalizado exitosamente.',
+                ]);
+            } finally {
+                if (file_exists($tempCertPath)) @unlink($tempCertPath);
+                if (file_exists($tempKeyPath)) @unlink($tempKeyPath);
+            }
+        } catch (\Exception $e) {
+            Log::error('[DIGITALIZAR] Error: ' . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Error: ' . $e->getMessage()], 500);
+        }
     }
     
     public function borrarBorrador(Request $request)

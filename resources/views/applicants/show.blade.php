@@ -97,104 +97,124 @@
                         <span class="detail-label">Razón Social</span>
                         <span class="detail-value">{{ $applicant->business_name }}</span>
                     </div>
-
-                    <div class="detail-item full-width">
-                        <span class="detail-label">Actividad Económica Preponderante</span>
-                        <span class="detail-value">{{ $applicant->main_economic_activity }}</span>
-                    </div>
                 </div>
             </div>
 
-            {{-- Domicilio Fiscal --}}
+            {{-- Estado de Sellos VUCEM --}}
             <div class="detail-card">
                 <h3 class="detail-section-title">
-                    <i data-lucide="map-pin" class="w-5 h-5"></i>
-                    Domicilio Fiscal
+                    <i data-lucide="shield-check" class="w-5 h-5"></i>
+                    Sellos VUCEM
                 </h3>
 
                 <div class="detail-grid">
                     <div class="detail-item">
-                        <span class="detail-label">País</span>
-                        <span class="detail-value">{{ $applicant->country }}</span>
+                        <span class="detail-label">Archivo .key</span>
+                        <span class="detail-value">
+                            @if($applicant->vucem_key_file)
+                                <span class="inline-flex items-center gap-1 text-green-700 bg-green-50 px-2 py-1 rounded-lg text-xs font-semibold">
+                                    <i data-lucide="check-circle" class="w-3.5 h-3.5"></i> Cargado (encriptado)
+                                </span>
+                            @else
+                                <span class="inline-flex items-center gap-1 text-slate-500 bg-slate-100 px-2 py-1 rounded-lg text-xs font-semibold">
+                                    <i data-lucide="minus-circle" class="w-3.5 h-3.5"></i> No configurado
+                                </span>
+                            @endif
+                        </span>
                     </div>
 
                     <div class="detail-item">
-                        <span class="detail-label">Código Postal</span>
-                        <span class="detail-value">{{ $applicant->postal_code }}</span>
+                        <span class="detail-label">Archivo .cer</span>
+                        <span class="detail-value">
+                            @if($applicant->vucem_cert_file)
+                                <span class="inline-flex items-center gap-1 text-green-700 bg-green-50 px-2 py-1 rounded-lg text-xs font-semibold">
+                                    <i data-lucide="check-circle" class="w-3.5 h-3.5"></i> Cargado (encriptado)
+                                </span>
+                            @else
+                                <span class="inline-flex items-center gap-1 text-slate-500 bg-slate-100 px-2 py-1 rounded-lg text-xs font-semibold">
+                                    <i data-lucide="minus-circle" class="w-3.5 h-3.5"></i> No configurado
+                                </span>
+                            @endif
+                        </span>
                     </div>
 
                     <div class="detail-item">
-                        <span class="detail-label">Estado</span>
-                        <span class="detail-value">{{ $applicant->state }}</span>
+                        <span class="detail-label">Contraseña del Sello</span>
+                        <span class="detail-value">
+                            @if($applicant->vucem_password)
+                                <span class="inline-flex items-center gap-1 text-green-700 bg-green-50 px-2 py-1 rounded-lg text-xs font-semibold">
+                                    <i data-lucide="check-circle" class="w-3.5 h-3.5"></i> Guardada (encriptada)
+                                </span>
+                            @else
+                                <span class="inline-flex items-center gap-1 text-slate-500 bg-slate-100 px-2 py-1 rounded-lg text-xs font-semibold">
+                                    <i data-lucide="minus-circle" class="w-3.5 h-3.5"></i> No configurada
+                                </span>
+                            @endif
+                        </span>
                     </div>
 
                     <div class="detail-item">
-                        <span class="detail-label">Municipio</span>
-                        <span class="detail-value">{{ $applicant->municipality }}</span>
+                        <span class="detail-label">Clave Web Service</span>
+                        <span class="detail-value">
+                            @if($applicant->vucem_webservice_key)
+                                <span class="inline-flex items-center gap-1 text-green-700 bg-green-50 px-2 py-1 rounded-lg text-xs font-semibold">
+                                    <i data-lucide="check-circle" class="w-3.5 h-3.5"></i> Guardada (encriptada)
+                                </span>
+                            @else
+                                <span class="inline-flex items-center gap-1 text-slate-500 bg-slate-100 px-2 py-1 rounded-lg text-xs font-semibold">
+                                    <i data-lucide="minus-circle" class="w-3.5 h-3.5"></i> No configurada
+                                </span>
+                            @endif
+                        </span>
                     </div>
-
-                    @if($applicant->locality)
-                        <div class="detail-item">
-                            <span class="detail-label">Localidad</span>
-                            <span class="detail-value">{{ $applicant->locality }}</span>
-                        </div>
-                    @endif
-
-                    <div class="detail-item">
-                        <span class="detail-label">Colonia</span>
-                        <span class="detail-value">{{ $applicant->neighborhood }}</span>
-                    </div>
-
-                    <div class="detail-item">
-                        <span class="detail-label">Calle</span>
-                        <span class="detail-value">{{ $applicant->street }}</span>
-                    </div>
-
-                    <div class="detail-item">
-                        <span class="detail-label">No. Exterior</span>
-                        <span class="detail-value">{{ $applicant->exterior_number }}</span>
-                    </div>
-
-                    @if($applicant->interior_number)
-                        <div class="detail-item">
-                            <span class="detail-label">No. Interior</span>
-                            <span class="detail-value">{{ $applicant->interior_number }}</span>
-                        </div>
-                    @endif
                 </div>
 
-                <div class="address-summary">
-                    <i data-lucide="map" class="w-5 h-5 text-[#003399]"></i>
-                    <p class="text-sm text-slate-600">
-                        {{ $applicant->street }} {{ $applicant->exterior_number }}{{ $applicant->interior_number ? ', Int. ' . $applicant->interior_number : '' }}, 
-                        {{ $applicant->neighborhood }}, {{ $applicant->municipality }}, {{ $applicant->state }}, 
-                        CP {{ $applicant->postal_code }}, {{ $applicant->country }}
-                    </p>
-                </div>
+                @if($applicant->hasVucemCredentials())
+                    <div class="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="shield-check" class="w-5 h-5 text-green-600"></i>
+                            <span class="text-sm font-semibold text-green-800">Sellos VUCEM completos — Las operaciones se ejecutarán con credenciales automáticas</span>
+                        </div>
+                    </div>
+                @else
+                    <div class="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="alert-triangle" class="w-5 h-5 text-amber-600"></i>
+                            <span class="text-sm font-semibold text-amber-800">Sellos VUCEM incompletos — Deberá ingresar credenciales manualmente en cada operación</span>
+                        </div>
+                    </div>
+                @endif
             </div>
 
-            {{-- Datos de Contacto --}}
+            {{-- Consentimiento de Privacidad --}}
             <div class="detail-card">
                 <h3 class="detail-section-title">
-                    <i data-lucide="phone" class="w-5 h-5"></i>
-                    Datos de Contacto
+                    <i data-lucide="file-text" class="w-5 h-5"></i>
+                    Consentimiento de Privacidad
                 </h3>
 
                 <div class="detail-grid">
                     <div class="detail-item">
-                        <span class="detail-label">Lada</span>
-                        <span class="detail-value">{{ $applicant->area_code }}</span>
+                        <span class="detail-label">Estado del Consentimiento</span>
+                        <span class="detail-value">
+                            @if($applicant->privacy_consent)
+                                <span class="inline-flex items-center gap-1 text-green-700 bg-green-50 px-2 py-1 rounded-lg text-xs font-semibold">
+                                    <i data-lucide="check-circle" class="w-3.5 h-3.5"></i> Autorizado
+                                </span>
+                            @else
+                                <span class="inline-flex items-center gap-1 text-amber-700 bg-amber-50 px-2 py-1 rounded-lg text-xs font-semibold">
+                                    <i data-lucide="alert-circle" class="w-3.5 h-3.5"></i> Pendiente
+                                </span>
+                            @endif
+                        </span>
                     </div>
 
-                    <div class="detail-item">
-                        <span class="detail-label">Teléfono</span>
-                        <span class="detail-value">{{ $applicant->phone }}</span>
-                    </div>
-
-                    <div class="detail-item">
-                        <span class="detail-label">Teléfono Completo</span>
-                        <span class="detail-value font-semibold text-[#003399]">+{{ $applicant->area_code }} {{ $applicant->phone }}</span>
-                    </div>
+                    @if($applicant->privacy_consent_at)
+                        <div class="detail-item">
+                            <span class="detail-label">Fecha de Autorización</span>
+                            <span class="detail-value">{{ $applicant->privacy_consent_at->format('d/m/Y H:i') }}</span>
+                        </div>
+                    @endif
                 </div>
             </div>
 

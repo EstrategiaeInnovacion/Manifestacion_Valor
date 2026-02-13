@@ -85,6 +85,7 @@
                                 <th>Correo Electrónico</th>
                                 <th>RFC</th>
                                 <th>Razón Social</th>
+                                <th class="text-center">Sellos VUCEM</th>
                                 <th class="text-center">Acciones</th>
                             </tr>
                         </thead>
@@ -99,6 +100,17 @@
                                     </td>
                                     <td><span class="badge-rfc">{{ $applicant->applicant_rfc }}</span></td>
                                     <td class="font-semibold text-[#001a4d]">{{ $applicant->business_name }}</td>
+                                    <td class="text-center">
+                                        @if($applicant->hasVucemCredentials())
+                                            <span class="inline-flex items-center gap-1 text-green-700 bg-green-50 px-2 py-1 rounded-lg text-xs font-semibold">
+                                                <i data-lucide="shield-check" class="w-3.5 h-3.5"></i> Configurados
+                                            </span>
+                                        @else
+                                            <span class="inline-flex items-center gap-1 text-slate-500 bg-slate-100 px-2 py-1 rounded-lg text-xs font-semibold">
+                                                <i data-lucide="shield-off" class="w-3.5 h-3.5"></i> Sin configurar
+                                            </span>
+                                        @endif
+                                    </td>
                                     <td>
                                         <div class="action-buttons">
                                             <a href="{{ route('applicants.show', $applicant) }}" class="btn-action btn-view" title="Ver detalles">
@@ -119,7 +131,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="4" class="text-center py-12">
+                                    <td colspan="5" class="text-center py-12">
                                         <div class="empty-state">
                                             <i data-lucide="inbox" class="w-16 h-16 mx-auto text-slate-300 mb-4"></i>
                                             <p class="text-lg font-semibold text-slate-400">No hay solicitantes registrados</p>

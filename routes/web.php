@@ -87,6 +87,8 @@ Route::middleware('auth')->group(function () {
         Route::post('/mve/save-informacion-cove/{applicant}', [MveController::class , 'saveInformacionCove'])->name('mve.save-informacion-cove');
         Route::post('/mve/save-valor-aduana/{applicant}', [MveController::class , 'saveValorAduana'])->name('mve.save-valor-aduana');
         Route::post('/mve/save-documentos/{applicant}', [MveController::class , 'saveDocumentos'])->name('mve.save-documentos');
+        Route::post('/mve/digitalizar-documento/{applicant}', [MveController::class , 'digitalizarDocumento'])->name('mve.digitalizar-documento');
+        Route::post('/mve/validar-pdf', [MveController::class , 'validarPdf'])->name('mve.validar-pdf');
         Route::post('/mve/parse-pedimento-edocuments', [MveController::class , 'parsePedimentoEdocuments'])->name('mve.parse-pedimento-edocuments');
         Route::post('/mve/validate-edocument', [MveController::class , 'validateEdocument'])->name('mve.validate-edocument');
 
@@ -98,6 +100,9 @@ Route::middleware('auth')->group(function () {
 
         // Y el POST apunta a 'consultar' (no a consultarCove)
         Route::post('/cove/consulta', [EDocumentConsultaController::class , 'consultar'])->name('cove.consulta');
+
+        // API: verificar credenciales VUCEM de un solicitante
+        Route::get('/cove/credenciales/{applicant}', [EDocumentConsultaController::class , 'checkCredentials'])->name('cove.credenciales.check');
 
         // Ruta de descarga
         Route::get('/cove/descargar/{token}', [EDocumentConsultaController::class , 'descargar'])->name('cove.descargar');

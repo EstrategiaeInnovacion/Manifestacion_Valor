@@ -78,12 +78,50 @@
                                     </select>
                                 </div>
 
-                                <div>
+                                {{-- Clave Web Service: se oculta si hay almacenada --}}
+                                <div id="ws-manual-section">
                                     <label for="clave_webservice" class="block text-sm font-semibold text-slate-700 mb-2">Contraseña Web Service VUCEM</label>
                                     <input type="password" name="clave_webservice" id="clave_webservice" 
                                            class="form-input w-full" 
-                                           placeholder="Contraseña de acceso al portal VUCEM" required />
+                                           placeholder="Contraseña de acceso al portal VUCEM" />
                                     <p class="text-[10px] text-slate-400 mt-1">Es la contraseña que usas para entrar al portal, NO la de la FIEL.</p>
+                                </div>
+                            </div>
+
+                            {{-- Badge de credenciales detectadas --}}
+                            <div id="cred-status" class="hidden">
+                                <div id="cred-badge-ok" class="hidden rounded-xl border border-green-200 bg-green-50 p-4">
+                                    <div class="flex items-center gap-3">
+                                        <div class="flex-shrink-0 w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
+                                            <i data-lucide="shield-check" class="w-5 h-5 text-green-600"></i>
+                                        </div>
+                                        <div>
+                                            <p class="text-sm font-bold text-green-800">Credenciales VUCEM detectadas</p>
+                                            <p class="text-xs text-green-600" id="cred-detail">Los sellos (.key, .cer) y contraseña se cargarán automáticamente desde la configuración del solicitante.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div id="cred-badge-partial" class="hidden rounded-xl border border-amber-200 bg-amber-50 p-4">
+                                    <div class="flex items-center gap-3">
+                                        <div class="flex-shrink-0 w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center">
+                                            <i data-lucide="alert-triangle" class="w-5 h-5 text-amber-600"></i>
+                                        </div>
+                                        <div>
+                                            <p class="text-sm font-bold text-amber-800">Credenciales VUCEM parciales</p>
+                                            <p class="text-xs text-amber-600" id="cred-partial-detail">Algunos datos se cargarán automáticamente. Complete los campos faltantes manualmente.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div id="cred-badge-none" class="hidden rounded-xl border border-slate-200 bg-slate-50 p-4">
+                                    <div class="flex items-center gap-3">
+                                        <div class="flex-shrink-0 w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center">
+                                            <i data-lucide="key" class="w-5 h-5 text-slate-500"></i>
+                                        </div>
+                                        <div>
+                                            <p class="text-sm font-bold text-slate-700">Sin credenciales almacenadas</p>
+                                            <p class="text-xs text-slate-500">Ingrese los archivos de firma electrónica y contraseña del Web Service manualmente.</p>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 
@@ -95,7 +133,8 @@
                                        placeholder="Ej. 0000000000000" required />
                             </div>
 
-                            <div class="p-6 bg-slate-50 rounded-xl border border-slate-200 border-dashed">
+                            {{-- Sección de firma manual: se oculta si hay credenciales almacenadas --}}
+                            <div id="efirma-manual-section" class="p-6 bg-slate-50 rounded-xl border border-slate-200 border-dashed">
                                 <h4 class="text-sm font-bold text-slate-700 mb-4 flex items-center">
                                     <i data-lucide="key" class="w-4 h-4 mr-2 text-[#003399]"></i>
                                     Firma Electrónica (Para desencriptar respuesta)
@@ -103,15 +142,15 @@
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div>
                                         <label class="block text-xs font-semibold text-slate-500 mb-2">Certificado (.cer)</label>
-                                        <input type="file" name="certificado" class="file-input w-full text-sm" accept=".cer,.crt,.pem" required />
+                                        <input type="file" name="certificado" id="certificado_input" class="file-input w-full text-sm" accept=".cer,.crt,.pem" />
                                     </div>
                                     <div>
                                         <label class="block text-xs font-semibold text-slate-500 mb-2">Llave (.key)</label>
-                                        <input type="file" name="llave_privada" class="file-input w-full text-sm" accept=".key,.pem" required />
+                                        <input type="file" name="llave_privada" id="llave_privada_input" class="file-input w-full text-sm" accept=".key,.pem" />
                                     </div>
                                     <div class="md:col-span-2">
                                         <label class="block text-xs font-semibold text-slate-500 mb-2">Contraseña de la Llave Privada</label>
-                                        <input type="password" name="contrasena_llave" class="form-input w-full" placeholder="••••••••" required />
+                                        <input type="password" name="contrasena_llave" id="contrasena_llave_input" class="form-input w-full" placeholder="••••••••" />
                                     </div>
                                 </div>
                             </div>
@@ -128,6 +167,122 @@
                     </div>
                 </form>
             </div>
+
+            {{-- Script para auto-detección de credenciales --}}
+            <script>
+                document.addEventListener('DOMContentLoaded', function() {
+                    const solicitanteSelect = document.getElementById('solicitante_id');
+                    if (!solicitanteSelect) return;
+
+                    const credStatus = document.getElementById('cred-status');
+                    const badgeOk = document.getElementById('cred-badge-ok');
+                    const badgePartial = document.getElementById('cred-badge-partial');
+                    const badgeNone = document.getElementById('cred-badge-none');
+                    const efirmaSection = document.getElementById('efirma-manual-section');
+                    const wsSection = document.getElementById('ws-manual-section');
+                    const credDetail = document.getElementById('cred-detail');
+                    const partialDetail = document.getElementById('cred-partial-detail');
+
+                    // Inputs manuales
+                    const certInput = document.getElementById('certificado_input');
+                    const keyInput = document.getElementById('llave_privada_input');
+                    const passInput = document.getElementById('contrasena_llave_input');
+                    const wsInput = document.getElementById('clave_webservice');
+
+                    function hideAllBadges() {
+                        badgeOk.classList.add('hidden');
+                        badgePartial.classList.add('hidden');
+                        badgeNone.classList.add('hidden');
+                    }
+
+                    function setFieldsRequired(required) {
+                        if (certInput) certInput.required = required;
+                        if (keyInput) keyInput.required = required;
+                        if (passInput) passInput.required = required;
+                    }
+
+                    function checkCredentials(applicantId) {
+                        if (!applicantId) {
+                            credStatus.classList.add('hidden');
+                            efirmaSection.classList.remove('hidden');
+                            wsSection.classList.remove('hidden');
+                            setFieldsRequired(true);
+                            if (wsInput) wsInput.required = true;
+                            return;
+                        }
+
+                        fetch(`/cove/credenciales/${applicantId}`, {
+                            headers: {
+                                'Accept': 'application/json',
+                                'X-Requested-With': 'XMLHttpRequest',
+                            },
+                            credentials: 'same-origin',
+                        })
+                        .then(r => r.json())
+                        .then(data => {
+                            credStatus.classList.remove('hidden');
+                            hideAllBadges();
+
+                            const hasCreds = data.has_credentials;
+                            const hasWs = data.has_webservice_key;
+
+                            if (hasCreds && hasWs) {
+                                // Todo almacenado: ocultar sección manual completa
+                                badgeOk.classList.remove('hidden');
+                                credDetail.textContent = 'Los sellos (.key, .cer), contraseña de llave y clave de Web Service se cargarán automáticamente.';
+                                efirmaSection.classList.add('hidden');
+                                wsSection.classList.add('hidden');
+                                setFieldsRequired(false);
+                                if (wsInput) wsInput.required = false;
+                            } else if (hasCreds && !hasWs) {
+                                // Sellos almacenados pero sin WS key
+                                badgePartial.classList.remove('hidden');
+                                partialDetail.textContent = 'Sellos VUCEM (.key, .cer) detectados. Ingrese la contraseña del Web Service manualmente.';
+                                efirmaSection.classList.add('hidden');
+                                wsSection.classList.remove('hidden');
+                                setFieldsRequired(false);
+                                if (wsInput) wsInput.required = true;
+                            } else if (!hasCreds && hasWs) {
+                                // Solo WS key almacenada
+                                badgePartial.classList.remove('hidden');
+                                partialDetail.textContent = 'Clave de Web Service detectada. Ingrese los sellos de firma electrónica manualmente.';
+                                efirmaSection.classList.remove('hidden');
+                                wsSection.classList.add('hidden');
+                                setFieldsRequired(true);
+                                if (wsInput) wsInput.required = false;
+                            } else {
+                                // Nada almacenado
+                                badgeNone.classList.remove('hidden');
+                                efirmaSection.classList.remove('hidden');
+                                wsSection.classList.remove('hidden');
+                                setFieldsRequired(true);
+                                if (wsInput) wsInput.required = true;
+                            }
+
+                            // Re-inicializar iconos de Lucide
+                            if (window.lucide) lucide.createIcons();
+                        })
+                        .catch(() => {
+                            // En caso de error, mostrar todos los campos manuales
+                            credStatus.classList.add('hidden');
+                            efirmaSection.classList.remove('hidden');
+                            wsSection.classList.remove('hidden');
+                            setFieldsRequired(true);
+                            if (wsInput) wsInput.required = true;
+                        });
+                    }
+
+                    // Evento de cambio de solicitante
+                    solicitanteSelect.addEventListener('change', function() {
+                        checkCredentials(this.value);
+                    });
+
+                    // Verificar al cargar si ya hay un solicitante seleccionado
+                    if (solicitanteSelect.value) {
+                        checkCredentials(solicitanteSelect.value);
+                    }
+                });
+            </script>
 
             {{-- RESULTADOS --}}
             @if(isset($result))

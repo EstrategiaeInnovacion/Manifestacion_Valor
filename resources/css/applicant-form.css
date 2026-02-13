@@ -100,6 +100,30 @@ select.form-input {
     appearance: none;
 }
 
+/* File input styling */
+input[type="file"].form-input {
+    padding: 0.5rem 0.75rem;
+    cursor: pointer;
+    font-size: 0.875rem;
+}
+
+input[type="file"].form-input::file-selector-button {
+    background: linear-gradient(135deg, #003399 0%, #001a4d 100%);
+    color: white;
+    border: none;
+    padding: 0.375rem 1rem;
+    border-radius: 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    margin-right: 0.75rem;
+    transition: all 0.2s;
+}
+
+input[type="file"].form-input::file-selector-button:hover {
+    background: linear-gradient(135deg, #004fc4 0%, #002a7a 100%);
+}
+
 .form-actions {
     display: flex;
     gap: 1rem;
