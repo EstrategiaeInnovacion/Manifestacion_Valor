@@ -1,5 +1,48 @@
 @import './dashboard.css';
 
+/* ============================================
+   STEPPER INDICATOR
+   ============================================ */
+.mve-stepper {
+    background: white;
+    border-radius: 1.5rem;
+    padding: 1.5rem 2rem;
+    border: 2px solid #eef2f6;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.stepper-step {
+    cursor: pointer;
+    background: none;
+    border: none;
+    padding: 0;
+    outline: none;
+    min-width: 60px;
+}
+
+.stepper-step:focus-visible .stepper-circle {
+    box-shadow: 0 0 0 3px rgba(0, 51, 153, 0.3);
+}
+
+.stepper-circle {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+}
+
+.step-content {
+    animation: stepFadeIn 0.35s ease-out;
+}
+
+@keyframes stepFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
 .applicant-info-card {
     background: white;
     border-radius: 1.5rem;

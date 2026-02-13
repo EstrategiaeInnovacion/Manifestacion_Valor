@@ -13,6 +13,154 @@ let precioPorPagarData = [];
 let compensoPagoData = [];
 
 // ============================================
+// STEPPER NAVIGATION
+// ============================================
+let currentStep = 1;
+const totalSteps = 5;
+
+/**
+ * Navega a un paso específico del wizard.
+ */
+window.goToStep = function(stepNumber) {
+    if (stepNumber < 1 || stepNumber > totalSteps) return;
+
+    // Si va al paso 5, cargar la vista previa
+    if (stepNumber === 5) {
+        cargarVistaPreviaInline();
+    }
+
+    // Ocultar todos los pasos
+    document.querySelectorAll('.step-content').forEach(el => {
+        el.classList.add('hidden');
+    });
+
+    // Mostrar el paso seleccionado
+    const targetStep = document.getElementById(`step-${stepNumber}`);
+    if (targetStep) {
+        targetStep.classList.remove('hidden');
+    }
+
+    // Actualizar indicadores del stepper
+    updateStepperIndicator(stepNumber);
+
+    currentStep = stepNumber;
+
+    // Scroll al inicio
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    // Re-renderizar iconos Lucide
+    setTimeout(() => {
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+    }, 100);
+};
+
+window.nextStep = function() {
+    goToStep(currentStep + 1);
+};
+
+window.prevStep = function() {
+    goToStep(currentStep - 1);
+};
+
+/**
+ * Desde paso 4: guardar documentos y luego ir a vista previa.
+ */
+window.guardarYVistaPrevia = async function() {
+    try {
+        await saveDocumentos();
+        goToStep(5);
+    } catch (error) {
+        console.error('Error al guardar documentos:', error);
+    }
+};
+
+/**
+ * Actualiza las clases visuales del stepper indicator.
+ */
+function updateStepperIndicator(activeStep) {
+    for (let i = 1; i <= totalSteps; i++) {
+        const indicator = document.getElementById(`stepIndicator${i}`);
+        if (!indicator) continue;
+
+        const circle = indicator.querySelector('.stepper-circle');
+        const label = indicator.querySelector('.stepper-label');
+
+        if (i < activeStep) {
+            // Paso completado
+            circle.className = 'stepper-circle w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all duration-300 border-green-500 bg-green-500 text-white';
+            label.className = 'stepper-label text-[10px] font-bold uppercase tracking-wide mt-2 transition-colors duration-300 text-center leading-tight max-w-[80px] text-green-600';
+        } else if (i === activeStep) {
+            // Paso activo
+            circle.className = 'stepper-circle w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all duration-300 border-[#003399] bg-[#003399] text-white shadow-lg shadow-blue-200';
+            label.className = 'stepper-label text-[10px] font-bold uppercase tracking-wide mt-2 transition-colors duration-300 text-center leading-tight max-w-[80px] text-[#003399]';
+        } else {
+            // Paso pendiente
+            circle.className = 'stepper-circle w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all duration-300 border-slate-300 bg-white text-slate-400';
+            label.className = 'stepper-label text-[10px] font-bold uppercase tracking-wide mt-2 transition-colors duration-300 text-center leading-tight max-w-[80px] text-slate-400';
+        }
+    }
+
+    // Actualizar línea de progreso
+    const progressLine = document.getElementById('stepperProgressLine');
+    if (progressLine) {
+        const percent = ((activeStep - 1) / (totalSteps - 1)) * 100;
+        progressLine.style.width = `${percent}%`;
+    }
+}
+
+/**
+ * Carga la vista previa inline en el step-5.
+ */
+async function cargarVistaPreviaInline() {
+    const container = document.getElementById('stepPreviewContent');
+    if (!container) return;
+
+    // Mostrar loading
+    container.innerHTML = `<div class="flex items-center justify-center py-16 text-slate-400">
+        <span class="inline-block w-6 h-6 border-2 border-slate-300 border-t-transparent rounded-full animate-spin mr-3"></span>
+        Cargando vista previa...
+    </div>`;
+
+    try {
+        const applicantId = document.querySelector('[data-applicant-id]').getAttribute('data-applicant-id');
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+        const response = await fetch(`/mve/preview-data/${applicantId}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrfToken
+            }
+        });
+
+        if (!response.ok) throw new Error('Error al obtener datos de vista previa');
+
+        const data = await response.json();
+        if (!data.success) throw new Error(data.message || 'Error desconocido');
+
+        // Reusar la misma función que genera la vista previa del modal
+        container.innerHTML = generarContenidoVistaPrevia(data);
+
+        setTimeout(() => {
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        }, 100);
+    } catch (error) {
+        console.error('Error cargando vista previa:', error);
+        container.innerHTML = `<div class="text-center py-16">
+            <i data-lucide="alert-triangle" class="w-12 h-12 text-red-400 mx-auto mb-4"></i>
+            <p class="text-red-600 font-semibold">Error al cargar la vista previa</p>
+            <p class="text-sm text-slate-500 mt-2">${error.message}</p>
+            <button type="button" onclick="cargarVistaPreviaInline()" class="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">
+                Reintentar
+            </button>
+        </div>`;
+        setTimeout(() => {
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        }, 100);
+    }
+}
+
+// ============================================
 // HELPERS PARA OBTENER TEXTOS DE CATALOGOS
 // ============================================
 /**
@@ -3234,17 +3382,9 @@ async function checkAllSectionsCompletion() {
     }
 }
 
-// Función para guardar la manifestación completa
+// Función para guardar la manifestación completa (ahora va al step 5)
 window.guardarManifestacionCompleta = async function() {
-    const btnGuardar = document.getElementById('btnGuardarManifestacion');
-    
-    if (btnGuardar.disabled) {
-        showNotification('Complete todas las secciones antes de guardar la manifestación', 'warning', 'Secciones Incompletas');
-        return;
-    }
-
-    // Mostrar vista previa en lugar de guardar directamente
-    await mostrarVistaPrevia();
+    goToStep(5);
 };
 
 // Hook para verificar completitud después de cada guardado de sección
@@ -3802,26 +3942,23 @@ window.closePreviewModal = function() {
     modal.classList.remove('flex');
 }
 
-// Confirmar guardado final
+// Confirmar guardado final (desde Step 5 inline)
 window.confirmarGuardadoFinal = async function() {
-    // Primero cerrar el modal de vista previa para que la confirmación sea visible
-    closePreviewModal();
-    
     const confirmResult = await showCustomConfirm(
         '¿Está seguro de que desea guardar la manifestación? Una vez guardada, podrá firmarla y enviarla a VUCEM desde la lista de pendientes.',
         'GUARDAR MANIFESTACIÓN'
     );
     
     if (!confirmResult) {
-        // Si cancela, volver a abrir la vista previa
-        mostrarVistaPrevia();
         return;
     }
 
     try {
-        const btnGuardar = document.getElementById('btnGuardarManifestacion');
-        btnGuardar.disabled = true;
-        btnGuardar.innerHTML = '<i data-lucide="loader-2" class="w-5 h-5 mr-2 animate-spin"></i>Guardando...';
+        const btnConfirmar = document.getElementById('btnConfirmarManifestacion');
+        if (btnConfirmar) {
+            btnConfirmar.disabled = true;
+            btnConfirmar.innerHTML = '<span class="inline-block w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></span>Guardando...';
+        }
         
         const applicantId = document.querySelector('[data-applicant-id]').getAttribute('data-applicant-id');
         const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
@@ -3850,9 +3987,12 @@ window.confirmarGuardadoFinal = async function() {
         console.error('Error guardando manifestación:', error);
         showNotification('Error al guardar la manifestación: ' + error.message, 'error', 'Error');
         
-        const btnGuardar = document.getElementById('btnGuardarManifestacion');
-        btnGuardar.disabled = false;
-        btnGuardar.innerHTML = '<i data-lucide="save" class="w-5 h-5 mr-2"></i>Guardar Manifestación';
+        const btnConfirmar = document.getElementById('btnConfirmarManifestacion');
+        if (btnConfirmar) {
+            btnConfirmar.disabled = false;
+            btnConfirmar.innerHTML = '<i data-lucide="check-circle" class="w-5 h-5 mr-2"></i>Confirmar y Guardar Manifestación';
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        }
     }
 };
 

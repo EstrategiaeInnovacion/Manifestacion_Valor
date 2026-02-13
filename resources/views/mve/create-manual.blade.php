@@ -89,10 +89,17 @@
 
         <main class="max-w-4xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
             <div class="mb-8">
-                <a href="{{ route('mve.select-applicant', ['mode' => 'manual']) }}" class="inline-flex items-center text-sm font-semibold text-slate-600 hover:text-[#003399] transition-colors mb-6">
-                    <i data-lucide="arrow-left" class="w-4 h-4 mr-2"></i>
-                    Cambiar Solicitante
-                </a>
+                <div class="flex items-center gap-4 mb-6">
+                    <a href="{{ route('dashboard') }}" class="inline-flex items-center text-sm font-semibold text-slate-600 hover:text-[#003399] transition-colors">
+                        <i data-lucide="arrow-left" class="w-4 h-4 mr-2"></i>
+                        Volver al Dashboard
+                    </a>
+                    <span class="text-slate-300">|</span>
+                    <a href="{{ route('mve.select-applicant', ['mode' => 'manual']) }}" class="inline-flex items-center text-sm font-semibold text-slate-600 hover:text-[#003399] transition-colors">
+                        <i data-lucide="repeat" class="w-4 h-4 mr-2"></i>
+                        Cambiar Solicitante
+                    </a>
+                </div>
                 
                 <h2 class="text-4xl font-black text-[#001a4d] tracking-tight">
                     Crear MVE <span class="text-[#003399]">Manual</span>
@@ -113,6 +120,47 @@
                 </div>
             </div>
 
+            {{-- ============================================ --}}
+            {{-- STEPPER INDICATOR --}}
+            {{-- ============================================ --}}
+            <div class="mve-stepper mb-8" id="mveStepperIndicator">
+                <div class="flex items-center justify-between relative">
+                    {{-- Línea conectora --}}
+                    <div class="absolute top-5 left-0 right-0 h-0.5 bg-slate-200 z-0"></div>
+                    <div class="absolute top-5 left-0 h-0.5 bg-[#003399] z-0 transition-all duration-500" id="stepperProgressLine" style="width: 0%"></div>
+
+                    @php
+                        $steps = [
+                            ['num' => 1, 'label' => 'Datos de Manifestación', 'icon' => 'file-text'],
+                            ['num' => 2, 'label' => 'Información COVE', 'icon' => 'receipt'],
+                            ['num' => 3, 'label' => 'Valor en Aduana', 'icon' => 'dollar-sign'],
+                            ['num' => 4, 'label' => 'Documentos', 'icon' => 'paperclip'],
+                            ['num' => 5, 'label' => 'Vista Previa', 'icon' => 'eye'],
+                        ];
+                    @endphp
+
+                    @foreach($steps as $step)
+                    <button type="button" onclick="goToStep({{ $step['num'] }})" 
+                            class="stepper-step relative z-10 flex flex-col items-center group" 
+                            id="stepIndicator{{ $step['num'] }}" 
+                            data-step="{{ $step['num'] }}">
+                        <div class="stepper-circle w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all duration-300
+                            {{ $step['num'] === 1 ? 'border-[#003399] bg-[#003399] text-white' : 'border-slate-300 bg-white text-slate-400' }}">
+                            <i data-lucide="{{ $step['icon'] }}" class="w-5 h-5"></i>
+                        </div>
+                        <span class="stepper-label text-[10px] font-bold uppercase tracking-wide mt-2 transition-colors duration-300 text-center leading-tight max-w-[80px]
+                            {{ $step['num'] === 1 ? 'text-[#003399]' : 'text-slate-400' }}">
+                            {{ $step['label'] }}
+                        </span>
+                    </button>
+                    @endforeach
+                </div>
+            </div>
+
+            {{-- ============================================ --}}
+            {{-- STEP 1: Datos de Manifestación --}}
+            {{-- ============================================ --}}
+            <div id="step-1" class="step-content" data-step="1">
             {{-- 1. Datos de Manifestación --}}
             <div class="mve-section-card">
                 <div class="mve-card-header">
@@ -231,10 +279,23 @@
                                     GUARDAR DATOS DE MANIFESTACIÓN
                                 </button>
                             </div>
+
+                            {{-- Navegación Stepper --}}
+                            <div class="flex justify-end mt-6">
+                                <button type="button" onclick="nextStep()" class="btn-primary-large">
+                                    Siguiente
+                                    <i data-lucide="arrow-right" class="w-5 h-5 ml-2"></i>
+                                </button>
+                            </div>
                         </form>
                     </div>
                 </div>
+            </div>{{-- /step-1 --}}
 
+            {{-- ============================================ --}}
+            {{-- STEP 2: Información COVE --}}
+            {{-- ============================================ --}}
+            <div id="step-2" class="step-content hidden" data-step="2">
             {{-- 2. Información de Acuse de valor (Cove) --}}
             <div class="mve-section-card">
                     <div class="mve-card-header">
@@ -1092,6 +1153,23 @@
                     </div>
                 </div>
 
+            {{-- Navegación Stepper --}}
+            <div class="flex justify-between mt-6">
+                <button type="button" onclick="prevStep()" class="btn-secondary-large">
+                    <i data-lucide="arrow-left" class="w-5 h-5 mr-2"></i>
+                    Anterior
+                </button>
+                <button type="button" onclick="nextStep()" class="btn-primary-large">
+                    Siguiente
+                    <i data-lucide="arrow-right" class="w-5 h-5 ml-2"></i>
+                </button>
+            </div>
+            </div>{{-- /step-2 --}}
+
+            {{-- ============================================ --}}
+            {{-- STEP 3: Valor en Aduana --}}
+            {{-- ============================================ --}}
+            <div id="step-3" class="step-content hidden" data-step="3">
             {{-- 3. Valor en Aduana --}}
             <div class="mve-section-card">
                     <div class="mve-card-header">
@@ -1161,10 +1239,27 @@
                                     GUARDAR VALOR EN ADUANA
                                 </button>
                             </div>
+
+                            {{-- Navegación Stepper --}}
+                            <div class="flex justify-between mt-6">
+                                <button type="button" onclick="prevStep()" class="btn-secondary-large">
+                                    <i data-lucide="arrow-left" class="w-5 h-5 mr-2"></i>
+                                    Anterior
+                                </button>
+                                <button type="button" onclick="nextStep()" class="btn-primary-large">
+                                    Siguiente
+                                    <i data-lucide="arrow-right" class="w-5 h-5 ml-2"></i>
+                                </button>
+                            </div>
                         </form>
                     </div>
                 </div>
+            </div>{{-- /step-3 --}}
 
+            {{-- ============================================ --}}
+            {{-- STEP 4: Documentos (eDocument) --}}
+            {{-- ============================================ --}}
+            <div id="step-4" class="step-content hidden" data-step="4">
             {{-- 4. Documentos (eDocument) - Digitalización Integrada --}}
             <div class="mve-section-card">
                     <div class="mve-card-header">
@@ -1360,36 +1455,80 @@
                                     Guardar Documentos
                                 </button>
                             </div>
+
+                            {{-- Navegación Stepper --}}
+                            <div class="flex justify-between mt-6">
+                                <button type="button" onclick="prevStep()" class="btn-secondary-large">
+                                    <i data-lucide="arrow-left" class="w-5 h-5 mr-2"></i>
+                                    Anterior
+                                </button>
+                                <button type="button" onclick="guardarYVistaPrevia()" class="btn-primary-large bg-green-600 hover:bg-green-700">
+                                    <i data-lucide="eye" class="w-5 h-5 mr-2"></i>
+                                    Guardar y Vista Previa
+                                </button>
+                            </div>
                         </form>
                     </div>
                 </div>
+            </div>{{-- /step-4 --}}
 
-            {{-- Botones de Acción --}}
-            <div class="form-actions-bottom">
-                <div class="flex gap-4">
-                    <a href="{{ route('dashboard') }}" class="btn-secondary-large">
-                        <i data-lucide="arrow-left" class="w-5 h-5 mr-2"></i>
-                        Volver al Dashboard
-                    </a>
-                    
-                    <button type="button" onclick="confirmarBorrarBorrador()" class="btn-danger-large">
-                        <i data-lucide="trash-2" class="w-5 h-5 mr-2"></i>
-                        Borrar Borrador
-                    </button>
+            {{-- ============================================ --}}
+            {{-- STEP 5: Vista Previa --}}
+            {{-- ============================================ --}}
+            <div id="step-5" class="step-content hidden" data-step="5">
+                <div class="mve-section-card">
+                    <div class="mve-card-header bg-gradient-to-r from-[#003399] to-[#0055cc]">
+                        <div class="mve-card-icon bg-white/20 text-white">
+                            <i data-lucide="eye" class="w-6 h-6"></i>
+                        </div>
+                        <div>
+                            <h3 class="mve-card-title text-white">Vista Previa de la Manifestación</h3>
+                            <p class="text-blue-200 text-sm">Revise cuidadosamente todos los datos antes de confirmar</p>
+                        </div>
+                    </div>
+                    <div class="mve-card-body p-0">
+                        <div id="stepPreviewContent" class="p-6">
+                            {{-- Se llena dinámicamente por JS --}}
+                            <div class="flex items-center justify-center py-16 text-slate-400">
+                                <span class="inline-block w-6 h-6 border-2 border-slate-300 border-t-transparent rounded-full animate-spin mr-3"></span>
+                                Cargando vista previa...
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
+                {{-- Acciones finales de Step 5 --}}
+                <div class="mt-6 flex flex-col gap-4">
+                    {{-- Mensaje informativo --}}
+                    <div class="rounded-xl border border-blue-200 bg-blue-50 p-4">
+                        <div class="flex items-start gap-3">
+                            <i data-lucide="info" class="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0"></i>
+                            <p class="text-sm text-blue-700">Revise cuidadosamente todos los datos. Al confirmar, la manifestación se guardará como <strong>completada</strong> y podrá proceder a firmarla y enviarla a VUCEM.</p>
+                        </div>
+                    </div>
+
+                    {{-- Botones --}}
+                    <div class="flex justify-between items-center">
+                        <div class="flex gap-3">
+                            <button type="button" onclick="prevStep()" class="btn-secondary-large">
+                                <i data-lucide="arrow-left" class="w-5 h-5 mr-2"></i>
+                                Volver a Editar
+                            </button>
+                            <button type="button" onclick="confirmarBorrarBorrador()" class="btn-danger-large">
+                                <i data-lucide="trash-2" class="w-5 h-5 mr-2"></i>
+                                Borrar Borrador
+                            </button>
+                        </div>
+
+                        <button type="button" id="btnConfirmarManifestacion" onclick="confirmarGuardadoFinal()" class="btn-primary-large bg-green-600 hover:bg-green-700">
+                            <i data-lucide="check-circle" class="w-5 h-5 mr-2"></i>
+                            Confirmar y Guardar Manifestación
+                        </button>
+                    </div>
                 </div>
-                
-                <button type="button" id="btnGuardarManifestacion" onclick="guardarManifestacionCompleta()" class="btn-primary-large" disabled>
-                    <i data-lucide="save" class="w-5 h-5 mr-2"></i>
-                    Guardar Manifestación
-                </button>
-                {{-- Debug Cache Tools - Solo visible en desarrollo --}}
-                <div class="text-xs text-slate-400 mt-2 space-x-2 hidden" style="font-size: 10px;">
-                    <a href="javascript:void(0)" onclick="showExchangeRateCacheInfo()" class="hover:text-slate-600">Cache Info</a>
-                    <span>|</span>
-                    <a href="javascript:void(0)" onclick="clearExchangeRateCache()" class="hover:text-red-600">Limpiar Cache</a>
-                </div>
-            </div>
+            </div>{{-- /step-5 --}}
+
+
         </main>
     </div>
 
