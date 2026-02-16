@@ -100,18 +100,6 @@
                                 </div>
                             </div>
                             
-                            <div class="applicant-divider"></div>
-                            
-                            <div class="applicant-details">
-                                <div class="detail-item">
-                                    <i data-lucide="map-pin" class="w-4 h-4 text-slate-400"></i>
-                                    <span class="text-sm text-slate-600">{{ $applicant->municipality }}, {{ $applicant->state }}</span>
-                                </div>
-                                <div class="detail-item">
-                                    <i data-lucide="briefcase" class="w-4 h-4 text-slate-400"></i>
-                                    <span class="text-sm text-slate-600">{{ Str::limit($applicant->main_economic_activity, 40) }}</span>
-                                </div>
-                            </div>
                             
                             <div class="applicant-action">
                                 <span class="text-[#003399] font-bold text-sm">Seleccionar</span>

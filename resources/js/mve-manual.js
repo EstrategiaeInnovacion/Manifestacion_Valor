@@ -556,6 +556,13 @@ window.loadSavedDataCallback = function() {
             addEdocumentToTable(documento);
         });
     }
+
+    // Navegar automáticamente al siguiente paso incompleto
+    const container = document.getElementById('mveManualData');
+    const initialStep = parseInt(container?.dataset?.initialStep || '1', 10);
+    if (initialStep > 1) {
+        goToStep(initialStep);
+    }
 };
 
 // ============================================
