@@ -488,15 +488,16 @@ class MveController extends Controller
         // Buscar registro existente
         $informacionCove = MvInformacionCove::where('applicant_id', $applicantId)->first();
         
-        // Preparar datos para actualizar - SOLO actualizar campos que se envían
+        // Preparar datos para actualizar - Multi-COVE: sub-datos incluidos en informacion_cove
         $datosActualizar = [
             'status' => 'borrador',
         ];
         
-        // Solo actualizar si se envía en la request (no sobrescribir con vacío)
+        // informacion_cove contiene los COVEs con sus sub-datos (pedimentos, incrementables, etc.)
         if ($request->has('informacion_cove') && !empty($request->informacion_cove)) {
             $datosActualizar['informacion_cove'] = $request->informacion_cove;
         }
+        // Campos planos ya no se usan en multi-COVE, pero mantener por compatibilidad
         if ($request->has('pedimentos')) {
             $datosActualizar['pedimentos'] = $request->pedimentos;
         }
@@ -758,19 +759,25 @@ class MveController extends Controller
                     ], 422);
                 }
 
-                // Guardar folio en edocuments_registrados
-                EdocumentRegistrado::updateOrCreate(
-                    ['folio_edocument' => $resultado['eDocument']],
-                    [
-                        'existe_en_vucem' => true,
-                        'fecha_ultima_consulta' => now(),
-                        'response_message' => 'Digitalizado para ' . $rfc . ' (Tipo ' . $request->input('tipo_documento') . ')',
-                    ]
-                );
+                $eDocument = $resultado['eDocument'];
+                $isPending = str_starts_with($eDocument, 'PENDIENTE-Op-');
+
+                if (!$isPending) {
+                    // Guardar folio real en edocuments_registrados
+                    EdocumentRegistrado::updateOrCreate(
+                        ['folio_edocument' => $eDocument],
+                        [
+                            'existe_en_vucem' => true,
+                            'fecha_ultima_consulta' => now(),
+                            'response_message' => 'Digitalizado para ' . $rfc . ' (Tipo ' . $request->input('tipo_documento') . ')',
+                        ]
+                    );
+                }
 
                 return response()->json([
                     'success' => true,
-                    'eDocument' => $resultado['eDocument'],
+                    'eDocument' => $eDocument,
+                    'pending' => $isPending,
                     'message' => $resultado['mensaje'] ?? 'Documento digitalizado exitosamente.',
                 ]);
             } finally {
@@ -976,8 +983,10 @@ class MveController extends Controller
                     'persona_consulta' => $datosManifestacion->persona_consulta,
                     'guardado_en' => $datosManifestacion->updated_at->format('d/m/Y H:i:s')
                 ] : null,
+                // Multi-COVE: sub-datos están anidados dentro de cada COVE en informacion_cove
                 'informacion_cove' => $informacionCove ? [
                     'informacion_cove' => $informacionCove->informacion_cove,
+                    // Campos planos por compatibilidad (pueden estar vacíos en multi-COVE)
                     'pedimentos' => $informacionCove->pedimentos,
                     'incrementables' => $informacionCove->incrementables,
                     'decrementables' => $informacionCove->decrementables,

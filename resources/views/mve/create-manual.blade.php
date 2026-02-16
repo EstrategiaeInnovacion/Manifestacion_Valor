@@ -17,7 +17,7 @@
          data-persona-consulta='@json(optional($datosManifestacion)->persona_consulta ?? [])'
          data-metodo-valoracion="{{ optional($datosManifestacion)->metodo_valoracion ?? '' }}"
          data-existe-vinculacion="{{ optional($datosManifestacion)->existe_vinculacion ?? '' }}"
-         data-pedimento="{{ isset($datosExtraidos) ? ($datosExtraidos['datos_manifestacion']['pedimento'] ?? '') : (optional($datosManifestacion)->pedimento ?? '') }}"
+         data-pedimento="{{ isset($datosExtraidos) ? ($datosExtraidos['datos_manifestacion']['pedimento_completo'] ?? $datosExtraidos['datos_manifestacion']['pedimento'] ?? '') : (optional($datosManifestacion)->pedimento ?? '') }}"
          data-patente="{{ isset($datosExtraidos) ? ($datosExtraidos['datos_manifestacion']['patente'] ?? '') : (optional($datosManifestacion)->patente ?? '') }}"
          data-aduana="{{ isset($datosExtraidos) ? ($datosExtraidos['datos_manifestacion']['aduana'] ?? '') : (optional($datosManifestacion)->aduana ?? '') }}"
          data-informacion-cove='@json(isset($datosExtraidos) ? $datosExtraidos["informacion_cove"] : (optional($informacionCove)->informacion_cove ?? []))'
@@ -34,6 +34,8 @@
          data-has-webservice-key='{{ $applicant->hasWebserviceKey() ? "true" : "false" }}'
          data-incoterm-archivo-m="{{ isset($datosExtraidos) && isset($datosExtraidos['informacion_cove'][0]) ? ($datosExtraidos['informacion_cove'][0]['incoterm'] ?? '') : '' }}"
          data-vinculacion-archivo-m="{{ isset($datosExtraidos) ? ($datosExtraidos['vinculacion'] ?? '') : '' }}"
+         data-rfc-agente-archivo-m="{{ isset($datosExtraidos) ? ($datosExtraidos['datos_manifestacion']['rfc_agente_aduanal'] ?? '') : '' }}"
+         data-tipo-cambio-archivo-m="{{ isset($datosExtraidos) ? ($datosExtraidos['datos_manifestacion']['tipo_cambio'] ?? '') : '' }}"
          data-desde-archivo-m="{{ isset($datosExtraidos) ? 'true' : 'false' }}"
          data-initial-step="{{ $initialStep }}">
     </div>

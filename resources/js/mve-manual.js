@@ -1,6 +1,5 @@
 // Importar axios si es necesario
 import axios from 'axios';
-import ExchangeRateManager from './exchange-rates';
 
 // Variables globales
 let currentSearchedRfc = null;
@@ -11,6 +10,90 @@ let decrementablesData = [];
 let precioPagadoData = [];
 let precioPorPagarData = [];
 let compensoPagoData = [];
+
+// ============================================
+// MULTI-COVE: Almacenamiento per-COVE
+// ============================================
+let covesDataMap = {}; // { 'COVE_NUMBER': { pedimentos, incrementables, decrementables, precioPagado, precioPorPagar, compensoPago } }
+let editingCoveNumber = null; // COVE actualmente en edición
+
+/**
+ * Inicializa una entrada vacía en covesDataMap si no existe
+ */
+function initCoveData(coveNumber) {
+    if (!covesDataMap[coveNumber]) {
+        covesDataMap[coveNumber] = {
+            pedimentos: [],
+            incrementables: [],
+            decrementables: [],
+            precioPagado: [],
+            precioPorPagar: [],
+            compensoPago: []
+        };
+    }
+}
+
+/**
+ * Guarda los arrays de trabajo actuales en covesDataMap para el COVE en edición
+ */
+function saveWorkingDataToCoveMap() {
+    if (!editingCoveNumber) return;
+    covesDataMap[editingCoveNumber] = {
+        pedimentos: [...pedimentosData],
+        incrementables: [...incrementablesData],
+        decrementables: [...decrementablesData],
+        precioPagado: [...precioPagadoData],
+        precioPorPagar: [...precioPorPagarData],
+        compensoPago: [...compensoPagoData]
+    };
+}
+
+/**
+ * Carga los datos de un COVE específico a los arrays de trabajo
+ */
+function loadCoveDataToWorking(coveNumber) {
+    initCoveData(coveNumber);
+    const data = covesDataMap[coveNumber];
+    pedimentosData = [...(data.pedimentos || [])];
+    incrementablesData = [...(data.incrementables || [])];
+    decrementablesData = [...(data.decrementables || [])];
+    precioPagadoData = [...(data.precioPagado || [])];
+    precioPorPagarData = [...(data.precioPorPagar || [])];
+    compensoPagoData = [...(data.compensoPago || [])];
+}
+
+/**
+ * Refresca todas las tablas de sub-datos en el formulario de modificación
+ */
+function refreshAllSubTables() {
+    if (typeof actualizarTablaPedimentos === 'function' || typeof window.actualizarTablaPedimentos === 'function') {
+        actualizarTablaPedimentos();
+    }
+    if (typeof actualizarTablaIncrementables === 'function' || typeof window.actualizarTablaIncrementables === 'function') {
+        actualizarTablaIncrementables();
+    }
+    if (typeof actualizarTablaDecrementables === 'function' || typeof window.actualizarTablaDecrementables === 'function') {
+        actualizarTablaDecrementables();
+    }
+    if (typeof actualizarTablaPrecioPagado === 'function' || typeof window.actualizarTablaPrecioPagado === 'function') {
+        actualizarTablaPrecioPagado();
+    }
+    if (typeof actualizarTablaPrecioPorPagar === 'function' || typeof window.actualizarTablaPrecioPorPagar === 'function') {
+        actualizarTablaPrecioPorPagar();
+    }
+    if (typeof actualizarTablaCompensoPago === 'function' || typeof window.actualizarTablaCompensoPago === 'function') {
+        actualizarTablaCompensoPago();
+    }
+    
+    // Auto-expandir secciones que tienen datos
+    setTimeout(() => {
+        autoExpandSectionIfHasData('incrementables', 'incrementablesTableBody');
+        autoExpandSectionIfHasData('decrementables', 'decrementablesTableBody');
+        autoExpandSectionIfHasData('precioPagado', 'precioPagadoTableBody');
+        autoExpandSectionIfHasData('precioPorPagar', 'precioPorPagarTableBody');
+        autoExpandSectionIfHasData('compensoPago', 'compensoPagoTableBody');
+    }, 100);
+}
 
 // ============================================
 // STEPPER NAVIGATION
@@ -387,6 +470,8 @@ const getMveManualData = () => {
         documentos: parseJson(container.dataset.documentos, []),
         desdeArchivoM: container.dataset.desdeArchivoM === 'true', // Indica si los datos vienen del archivo M
         vinculacionArchivoM: container.dataset.vinculacionArchivoM || '', // Vinculación extraída del registro 551
+        rfcAgenteArchivoM: container.dataset.rfcAgenteArchivoM || '', // RFC del agente aduanal extraído del registro 501
+        tipoCambioArchivoM: container.dataset.tipoCambioArchivoM || '', // Tipo de cambio extraído del registro 501
     };
 };
 
@@ -425,6 +510,18 @@ window.loadSavedDataCallback = function() {
         });
     }
 
+    // Auto-agregar RFC del agente aduanal extraído del Archivo M (si no está ya en la tabla)
+    if (data.desdeArchivoM && data.rfcAgenteArchivoM) {
+        const rfcAgente = data.rfcAgenteArchivoM.toUpperCase();
+        const existingRows = document.querySelectorAll('#rfcConsultaTableBody tr[data-rfc]');
+        const alreadyExists = Array.from(existingRows).some(row => row.getAttribute('data-rfc') === rfcAgente);
+        if (!alreadyExists) {
+            const tipoFiguraDesc = getOptionText('tipoFiguraConsulta', 'TIPFIG.AGE');
+            window.addRfcToTable(rfcAgente, '', tipoFiguraDesc, 'TIPFIG.AGE');
+            console.log('RFC agente aduanal auto-agregado desde Archivo M:', rfcAgente);
+        }
+    }
+
     if (data.metodoValoracion && document.getElementById('metodoValoracion')) {
         document.getElementById('metodoValoracion').value = data.metodoValoracion;
     }
@@ -442,44 +539,8 @@ window.loadSavedDataCallback = function() {
     }
 
     if (Array.isArray(data.informacionCove) && data.informacionCove.length > 0) {
-        // Si los datos vienen del archivo M (primera carga), cargar en los campos del formulario
-        // Si los datos ya están guardados en BD, cargarlos en la tabla
         if (data.desdeArchivoM) {
-            // Primera carga desde archivo M: cargar en campos para que el usuario revise y agregue
-            const primerCove = data.informacionCove[0];
-            if (primerCove && primerCove.numero_cove) {
-                window.loadCoveToFields(
-                    primerCove.numero_cove,
-                    primerCove.metodo_valoracion || '',
-                    primerCove.numero_factura || '',
-                    primerCove.fecha_expedicion || '',
-                    primerCove.emisor_original || '',
-                    primerCove.destinatario || ''
-                );
-                
-                // Si hay incoterm, guardarlo en localStorage
-                if (primerCove.incoterm) {
-                    saveIncotermToLocalStorage(primerCove.incoterm);
-                }
-                
-                // Si hay vinculación en el COVE, guardarlo en localStorage
-                if (primerCove.vinculacion) {
-                    saveVinculacionToLocalStorage(primerCove.vinculacion);
-                }
-            }
-            
-            // Guardar vinculación del archivo M (del registro 551) en localStorage
-            if (data.vinculacionArchivoM) {
-                saveVinculacionToLocalStorage(data.vinculacionArchivoM);
-                console.log('Vinculación del archivo M guardada:', data.vinculacionArchivoM);
-            }
-            
-            // Guardar pedimento, patente y aduana en localStorage desde el archivo M
-            if (data.pedimento || data.patente || data.aduana) {
-                savePedimentoInfoToLocalStorage(data.pedimento || '', data.patente || '', data.aduana || '');
-            }
-        } else {
-            // Datos ya guardados en BD: cargar directamente en la tabla
+            // Archivo M: cargar TODOS los COVEs directamente en la tabla
             data.informacionCove.forEach((cove) => {
                 if (cove && cove.numero_cove) {
                     window.addCoveToTableFromData(
@@ -492,15 +553,81 @@ window.loadSavedDataCallback = function() {
                         cove.incoterm || '',
                         cove.vinculacion || ''
                     );
+                    // Inicializar entrada en covesDataMap
+                    initCoveData(cove.numero_cove);
                 }
             });
+            
+            // Guardar vinculación del archivo M (del registro 551) en localStorage
+            if (data.vinculacionArchivoM !== undefined && data.vinculacionArchivoM !== '') {
+                saveVinculacionToLocalStorage(data.vinculacionArchivoM);
+                console.log('Vinculación del archivo M guardada:', data.vinculacionArchivoM);
+            }
+            
+            // Guardar pedimento, patente y aduana en localStorage desde el archivo M
+            if (data.pedimento || data.patente || data.aduana) {
+                savePedimentoInfoToLocalStorage(data.pedimento || '', data.patente || '', data.aduana || '');
+            }
+            
+            // Si el primer COVE tiene incoterm, guardarlo
+            const primerCove = data.informacionCove[0];
+            if (primerCove && primerCove.incoterm) {
+                saveIncotermToLocalStorage(primerCove.incoterm);
+            }
+        } else {
+            // Datos ya guardados en BD: cargar en tabla y poblar covesDataMap
+            data.informacionCove.forEach((cove) => {
+                if (cove && cove.numero_cove) {
+                    window.addCoveToTableFromData(
+                        cove.numero_cove,
+                        cove.metodo_valoracion || '',
+                        cove.numero_factura || '',
+                        cove.fecha_expedicion || '',
+                        cove.emisor_original || '',
+                        cove.destinatario || '',
+                        cove.incoterm || '',
+                        cove.vinculacion || ''
+                    );
+                    // Cargar sub-datos per-COVE si existen (nuevo formato)
+                    covesDataMap[cove.numero_cove] = {
+                        pedimentos: Array.isArray(cove.pedimentos) ? cove.pedimentos : [],
+                        incrementables: Array.isArray(cove.incrementables) ? cove.incrementables : [],
+                        decrementables: Array.isArray(cove.decrementables) ? cove.decrementables : [],
+                        precioPagado: Array.isArray(cove.precio_pagado) ? cove.precio_pagado : [],
+                        precioPorPagar: Array.isArray(cove.precio_por_pagar) ? cove.precio_por_pagar : [],
+                        compensoPago: Array.isArray(cove.compenso_pago) ? cove.compenso_pago : []
+                    };
+                }
+            });
+            
+            // Migración: si hay datos planos (formato antiguo), asignarlos al primer COVE
+            const primerCoveNum = data.informacionCove[0]?.numero_cove;
+            if (primerCoveNum) {
+                const coveData = covesDataMap[primerCoveNum];
+                if (coveData.pedimentos.length === 0 && Array.isArray(data.pedimentosGuardados) && data.pedimentosGuardados.length > 0) {
+                    coveData.pedimentos = data.pedimentosGuardados;
+                }
+                if (coveData.incrementables.length === 0 && Array.isArray(data.incrementables) && data.incrementables.length > 0) {
+                    coveData.incrementables = data.incrementables;
+                }
+                if (coveData.decrementables.length === 0 && Array.isArray(data.decrementables) && data.decrementables.length > 0) {
+                    coveData.decrementables = data.decrementables;
+                }
+                if (coveData.precioPagado.length === 0 && Array.isArray(data.precioPagado) && data.precioPagado.length > 0) {
+                    coveData.precioPagado = data.precioPagado;
+                }
+                if (coveData.precioPorPagar.length === 0 && Array.isArray(data.precioPorPagar) && data.precioPorPagar.length > 0) {
+                    coveData.precioPorPagar = data.precioPorPagar;
+                }
+                if (coveData.compensoPago.length === 0 && Array.isArray(data.compensoPago) && data.compensoPago.length > 0) {
+                    coveData.compensoPago = data.compensoPago;
+                }
+            }
         }
     }
 
-    if (Array.isArray(data.pedimentosGuardados) && data.pedimentosGuardados.length > 0) {
-        pedimentosData = data.pedimentosGuardados;
-        actualizarTablaPedimentos();
-    }
+    // NOTA: pedimentosGuardados, incrementables, decrementables, etc. planos ya fueron
+    // migrados a covesDataMap arriba. No cargarlos en arrays globales.
 
     if (data.valorAduana) {
         if (data.valorAduana.total_precio_pagado && document.getElementById('totalPrecioPagado')) {
@@ -520,30 +647,7 @@ window.loadSavedDataCallback = function() {
         }
     }
 
-    if (Array.isArray(data.incrementables) && data.incrementables.length > 0) {
-        incrementablesData = data.incrementables;
-        actualizarTablaIncrementables();
-    }
-
-    if (Array.isArray(data.decrementables) && data.decrementables.length > 0) {
-        decrementablesData = data.decrementables;
-        actualizarTablaDecrementables();
-    }
-
-    if (Array.isArray(data.precioPagado) && data.precioPagado.length > 0) {
-        precioPagadoData = data.precioPagado;
-        actualizarTablaPrecioPagado();
-    }
-
-    if (Array.isArray(data.precioPorPagar) && data.precioPorPagar.length > 0) {
-        precioPorPagarData = data.precioPorPagar;
-        actualizarTablaPrecioPorPagar();
-    }
-
-    if (Array.isArray(data.compensoPago) && data.compensoPago.length > 0) {
-        compensoPagoData = data.compensoPago;
-        actualizarTablaCompensoPago();
-    }
+    // Sub-datos planos ya migrados a covesDataMap. No cargar en arrays globales.
 
     // Cargar datos adicionales desde localStorage (pedimentos, incoterm, a cargo del importador)
     loadMveFromLocalStorage();
@@ -650,56 +754,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-
-    window.exchangeRateManager = new ExchangeRateManager({
-        apiEndpoint: '/api/exchange-rate',
-        debounceMs: 400,
-        decimalPlaces: 4,
-        loadingText: 'Consultando Banxico...',
-        errorText: 'No disponible'
-    });
-
-    window.exchangeRateManager.initialize('body', {
-        dateField: '[data-exchange-date]',
-        currencyField: '[data-exchange-currency]',
-        rateField: '[data-exchange-rate]',
-        autoButton: '[data-exchange-auto]',
-        statusIndicator: '[data-exchange-status]'
-    });
-
-    window.clearExchangeRateCache = function() {
-        window.exchangeRateManager.destroy();
-        window.exchangeRateManager = new ExchangeRateManager({
-            apiEndpoint: '/api/exchange-rate',
-            debounceMs: 400,
-            decimalPlaces: 4,
-            cacheExpirationHours: 24,
-            loadingText: 'Consultando Banxico...',
-            errorText: 'No disponible'
-        });
-        window.exchangeRateManager.initialize('body', {
-            dateField: '[data-exchange-date]',
-            currencyField: '[data-exchange-currency]',
-            rateField: '[data-exchange-rate]',
-            autoButton: '[data-exchange-auto]',
-            statusIndicator: '[data-exchange-status]'
-        });
-        showNotification('Cache de tipos de cambio limpiado', 'success', 'Cache');
-    };
-
-    window.showExchangeRateCacheInfo = function() {
-        const cacheSize = window.exchangeRateManager.rateCache.size;
-        const storageInfo = localStorage.getItem('exchange_rate_cache');
-        const storageSize = storageInfo ? JSON.parse(storageInfo) : {};
-
-        console.log('=== INFORMACIÓN DE CACHE DE TIPOS DE CAMBIO ===');
-        console.log(`Entradas en memoria: ${cacheSize}`);
-        console.log('Entradas en localStorage:', Object.keys(storageSize).length);
-        console.log('Datos en memoria:', Array.from(window.exchangeRateManager.rateCache.keys()));
-        console.log('Para limpiar cache: clearExchangeRateCache()');
-
-        showNotification(`Cache: ${cacheSize} en memoria, ${Object.keys(storageSize).length} en storage`, 'info', 'Info');
-    };
 
     // Cargar datos guardados
     window.loadSavedDataCallback();
@@ -1050,7 +1104,12 @@ document.addEventListener('DOMContentLoaded', function() {
  * Digitaliza el documento: firma y envía a VUCEM via AJAX.
  * Recibe el folio eDocument y lo agrega a la tabla.
  */
+let _digitalizando = false;
 window.digitalizarDocumento = async function() {
+    // Guard contra múltiples clics
+    if (_digitalizando) return;
+    _digitalizando = true;
+
     const nombreDoc = document.getElementById('documentName')?.value?.trim();
     const tipoDocSelect = document.getElementById('documentTypeSelect');
     const tipoDocId = tipoDocSelect?.value;
@@ -1059,15 +1118,15 @@ window.digitalizarDocumento = async function() {
     // Validaciones
     if (!nombreDoc) {
         showNotification('Ingrese el nombre del documento.', 'warning');
-        return;
+        _digitalizando = false; return;
     }
     if (!tipoDocId) {
         showNotification('Seleccione el tipo de documento.', 'warning');
-        return;
+        _digitalizando = false; return;
     }
     if (!pdfValidado || !pdfValidado.file_content) {
         showNotification('Cargue y espere a que se valide el archivo PDF.', 'warning');
-        return;
+        _digitalizando = false; return;
     }
 
     const applicantId = document.querySelector('[data-applicant-id]').getAttribute('data-applicant-id');
@@ -1088,7 +1147,7 @@ window.digitalizarDocumento = async function() {
         const claveWS = document.getElementById('digitClaveWS')?.value;
         if (!claveWS) {
             showNotification('Ingrese la Contraseña del Web Service VUCEM.', 'warning');
-            return;
+            _digitalizando = false; return;
         }
         formData.append('clave_webservice', claveWS);
     }
@@ -1100,7 +1159,7 @@ window.digitalizarDocumento = async function() {
 
         if (!certFile || !keyFile || !keyPass) {
             showNotification('Ingrese los archivos de firma electrónica (.cer, .key) y la contraseña.', 'warning');
-            return;
+            _digitalizando = false; return;
         }
         formData.append('certificado', certFile);
         formData.append('llave_privada', keyFile);
@@ -1123,17 +1182,6 @@ window.digitalizarDocumento = async function() {
         const result = await response.json();
 
         if (result.success) {
-            // Agregar a la tabla
-            const tipoNombre = tipoDocSelect.options[tipoDocSelect.selectedIndex]?.text || tipoDocId;
-            addEdocumentToTable({
-                tipo_documento: tipoDocId,
-                nombre_documento: nombreDoc,
-                folio_edocument: result.eDocument,
-                created_at: new Date().toISOString()
-            });
-
-            showNotification(`¡Éxito! Folio eDocument: ${result.eDocument}`, 'success');
-
             // Limpiar campos
             document.getElementById('documentName').value = '';
             document.getElementById('documentTypeSelect').value = '';
@@ -1142,8 +1190,23 @@ window.digitalizarDocumento = async function() {
             document.getElementById('pdfValidationStatus').classList.add('hidden');
             pdfValidado = null;
 
-            // Auto-guardar documentos
-            await saveDocumentos();
+            if (result.pending) {
+                // VUCEM aún está procesando, no agregar a la tabla todavía
+                showNotification(`Documento enviado a VUCEM. Está siendo procesado. Consulte el folio eDocument en el portal VUCEM y agréguelo manualmente.`, 'warning');
+            } else {
+                // Agregar a la tabla solo con folio real
+                addEdocumentToTable({
+                    tipo_documento: tipoDocId,
+                    nombre_documento: nombreDoc,
+                    folio_edocument: result.eDocument,
+                    created_at: new Date().toISOString()
+                });
+
+                showNotification(`Folio eDocument: ${result.eDocument}`, 'success');
+
+                // Auto-guardar documentos
+                await saveDocumentos();
+            }
         } else {
             showNotification(result.message || 'Error al digitalizar documento.', 'error');
         }
@@ -1151,6 +1214,7 @@ window.digitalizarDocumento = async function() {
         console.error('[DIGITALIZAR] Error:', error);
         showNotification('Error de conexión al enviar a VUCEM.', 'error');
     } finally {
+        _digitalizando = false;
         btnDigit.disabled = false;
         btnDigit.innerHTML = originalHTML;
         lucide.createIcons();
@@ -1220,6 +1284,30 @@ window.addRfcConsulta = async function() {
 
     if (rfcValue.length < 12 || rfcValue.length > 13) {
         showNotification('El RFC debe tener entre 12 y 13 caracteres', 'warning');
+        return;
+    }
+
+    // Modo edición: actualizar la fila existente en lugar de agregar nueva
+    if (editingRfcRow) {
+        editingRfcRow.setAttribute('data-rfc', rfcValue);
+        editingRfcRow.setAttribute('data-razon-social', razonSocial);
+        editingRfcRow.setAttribute('data-tipo-figura', tipoFigura);
+        editingRfcRow.innerHTML = `
+            <td class="table-checkbox">
+                <input type="checkbox" class="table-checkbox-input rfc-checkbox" onchange="toggleDeleteButton()">
+            </td>
+            <td class="font-semibold text-[#003399]">${rfcValue}</td>
+            <td>${razonSocial}</td>
+            <td>${tipoFiguraTexto}</td>
+            <td class="text-center">
+                <button type="button" onclick="editRfcConsulta('${rfcValue}')" class="text-blue-600 hover:text-blue-800 p-1" title="Editar">
+                    <i data-lucide="pencil" class="w-4 h-4"></i>
+                </button>
+            </td>
+        `;
+        setTimeout(() => lucide.createIcons(), 50);
+        clearRfcConsultaFields();
+        showNotification('RFC actualizado exitosamente', 'success');
         return;
     }
 
@@ -1332,6 +1420,11 @@ window.addRfcToTable = function(rfc, razonSocial, tipoFigura, tipoFiguraClave = 
         <td class="font-semibold text-[#003399]">${rfc}</td>
         <td>${razonSocial}</td>
         <td>${tipoFigura}</td>
+        <td class="text-center">
+            <button type="button" onclick="editRfcConsulta('${rfc}')" class="text-blue-600 hover:text-blue-800 p-1" title="Editar">
+                <i data-lucide="pencil" class="w-4 h-4"></i>
+            </button>
+        </td>
     `;
     
     tbody.appendChild(newRow);
@@ -1410,7 +1503,7 @@ window.deleteSelectedRfcConsulta = async function() {
         if (tbody.children.length === 0) {
             const emptyRow = document.createElement('tr');
             emptyRow.innerHTML = `
-                <td colspan="4" class="table-empty">
+                <td colspan="5" class="table-empty">
                     <i data-lucide="inbox" class="w-8 h-8 text-slate-300"></i>
                     <p class="text-sm text-slate-400 mt-2">No hay RFC's agregados</p>
                 </td>
@@ -1428,11 +1521,35 @@ window.deleteSelectedRfcConsulta = async function() {
     }
 };
 
+// Variable para rastrear si estamos editando un RFC existente
+let editingRfcRow = null;
+
+window.editRfcConsulta = function(rfc) {
+    const tbody = document.getElementById('rfcConsultaTableBody');
+    const row = tbody.querySelector(`tr[data-rfc="${rfc}"]`);
+    if (!row) return;
+
+    editingRfcRow = row;
+
+    // Poblar los campos de entrada con los datos de la fila
+    document.getElementById('rfcConsultaInput').value = rfc;
+    document.getElementById('razonSocialConsulta').value = row.getAttribute('data-razon-social') || '';
+    const tipoFigura = row.getAttribute('data-tipo-figura') || '';
+    document.getElementById('tipoFiguraConsulta').value = tipoFigura;
+
+    // Scroll al formulario de entrada
+    document.getElementById('rfcConsultaInput').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    document.getElementById('razonSocialConsulta').focus();
+
+    showNotification('Editando RFC ' + rfc + '. Modifique los campos y presione Aceptar.', 'info');
+};
+
 window.clearRfcConsultaFields = function() {
     document.getElementById('rfcConsultaInput').value = '';
     document.getElementById('razonSocialConsulta').value = '';
     document.getElementById('tipoFiguraConsulta').value = '';
     currentSearchedRfc = null;
+    editingRfcRow = null;
 };
 
 // ============================================
@@ -1525,10 +1642,44 @@ window.addCoveToTableFromData = function(cove, metodoValor, factura, fechaExpedi
         <td class="text-sm text-slate-700">${fechaExpedicion}</td>
         <td class="text-sm text-slate-700">${emisorOriginal}</td>
         <td class="text-sm text-slate-700">${destinatario}</td>
+        <td class="text-center">
+            <button type="button" onclick="editCoveRow('${cove}')" class="p-1.5 text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 rounded-lg transition-colors" title="Editar datos del COVE">
+                <i data-lucide="pencil" class="w-4 h-4"></i>
+            </button>
+        </td>
     `;
 
     tableBody.appendChild(row);
     lucide.createIcons();
+};
+
+// Variable para modo edición de fila COVE
+let editingCoveRow = null;
+
+window.editCoveRow = function(coveNum) {
+    const tbody = document.getElementById('informacionCoveTableBody');
+    const row = tbody.querySelector(`tr[data-cove="${coveNum}"]`);
+    if (!row) return;
+
+    editingCoveRow = row;
+
+    // Poblar campos con los datos de la fila
+    const coveInput = document.getElementById('coveInput');
+    coveInput.value = coveNum;
+    coveInput.setAttribute('readonly', 'readonly');
+    coveInput.classList.add('bg-slate-100');
+
+    document.getElementById('metodoValoracionCove').value = row.getAttribute('data-metodo') || '';
+    document.getElementById('facturaInput').value = row.getAttribute('data-factura') || '';
+    document.getElementById('fechaExpedicionInput').value = row.getAttribute('data-fecha') || '';
+    document.getElementById('emisorOriginalInput').value = row.getAttribute('data-emisor') || '';
+    document.getElementById('destinatarioInput').value = row.getAttribute('data-destinatario') || '';
+
+    // Scroll al formulario
+    coveInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    document.getElementById('metodoValoracionCove').focus();
+
+    showNotification('Editando COVE ' + coveNum + '. Complete los campos y presione AGREGAR.', 'info');
 };
 
 window.addCoveToTable = function() {
@@ -1564,6 +1715,37 @@ window.addCoveToTable = function() {
     // Validar otros campos obligatorios
     if (!factura || !fechaExpedicion || !emisorOriginal || !destinatario) {
         showNotification('Por favor complete todos los campos obligatorios', 'warning');
+        return;
+    }
+
+    // Modo edición: actualizar la fila existente
+    if (editingCoveRow) {
+        const metodoTexto = metodoSelect.options[metodoSelect.selectedIndex].text;
+        editingCoveRow.setAttribute('data-metodo', metodoValor);
+        editingCoveRow.setAttribute('data-factura', factura);
+        editingCoveRow.setAttribute('data-fecha', fechaExpedicion);
+        editingCoveRow.setAttribute('data-emisor', emisorOriginal);
+        editingCoveRow.setAttribute('data-destinatario', destinatario);
+        if (incotermValor) editingCoveRow.setAttribute('data-incoterm', incotermValor);
+        editingCoveRow.innerHTML = `
+            <td class="table-checkbox">
+                <input type="checkbox" class="table-checkbox-input cove-checkbox" onchange="updateDeleteCoveButton()">
+            </td>
+            <td class="font-mono text-sm text-purple-600 font-semibold">${cove}</td>
+            <td class="text-sm text-slate-700">${metodoTexto}</td>
+            <td class="text-sm text-slate-700">${factura}</td>
+            <td class="text-sm text-slate-700">${fechaExpedicion}</td>
+            <td class="text-sm text-slate-700">${emisorOriginal}</td>
+            <td class="text-sm text-slate-700">${destinatario}</td>
+            <td class="text-center">
+                <button type="button" onclick="editCoveRow('${cove}')" class="p-1.5 text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 rounded-lg transition-colors" title="Editar datos del COVE">
+                    <i data-lucide="pencil" class="w-4 h-4"></i>
+                </button>
+            </td>
+        `;
+        lucide.createIcons();
+        clearCoveFields();
+        showNotification('COVE actualizado exitosamente', 'success');
         return;
     }
 
@@ -1604,9 +1786,18 @@ window.addCoveToTable = function() {
         <td class="text-sm text-slate-700">${fechaExpedicion}</td>
         <td class="text-sm text-slate-700">${emisorOriginal}</td>
         <td class="text-sm text-slate-700">${destinatario}</td>
+        <td class="text-center">
+            <button type="button" onclick="editCoveRow('${cove}')" class="p-1.5 text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 rounded-lg transition-colors" title="Editar datos del COVE">
+                <i data-lucide="pencil" class="w-4 h-4"></i>
+            </button>
+        </td>
     `;
 
     tableBody.appendChild(row);
+    
+    // Inicializar entrada en covesDataMap para el nuevo COVE
+    initCoveData(cove);
+    
     clearCoveFields();
     lucide.createIcons();
 };
@@ -1618,6 +1809,10 @@ window.clearCoveFields = function() {
     document.getElementById('fechaExpedicionInput').value = '';
     document.getElementById('emisorOriginalInput').value = '';
     document.getElementById('destinatarioInput').value = '';
+    editingCoveRow = null;
+    // Restaurar el input COVE para que sea editable
+    document.getElementById('coveInput').removeAttribute('readonly');
+    document.getElementById('coveInput').classList.remove('bg-slate-100');
 };
 
 window.toggleAllCove = function(checkbox) {
@@ -1665,6 +1860,11 @@ window.deleteSelectedCove = async function() {
 
     checkedBoxes.forEach(checkbox => {
         const row = checkbox.closest('tr');
+        const coveNum = row.getAttribute('data-cove');
+        // Limpiar covesDataMap
+        if (coveNum && covesDataMap[coveNum]) {
+            delete covesDataMap[coveNum];
+        }
         row.remove();
     });
 
@@ -1672,7 +1872,7 @@ window.deleteSelectedCove = async function() {
     if (tableBody.querySelectorAll('tr').length === 0) {
         tableBody.innerHTML = `
             <tr>
-                <td colspan="7" class="table-empty">
+                <td colspan="8" class="table-empty">
                     <i data-lucide="inbox" class="w-8 h-8 text-slate-300"></i>
                     <p class="text-sm text-slate-400 mt-2">No hay COVE agregados</p>
                 </td>
@@ -1692,18 +1892,41 @@ window.deleteSelectedCove = async function() {
 // ============================================
 // MODIFICACIÓN DE COVE
 // ============================================
-window.openManifestacionModal = function() {
-    const checkedBox = document.querySelector('.cove-checkbox:checked');
-    if (!checkedBox) {
-        showNotification('Por favor seleccione un COVE', 'warning');
+window.openManifestacionModal = function(coveNumberOverride) {
+    let targetRow = null;
+    
+    // Si se pasa un COVE directamente (desde botón editar), usarlo
+    if (coveNumberOverride) {
+        const rows = document.querySelectorAll('#informacionCoveTableBody tr[data-cove]');
+        rows.forEach(r => {
+            if (r.getAttribute('data-cove') === coveNumberOverride) targetRow = r;
+        });
+    } else {
+        const checkedBox = document.querySelector('.cove-checkbox:checked');
+        if (!checkedBox) {
+            showNotification('Por favor seleccione un COVE', 'warning');
+            return;
+        }
+        targetRow = checkedBox.closest('tr');
+    }
+    
+    if (!targetRow) {
+        showNotification('No se encontró el COVE', 'error');
         return;
     }
 
-    selectedCoveRow = checkedBox.closest('tr');
+    // Guardar datos del COVE anterior antes de cambiar
+    saveWorkingDataToCoveMap();
+
+    selectedCoveRow = targetRow;
     const cove = selectedCoveRow.getAttribute('data-cove');
     const metodo = selectedCoveRow.getAttribute('data-metodo');
     let incoterm = selectedCoveRow.getAttribute('data-incoterm') || '';
     const vinculacion = selectedCoveRow.getAttribute('data-vinculacion') || '';
+
+    // Establecer el COVE en edición y cargar sus datos
+    editingCoveNumber = cove;
+    loadCoveDataToWorking(cove);
 
     document.getElementById('modalCoveDisplay').value = cove;
     document.getElementById('modalMetodoValoracion').value = metodo;
@@ -1720,7 +1943,6 @@ window.openManifestacionModal = function() {
     const incotermSelect = document.getElementById('modalIncoterm');
     if (incotermSelect && incoterm) {
         incotermSelect.value = incoterm;
-        // Si no se selecciona, intentar seleccionar con un pequeño retraso
         setTimeout(() => {
             if (incotermSelect.value !== incoterm) {
                 incotermSelect.value = incoterm;
@@ -1748,7 +1970,7 @@ window.openManifestacionModal = function() {
         });
     }
 
-    // Pre-llenar pedimento desde datos del Archivo M o localStorage si están disponibles y no hay pedimentos agregados
+    // Pre-llenar pedimento desde datos del Archivo M o localStorage si el COVE no tiene pedimentos
     const mveData = getMveManualData();
     const savedLocalData = getMveFromLocalStorage();
     
@@ -1757,7 +1979,6 @@ window.openManifestacionModal = function() {
         const patenteInput = document.getElementById('patentePedimento');
         const aduanaSelect = document.getElementById('aduanaPedimento');
         
-        // Primero intentar cargar desde localStorage (tiene prioridad porque es más reciente)
         if (savedLocalData && savedLocalData.pedimentoInfo) {
             if (pedimentoInput && savedLocalData.pedimentoInfo.numero) {
                 pedimentoInput.value = formatPedimentoDisplay(savedLocalData.pedimentoInfo.numero);
@@ -1776,9 +1997,7 @@ window.openManifestacionModal = function() {
                     }
                 }
             }
-        }
-        // Si no hay en localStorage, intentar desde datos del servidor (Archivo M)
-        else if (mveData && mveData.pedimento) {
+        } else if (mveData && mveData.pedimento) {
             if (pedimentoInput && mveData.pedimento) {
                 pedimentoInput.value = formatPedimentoDisplay(mveData.pedimento);
             }
@@ -1796,11 +2015,12 @@ window.openManifestacionModal = function() {
                     }
                 }
             }
-            
-            // Guardar en localStorage para futuras cargas
             savePedimentoInfoToLocalStorage(mveData.pedimento, mveData.patente, mveData.aduana);
         }
     }
+
+    // Refrescar todas las sub-tablas con los datos de este COVE
+    refreshAllSubTables();
 
     const modificacionForm = document.getElementById('modificacionCoveForm');
     modificacionForm.classList.remove('hidden');
@@ -1813,9 +2033,13 @@ window.openManifestacionModal = function() {
 };
 
 window.ocultarModificacionForm = function() {
+    // Guardar datos del COVE en edición antes de cerrar
+    saveWorkingDataToCoveMap();
+    
     const modificacionForm = document.getElementById('modificacionCoveForm');
     modificacionForm.classList.add('hidden');
     selectedCoveRow = null;
+    editingCoveNumber = null;
 };
 
 window.guardarModificacionesCove = function() {
@@ -1852,6 +2076,9 @@ window.guardarModificacionesCove = function() {
     selectedCoveRow.setAttribute('data-metodo', metodoValor);
     selectedCoveRow.setAttribute('data-incoterm', incotermValor);
     selectedCoveRow.setAttribute('data-vinculacion', vinculacion);
+    
+    // Guardar datos de sub-tablas al covesDataMap
+    saveWorkingDataToCoveMap();
     
     // Guardar incoterm y vinculación en localStorage
     saveIncotermToLocalStorage(incotermValor);
@@ -2183,37 +2410,92 @@ window.eliminarPedimentosSeleccionados = async function() {
 };
 
 // ============================================
-// GUARDAR POR SECCIÓN
+// TOGGLE SECCIONES COLAPSABLES
 // ============================================
-// Validar tipo de cambio según StoreManifestacionValorRequest (between:0,9999999999999.9999)
-window.validateExchangeRateInput = function(input) {
-    const value = parseFloat(input.value);
-    const maxValue = 9999999999999.9999;
-    
-    if (isNaN(value)) {
-        input.setCustomValidity('El tipo de cambio debe ser numérico');
-        return;
+
+// Pre-rellenar tipo de cambio del Archivo M al expandir una sección
+function prefillTipoCambioFromArchivoM(sectionName) {
+    const data = getInitialData();
+    if (!data.desdeArchivoM || !data.tipoCambioArchivoM) return;
+
+    const inputMap = {
+        'incrementables': 'tipoCambioIncrementableInput',
+        'decrementables': 'tipoCambioDecrementableInput',
+        'precioPagado': 'tipoCambioPrecioPagadoInput',
+        'precioPorPagar': 'tipoCambioPrecioPorPagarInput'
+    };
+
+    const inputId = inputMap[sectionName];
+    if (!inputId) return;
+
+    const input = document.getElementById(inputId);
+    if (input && !input.value) {
+        input.value = data.tipoCambioArchivoM;
     }
+}
+
+window.toggleSection = function(sectionName) {
+    const content = document.getElementById(sectionName + 'Content');
+    const icon = document.getElementById('toggle' + sectionName.charAt(0).toUpperCase() + sectionName.slice(1) + 'Icon');
+    const textEl = document.getElementById('toggle' + sectionName.charAt(0).toUpperCase() + sectionName.slice(1) + 'Text');
+    const btn = document.getElementById('toggle' + sectionName.charAt(0).toUpperCase() + sectionName.slice(1) + 'Btn');
     
-    if (value < 0) {
-        input.setCustomValidity('El tipo de cambio no puede ser negativo');
-        return;
+    if (!content) return;
+    
+    const isHidden = content.classList.contains('hidden');
+    
+    if (isHidden) {
+        content.classList.remove('hidden');
+        if (icon) {
+            icon.setAttribute('data-lucide', 'minus');
+        }
+        if (textEl) {
+            textEl.textContent = 'Ocultar';
+        }
+        if (btn) {
+            btn.classList.remove('text-blue-600', 'bg-blue-50', 'border-blue-200', 'hover:bg-blue-100');
+            btn.classList.add('text-slate-600', 'bg-slate-100', 'border-slate-300', 'hover:bg-slate-200');
+        }
+        // Auto-rellenar tipo de cambio del Archivo M si está disponible
+        prefillTipoCambioFromArchivoM(sectionName);
+    } else {
+        content.classList.add('hidden');
+        if (icon) {
+            icon.setAttribute('data-lucide', 'plus');
+        }
+        if (textEl) {
+            const labels = {
+                'incrementables': 'Agregar Incrementable',
+                'decrementables': 'Agregar Decrementable',
+                'precioPagado': 'Agregar Precio Pagado',
+                'precioPorPagar': 'Agregar Precio por Pagar',
+                'compensoPago': 'Agregar Compenso Pago'
+            };
+            textEl.textContent = labels[sectionName] || 'Agregar';
+        }
+        if (btn) {
+            btn.classList.remove('text-slate-600', 'bg-slate-100', 'border-slate-300', 'hover:bg-slate-200');
+            btn.classList.add('text-blue-600', 'bg-blue-50', 'border-blue-200', 'hover:bg-blue-100');
+        }
     }
-    
-    if (value > maxValue) {
-        input.setCustomValidity(`El tipo de cambio no debe exceder ${maxValue.toLocaleString()}`);
-        return;
-    }
-    
-    // Validar hasta 3 decimales
-    const decimalParts = input.value.split('.');
-    if (decimalParts.length > 1 && decimalParts[1].length > 3) {
-        input.value = parseFloat(input.value).toFixed(3);
-    }
-    
-    input.setCustomValidity('');
+    lucide.createIcons();
 };
 
+// Auto-expandir sección si tiene datos
+window.autoExpandSectionIfHasData = function(sectionName, tableBodyId) {
+    const tbody = document.getElementById(tableBodyId);
+    if (!tbody) return;
+    const hasData = tbody.querySelectorAll('tr:not(:has(.table-empty))').length > 0;
+    if (hasData) {
+        const content = document.getElementById(sectionName + 'Content');
+        if (content && content.classList.contains('hidden')) {
+            toggleSection(sectionName);
+        }
+    }
+};
+
+// ============================================
+// GUARDAR POR SECCIÓN
 // ============================================
 // INCREMENTABLES
 // ============================================
@@ -3120,47 +3402,57 @@ window.saveDatosManifestacion = async function() {
 };
 
 window.saveInformacionCove = async function() {
+    // Guardar datos del COVE actualmente en edición (si hay)
+    saveWorkingDataToCoveMap();
+    
     const informacionCove = [];
     const coveRows = document.querySelectorAll('#informacionCoveTableBody tr[data-cove]');
     
     console.log('Filas COVE encontradas:', coveRows.length);
     
     coveRows.forEach(row => {
-        const cove = row.getAttribute('data-cove');
-        if (cove) {
+        const coveNum = row.getAttribute('data-cove');
+        if (coveNum) {
+            // Obtener sub-datos per-COVE desde covesDataMap
+            const coveSubData = covesDataMap[coveNum] || {};
+            
             informacionCove.push({
-                numero_cove: cove,
+                numero_cove: coveNum,
                 metodo_valoracion: row.getAttribute('data-metodo') || '',
                 numero_factura: row.getAttribute('data-factura') || '',
                 fecha_expedicion: row.getAttribute('data-fecha') || '',
                 emisor_original: row.getAttribute('data-emisor') || '',
                 destinatario: row.getAttribute('data-destinatario') || '',
                 incoterm: row.getAttribute('data-incoterm') || '',
-                vinculacion: row.getAttribute('data-vinculacion') || ''
+                vinculacion: row.getAttribute('data-vinculacion') || '',
+                // Sub-datos per-COVE
+                pedimentos: coveSubData.pedimentos || [],
+                incrementables: coveSubData.incrementables || [],
+                decrementables: coveSubData.decrementables || [],
+                precio_pagado: coveSubData.precioPagado || [],
+                precio_por_pagar: coveSubData.precioPorPagar || [],
+                compenso_pago: coveSubData.compensoPago || []
             });
         }
     });
     
-    console.log('Información COVE a guardar:', informacionCove);
+    console.log('Información COVE a guardar (multi-COVE):', informacionCove);
     
     const data = {
-        informacion_cove: informacionCove,
-        pedimentos: pedimentosData,
-        incrementables: incrementablesData,
-        decrementables: decrementablesData,
-        precio_pagado: precioPagadoData,
-        precio_por_pagar: precioPorPagarData,
-        compenso_pago: compensoPagoData
+        informacion_cove: informacionCove
     };
 
-    // Debug log para verificar los datos
     console.log('Datos a enviar:', {
-        informacion_cove: informacionCove.length,
-        incrementables: incrementablesData.length,
-        decrementables: decrementablesData.length,
-        precio_pagado: precioPagadoData.length,
-        precio_por_pagar: precioPorPagarData.length,
-        compenso_pago: compensoPagoData.length
+        total_coves: informacionCove.length,
+        coves: informacionCove.map(c => ({
+            cove: c.numero_cove,
+            pedimentos: (c.pedimentos || []).length,
+            incrementables: (c.incrementables || []).length,
+            decrementables: (c.decrementables || []).length,
+            precio_pagado: (c.precio_pagado || []).length,
+            precio_por_pagar: (c.precio_por_pagar || []).length,
+            compenso_pago: (c.compenso_pago || []).length
+        }))
     });
 
     await saveSection('informacion-cove', data, 'Información COVE');
@@ -3466,20 +3758,222 @@ async function mostrarVistaPrevia() {
 function generarContenidoVistaPrevia(data) {
     let html = '';
     
-    // Obtener datos
+    // Obtener datos — nuevo formato multi-COVE
     const coves = data.informacion_cove?.informacion_cove || [];
-    const pedimentos = data.informacion_cove?.pedimentos || [];
-    const incrementables = data.informacion_cove?.incrementables || [];
-    const decrementables = data.informacion_cove?.decrementables || [];
-    const precioPagado = data.informacion_cove?.precio_pagado || [];
-    const precioPorPagar = data.informacion_cove?.precio_por_pagar || [];
-    const compensoPago = data.informacion_cove?.compenso_pago || [];
     const valorAduana = data.valor_aduana?.valor_en_aduana_data || {};
     const personasConsulta = data.datos_manifestacion?.persona_consulta || [];
     const documentos = data.documentos || [];
     
-    // Primer COVE para datos generales
-    const primerCove = coves[0] || {};
+    // Función helper para generar bloque de un COVE
+    function generarBloqueCove(cove, index) {
+        const pedimentos = cove.pedimentos || [];
+        const incrementables = cove.incrementables || [];
+        const decrementables = cove.decrementables || [];
+        const precioPagado = cove.precio_pagado || [];
+        const precioPorPagar = cove.precio_por_pagar || [];
+        const compensoPago = cove.compenso_pago || [];
+        
+        return `
+            <!-- COVE ${index + 1}: ${cove.numero_cove || ''} -->
+            <div class="border-2 border-purple-200 rounded-lg p-4 bg-purple-50/30">
+                <div class="flex items-center gap-2 mb-4">
+                    <span class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-purple-600 text-white text-xs font-bold">${index + 1}</span>
+                    <h3 class="text-sm font-bold text-purple-800">COVE: ${cove.numero_cove || ''}</h3>
+                </div>
+                
+                <!-- Información Acuse de Valor -->
+                <div class="border-b-2 border-slate-300 pb-4 mb-4">
+                    <h4 class="text-xs font-bold text-slate-700 mb-2 border-b border-slate-200 pb-1">Información Acuse de Valor</h4>
+                    <table class="w-full text-xs">
+                        <tr class="bg-slate-100">
+                            <td class="border border-slate-300 p-2 font-semibold" colspan="2">Método de valoración aduanera</td>
+                        </tr>
+                        <tr><td class="border border-slate-300 p-2" colspan="2">${cove.metodo_valoracion || ''}</td></tr>
+                        <tr class="bg-slate-100">
+                            <td class="border border-slate-300 p-2 font-semibold" colspan="2">INCOTERM</td>
+                        </tr>
+                        <tr><td class="border border-slate-300 p-2" colspan="2">${cove.incoterm || ''}</td></tr>
+                        <tr class="bg-slate-100">
+                            <td class="border border-slate-300 p-2 font-semibold" colspan="2">¿Existe vinculación entre importador y vendedor/proveedor?</td>
+                        </tr>
+                        <tr><td class="border border-slate-300 p-2" colspan="2">${cove.vinculacion === '1' || cove.vinculacion === 1 ? 'Sí' : (cove.vinculacion === '0' || cove.vinculacion === 0 ? 'No' : '')}</td></tr>
+                    </table>
+                </div>
+                
+                <!-- Pedimentos -->
+                <div class="border-b-2 border-slate-300 pb-4 mb-4">
+                    <h4 class="text-xs font-bold text-slate-700 mb-2 border-b border-slate-200 pb-1">Pedimentos</h4>
+                    <table class="w-full text-xs">
+                        <tr class="bg-slate-100">
+                            <td class="border border-slate-300 p-2 font-semibold w-1/3">Pedimento</td>
+                            <td class="border border-slate-300 p-2 font-semibold w-1/3">Patente</td>
+                            <td class="border border-slate-300 p-2 font-semibold w-1/3">Aduana</td>
+                        </tr>
+                        ${pedimentos.length > 0 ? pedimentos.map(p => `
+                            <tr>
+                                <td class="border border-slate-300 p-2">${p.numeroDisplay || p.numero || ''}</td>
+                                <td class="border border-slate-300 p-2">${p.patente || ''}</td>
+                                <td class="border border-slate-300 p-2">${p.aduanaText || p.aduana || ''}</td>
+                            </tr>
+                        `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="3">&nbsp;</td></tr>`}
+                    </table>
+                </div>
+                
+                <!-- Incrementables -->
+                <div class="border-b-2 border-slate-300 pb-4 mb-4">
+                    <h4 class="text-xs font-bold text-slate-700 mb-1 border-b border-slate-200 pb-1">Incrementables conforme al artículo 65 de la ley</h4>
+                    <table class="w-full text-xs">
+                        <tr class="bg-slate-100">
+                            <td class="border border-slate-300 p-2 font-semibold">Fecha de erogación</td>
+                            <td class="border border-slate-300 p-2 font-semibold">Importe</td>
+                            <td class="border border-slate-300 p-2 font-semibold">Tipo de moneda</td>
+                        </tr>
+                        ${incrementables.length > 0 ? incrementables.map(inc => `
+                            <tr>
+                                <td class="border border-slate-300 p-2">${inc.fechaErogacion || ''}</td>
+                                <td class="border border-slate-300 p-2">${inc.importe ? '$' + parseFloat(inc.importe).toLocaleString('es-MX', {minimumFractionDigits: 2}) : ''}</td>
+                                <td class="border border-slate-300 p-2">${inc.tipoMonedaText || inc.tipoMoneda || ''}</td>
+                            </tr>
+                        `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="3">&nbsp;</td></tr>`}
+                        <tr class="bg-slate-100">
+                            <td class="border border-slate-300 p-2 font-semibold">Tipo de cambio</td>
+                            <td class="border border-slate-300 p-2 font-semibold" colspan="2">¿Está a cargo del importador?</td>
+                        </tr>
+                        ${incrementables.length > 0 ? incrementables.map(inc => `
+                            <tr>
+                                <td class="border border-slate-300 p-2">${inc.tipoCambio || ''}</td>
+                                <td class="border border-slate-300 p-2" colspan="2">${inc.aCargoImportador !== undefined ? (inc.aCargoImportador ? 'Sí' : 'No') : ''}</td>
+                            </tr>
+                        `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="3">&nbsp;</td></tr>`}
+                    </table>
+                </div>
+                
+                <!-- Decrementables -->
+                <div class="border-b-2 border-slate-300 pb-4 mb-4">
+                    <h4 class="text-xs font-bold text-slate-700 mb-1 border-b border-slate-200 pb-1">Decrementables (Art. 66)</h4>
+                    <table class="w-full text-xs">
+                        <tr class="bg-slate-100">
+                            <td class="border border-slate-300 p-2 font-semibold">Fecha de erogación</td>
+                            <td class="border border-slate-300 p-2 font-semibold">Importe</td>
+                            <td class="border border-slate-300 p-2 font-semibold">Tipo de moneda</td>
+                        </tr>
+                        ${decrementables.length > 0 ? decrementables.map(dec => `
+                            <tr>
+                                <td class="border border-slate-300 p-2">${dec.fechaErogacion || ''}</td>
+                                <td class="border border-slate-300 p-2">${dec.importe ? '$' + parseFloat(dec.importe).toLocaleString('es-MX', {minimumFractionDigits: 2}) : ''}</td>
+                                <td class="border border-slate-300 p-2">${dec.tipoMonedaText || dec.tipoMoneda || ''}</td>
+                            </tr>
+                        `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="3">&nbsp;</td></tr>`}
+                        <tr class="bg-slate-100">
+                            <td class="border border-slate-300 p-2 font-semibold" colspan="3">Tipo de cambio</td>
+                        </tr>
+                        ${decrementables.length > 0 ? decrementables.map(dec => `
+                            <tr><td class="border border-slate-300 p-2" colspan="3">${dec.tipoCambio || ''}</td></tr>
+                        `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="3">&nbsp;</td></tr>`}
+                    </table>
+                </div>
+                
+                <!-- Precio pagado -->
+                <div class="border-b-2 border-slate-300 pb-4 mb-4">
+                    <h4 class="text-xs font-bold text-slate-700 mb-2 border-b border-slate-200 pb-1">Precio pagado</h4>
+                    <table class="w-full text-xs">
+                        <tr class="bg-slate-100">
+                            <td class="border border-slate-300 p-2 font-semibold">Fecha de pago</td>
+                            <td class="border border-slate-300 p-2 font-semibold">Importe</td>
+                            <td class="border border-slate-300 p-2 font-semibold">Forma de pago</td>
+                            <td class="border border-slate-300 p-2 font-semibold">Especifique</td>
+                        </tr>
+                        ${precioPagado.length > 0 ? precioPagado.map(p => `
+                            <tr>
+                                <td class="border border-slate-300 p-2">${p.fecha || ''}</td>
+                                <td class="border border-slate-300 p-2">${p.importe ? '$' + parseFloat(p.importe).toLocaleString('es-MX', {minimumFractionDigits: 2}) : ''}</td>
+                                <td class="border border-slate-300 p-2">${p.formaPagoText || p.formaPago || ''}</td>
+                                <td class="border border-slate-300 p-2">${p.especifique || ''}</td>
+                            </tr>
+                        `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="4">&nbsp;</td></tr>`}
+                        <tr class="bg-slate-100">
+                            <td class="border border-slate-300 p-2 font-semibold">Tipo de moneda</td>
+                            <td class="border border-slate-300 p-2 font-semibold" colspan="3">Tipo de cambio</td>
+                        </tr>
+                        ${precioPagado.length > 0 ? precioPagado.map(p => `
+                            <tr>
+                                <td class="border border-slate-300 p-2">${p.tipoMonedaText || p.tipoMoneda || ''}</td>
+                                <td class="border border-slate-300 p-2" colspan="3">${p.tipoCambio || ''}</td>
+                            </tr>
+                        `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="4">&nbsp;</td></tr>`}
+                    </table>
+                </div>
+                
+                <!-- Precio por pagar -->
+                <div class="border-b-2 border-slate-300 pb-4 mb-4">
+                    <h4 class="text-xs font-bold text-slate-700 mb-2 border-b border-slate-200 pb-1">Precio por pagar</h4>
+                    <table class="w-full text-xs">
+                        <tr class="bg-slate-100">
+                            <td class="border border-slate-300 p-2 font-semibold">Fecha de pago</td>
+                            <td class="border border-slate-300 p-2 font-semibold">Importe</td>
+                            <td class="border border-slate-300 p-2 font-semibold">Forma de pago</td>
+                            <td class="border border-slate-300 p-2 font-semibold">Especifique</td>
+                        </tr>
+                        ${precioPorPagar.length > 0 ? precioPorPagar.map(p => `
+                            <tr>
+                                <td class="border border-slate-300 p-2">${p.fecha || ''}</td>
+                                <td class="border border-slate-300 p-2">${p.importe ? '$' + parseFloat(p.importe).toLocaleString('es-MX', {minimumFractionDigits: 2}) : ''}</td>
+                                <td class="border border-slate-300 p-2">${p.formaPagoText || p.formaPago || ''}</td>
+                                <td class="border border-slate-300 p-2">${p.especifique || ''}</td>
+                            </tr>
+                        `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="4">&nbsp;</td></tr>`}
+                        <tr class="bg-slate-100">
+                            <td class="border border-slate-300 p-2 font-semibold">Tipo de moneda</td>
+                            <td class="border border-slate-300 p-2 font-semibold" colspan="3">Tipo de cambio</td>
+                        </tr>
+                        ${precioPorPagar.length > 0 ? precioPorPagar.map(p => `
+                            <tr>
+                                <td class="border border-slate-300 p-2">${p.tipoMonedaText || p.tipoMoneda || ''}</td>
+                                <td class="border border-slate-300 p-2" colspan="3">${p.tipoCambio || ''}</td>
+                            </tr>
+                        `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="4">&nbsp;</td></tr>`}
+                        <tr class="bg-slate-100">
+                            <td class="border border-slate-300 p-2 font-semibold" colspan="4">Momento(s) o situación(es) cuando se realizará el pago</td>
+                        </tr>
+                        ${precioPorPagar.length > 0 ? precioPorPagar.map(p => `
+                            <tr><td class="border border-slate-300 p-2" colspan="4">${p.momentoSituacion || ''}</td></tr>
+                        `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="4">&nbsp;</td></tr>`}
+                    </table>
+                </div>
+                
+                <!-- Compenso pago -->
+                <div class="pb-2">
+                    <h4 class="text-xs font-bold text-slate-700 mb-2 border-b border-slate-200 pb-1">Compenso pago</h4>
+                    <table class="w-full text-xs">
+                        <tr class="bg-slate-100">
+                            <td class="border border-slate-300 p-2 font-semibold">Fecha de pago</td>
+                            <td class="border border-slate-300 p-2 font-semibold">Forma de pago</td>
+                            <td class="border border-slate-300 p-2 font-semibold">Especifique</td>
+                        </tr>
+                        ${compensoPago.length > 0 ? compensoPago.map(c => `
+                            <tr>
+                                <td class="border border-slate-300 p-2">${c.fecha || ''}</td>
+                                <td class="border border-slate-300 p-2">${c.formaPagoText || c.formaPago || ''}</td>
+                                <td class="border border-slate-300 p-2">${c.especifique || ''}</td>
+                            </tr>
+                        `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="3">&nbsp;</td></tr>`}
+                        <tr class="bg-slate-100">
+                            <td class="border border-slate-300 p-2 font-semibold" colspan="3">Motivo por lo que se realizó</td>
+                        </tr>
+                        ${compensoPago.length > 0 ? compensoPago.map(c => `
+                            <tr><td class="border border-slate-300 p-2" colspan="3">${c.motivo || ''}</td></tr>
+                        `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="3">&nbsp;</td></tr>`}
+                        <tr class="bg-slate-100">
+                            <td class="border border-slate-300 p-2 font-semibold" colspan="3">Prestación de la mercancía</td>
+                        </tr>
+                        ${compensoPago.length > 0 ? compensoPago.map(c => `
+                            <tr><td class="border border-slate-300 p-2" colspan="3">${c.prestacionMercancia || ''}</td></tr>
+                        `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="3">&nbsp;</td></tr>`}
+                    </table>
+                </div>
+            </div>
+        `;
+    }
     
     html += `
     <div class="bg-white border border-slate-300 shadow-lg">
@@ -3545,133 +4039,14 @@ function generarContenidoVistaPrevia(data) {
                 </table>
             </div>
             
-            <!-- Información Acuse de Valor -->
+            <!-- Bloques de COVEs secuenciales -->
             <div class="border-b-2 border-slate-300 pb-4">
-                <h3 class="text-sm font-bold text-slate-700 mb-3 border-b border-slate-200 pb-1">Información Acuse de Valor</h3>
-                <table class="w-full text-xs">
-                    <tr class="bg-slate-100">
-                        <td class="border border-slate-300 p-2 font-semibold" colspan="2">Método de valoración aduanera</td>
-                    </tr>
-                    <tr>
-                        <td class="border border-slate-300 p-2" colspan="2">${primerCove.metodo_valoracion || ''}</td>
-                    </tr>
-                    <tr class="bg-slate-100">
-                        <td class="border border-slate-300 p-2 font-semibold" colspan="2">INCOTERM</td>
-                    </tr>
-                    <tr>
-                        <td class="border border-slate-300 p-2" colspan="2">${primerCove.incoterm || ''}</td>
-                    </tr>
-                    <tr class="bg-slate-100">
-                        <td class="border border-slate-300 p-2 font-semibold" colspan="2">¿Existe vinculación entre importador y vendedor/proveedor?</td>
-                    </tr>
-                    <tr>
-                        <td class="border border-slate-300 p-2" colspan="2">${primerCove.vinculacion === '1' || primerCove.vinculacion === 1 ? 'Sí' : (primerCove.vinculacion === '0' || primerCove.vinculacion === 0 ? 'No' : '')}</td>
-                    </tr>
-                </table>
-            </div>
-            
-            <!-- Pedimentos -->
-            <div class="border-b-2 border-slate-300 pb-4">
-                <h3 class="text-sm font-bold text-slate-700 mb-3 border-b border-slate-200 pb-1">Pedimentos</h3>
-                <table class="w-full text-xs">
-                    <tr class="bg-slate-100">
-                        <td class="border border-slate-300 p-2 font-semibold w-1/3">Pedimento</td>
-                        <td class="border border-slate-300 p-2 font-semibold w-1/3">Patente</td>
-                        <td class="border border-slate-300 p-2 font-semibold w-1/3">Aduana</td>
-                    </tr>
-                    ${pedimentos.length > 0 ? pedimentos.map(p => `
-                        <tr>
-                            <td class="border border-slate-300 p-2">${p.numeroDisplay || p.numero || ''}</td>
-                            <td class="border border-slate-300 p-2">${p.patente || ''}</td>
-                            <td class="border border-slate-300 p-2">${p.aduanaText || p.aduana || ''}</td>
-                        </tr>
-                    `).join('') : `
-                        <tr>
-                            <td class="border border-slate-300 p-2">&nbsp;</td>
-                            <td class="border border-slate-300 p-2">&nbsp;</td>
-                            <td class="border border-slate-300 p-2">&nbsp;</td>
-                        </tr>
+                <h3 class="text-sm font-bold text-slate-700 mb-4 border-b border-slate-200 pb-1">Información de COVEs (${coves.length})</h3>
+                <div class="space-y-6">
+                    ${coves.length > 0 ? coves.map((cove, i) => generarBloqueCove(cove, i)).join('') : `
+                        <p class="text-sm text-slate-400 text-center py-4">No hay COVEs registrados</p>
                     `}
-                </table>
-            </div>
-            
-            <!-- Incrementables conforme al artículo 65 de la ley -->
-            <div class="border-b-2 border-slate-300 pb-4">
-                <h3 class="text-sm font-bold text-slate-700 mb-2 border-b border-slate-200 pb-1">Incrementables conforme al artículo 65 de la ley</h3>
-                <p class="text-xs text-slate-600 mb-3">Las comisiones y los gastos de corretaje, salvo las comisiones de compra.</p>
-                <table class="w-full text-xs">
-                    <tr class="bg-slate-100">
-                        <td class="border border-slate-300 p-2 font-semibold">Fecha de erogación</td>
-                        <td class="border border-slate-300 p-2 font-semibold">Importe</td>
-                        <td class="border border-slate-300 p-2 font-semibold">Tipo de moneda</td>
-                    </tr>
-                    ${incrementables.length > 0 ? incrementables.map(inc => `
-                        <tr>
-                            <td class="border border-slate-300 p-2">${inc.fechaErogacion || ''}</td>
-                            <td class="border border-slate-300 p-2">${inc.importe ? '$' + parseFloat(inc.importe).toLocaleString('es-MX', {minimumFractionDigits: 2}) : ''}</td>
-                            <td class="border border-slate-300 p-2">${inc.tipoMonedaText || inc.tipoMoneda || ''}</td>
-                        </tr>
-                    `).join('') : `
-                        <tr>
-                            <td class="border border-slate-300 p-2">&nbsp;</td>
-                            <td class="border border-slate-300 p-2">&nbsp;</td>
-                            <td class="border border-slate-300 p-2">&nbsp;</td>
-                        </tr>
-                    `}
-                    <tr class="bg-slate-100">
-                        <td class="border border-slate-300 p-2 font-semibold">Tipo de cambio</td>
-                        <td class="border border-slate-300 p-2 font-semibold" colspan="2">¿Está a cargo del importador?</td>
-                    </tr>
-                    ${incrementables.length > 0 ? incrementables.map(inc => `
-                        <tr>
-                            <td class="border border-slate-300 p-2">${inc.tipoCambio || ''}</td>
-                            <td class="border border-slate-300 p-2" colspan="2">${inc.aCargoImportador !== undefined ? (inc.aCargoImportador ? 'Sí' : 'No') : ''}</td>
-                        </tr>
-                    `).join('') : `
-                        <tr>
-                            <td class="border border-slate-300 p-2">&nbsp;</td>
-                            <td class="border border-slate-300 p-2" colspan="2">&nbsp;</td>
-                        </tr>
-                    `}
-                </table>
-            </div>
-            
-            <!-- Decrementables (Información que no integra el valor de transacción) -->
-            <div class="border-b-2 border-slate-300 pb-4">
-                <h3 class="text-sm font-bold text-slate-700 mb-2 border-b border-slate-200 pb-1">Información que no integra el valor de transacción conforme el artículo 66 de la ley aduanera (DECREMENTABLES)</h3>
-                <p class="text-xs text-slate-600 mb-3">(Se considera que se distinguen del precio pagado las cantidades que se mencionan, se detallan o especifican separadamente del precio pagado en el comprobante fiscal digital o en el documento equivalente)</p>
-                <table class="w-full text-xs">
-                    <tr class="bg-slate-100">
-                        <td class="border border-slate-300 p-2 font-semibold">Fecha de erogación</td>
-                        <td class="border border-slate-300 p-2 font-semibold">Importe</td>
-                        <td class="border border-slate-300 p-2 font-semibold">Tipo de moneda</td>
-                    </tr>
-                    ${decrementables.length > 0 ? decrementables.map(dec => `
-                        <tr>
-                            <td class="border border-slate-300 p-2">${dec.fechaErogacion || ''}</td>
-                            <td class="border border-slate-300 p-2">${dec.importe ? '$' + parseFloat(dec.importe).toLocaleString('es-MX', {minimumFractionDigits: 2}) : ''}</td>
-                            <td class="border border-slate-300 p-2">${dec.tipoMonedaText || dec.tipoMoneda || ''}</td>
-                        </tr>
-                    `).join('') : `
-                        <tr>
-                            <td class="border border-slate-300 p-2">&nbsp;</td>
-                            <td class="border border-slate-300 p-2">&nbsp;</td>
-                            <td class="border border-slate-300 p-2">&nbsp;</td>
-                        </tr>
-                    `}
-                    <tr class="bg-slate-100">
-                        <td class="border border-slate-300 p-2 font-semibold" colspan="3">Tipo de cambio</td>
-                    </tr>
-                    ${decrementables.length > 0 ? decrementables.map(dec => `
-                        <tr>
-                            <td class="border border-slate-300 p-2" colspan="3">${dec.tipoCambio || ''}</td>
-                        </tr>
-                    `).join('') : `
-                        <tr>
-                            <td class="border border-slate-300 p-2" colspan="3">&nbsp;</td>
-                        </tr>
-                    `}
-                </table>
+                </div>
             </div>
             
             <!-- Los gastos que por cuenta propia realice el importador -->
@@ -3697,154 +4072,7 @@ function generarContenidoVistaPrevia(data) {
                 </table>
             </div>
             
-            <!-- Precio pagado -->
-            <div class="border-b-2 border-slate-300 pb-4">
-                <h3 class="text-sm font-bold text-slate-700 mb-3 border-b border-slate-200 pb-1">Precio pagado</h3>
-                <table class="w-full text-xs">
-                    <tr class="bg-slate-100">
-                        <td class="border border-slate-300 p-2 font-semibold">Fecha de pago</td>
-                        <td class="border border-slate-300 p-2 font-semibold">Importe</td>
-                        <td class="border border-slate-300 p-2 font-semibold">Forma de pago</td>
-                        <td class="border border-slate-300 p-2 font-semibold">Especifique</td>
-                    </tr>
-                    ${precioPagado.length > 0 ? precioPagado.map(p => `
-                        <tr>
-                            <td class="border border-slate-300 p-2">${p.fecha || ''}</td>
-                            <td class="border border-slate-300 p-2">${p.importe ? '$' + parseFloat(p.importe).toLocaleString('es-MX', {minimumFractionDigits: 2}) : ''}</td>
-                            <td class="border border-slate-300 p-2">${p.formaPagoText || p.formaPago || ''}</td>
-                            <td class="border border-slate-300 p-2">${p.especifique || ''}</td>
-                        </tr>
-                    `).join('') : `
-                        <tr>
-                            <td class="border border-slate-300 p-2">&nbsp;</td>
-                            <td class="border border-slate-300 p-2">&nbsp;</td>
-                            <td class="border border-slate-300 p-2">&nbsp;</td>
-                            <td class="border border-slate-300 p-2">&nbsp;</td>
-                        </tr>
-                    `}
-                    <tr class="bg-slate-100">
-                        <td class="border border-slate-300 p-2 font-semibold">Tipo de moneda</td>
-                        <td class="border border-slate-300 p-2 font-semibold" colspan="3">Tipo de cambio</td>
-                    </tr>
-                    ${precioPagado.length > 0 ? precioPagado.map(p => `
-                        <tr>
-                            <td class="border border-slate-300 p-2">${p.tipoMonedaText || p.tipoMoneda || ''}</td>
-                            <td class="border border-slate-300 p-2" colspan="3">${p.tipoCambio || ''}</td>
-                        </tr>
-                    `).join('') : `
-                        <tr>
-                            <td class="border border-slate-300 p-2">&nbsp;</td>
-                            <td class="border border-slate-300 p-2" colspan="3">&nbsp;</td>
-                        </tr>
-                    `}
-                </table>
-            </div>
-            
-            <!-- Precio por pagar -->
-            <div class="border-b-2 border-slate-300 pb-4">
-                <h3 class="text-sm font-bold text-slate-700 mb-3 border-b border-slate-200 pb-1">Precio por pagar</h3>
-                <table class="w-full text-xs">
-                    <tr class="bg-slate-100">
-                        <td class="border border-slate-300 p-2 font-semibold">Fecha de pago</td>
-                        <td class="border border-slate-300 p-2 font-semibold">Importe</td>
-                        <td class="border border-slate-300 p-2 font-semibold">Forma de pago</td>
-                        <td class="border border-slate-300 p-2 font-semibold">Especifique</td>
-                    </tr>
-                    ${precioPorPagar.length > 0 ? precioPorPagar.map(p => `
-                        <tr>
-                            <td class="border border-slate-300 p-2">${p.fecha || ''}</td>
-                            <td class="border border-slate-300 p-2">${p.importe ? '$' + parseFloat(p.importe).toLocaleString('es-MX', {minimumFractionDigits: 2}) : ''}</td>
-                            <td class="border border-slate-300 p-2">${p.formaPagoText || p.formaPago || ''}</td>
-                            <td class="border border-slate-300 p-2">${p.especifique || ''}</td>
-                        </tr>
-                    `).join('') : `
-                        <tr>
-                            <td class="border border-slate-300 p-2">&nbsp;</td>
-                            <td class="border border-slate-300 p-2">&nbsp;</td>
-                            <td class="border border-slate-300 p-2">&nbsp;</td>
-                            <td class="border border-slate-300 p-2">&nbsp;</td>
-                        </tr>
-                    `}
-                    <tr class="bg-slate-100">
-                        <td class="border border-slate-300 p-2 font-semibold">Tipo de moneda</td>
-                        <td class="border border-slate-300 p-2 font-semibold" colspan="3">Tipo de cambio</td>
-                    </tr>
-                    ${precioPorPagar.length > 0 ? precioPorPagar.map(p => `
-                        <tr>
-                            <td class="border border-slate-300 p-2">${p.tipoMonedaText || p.tipoMoneda || ''}</td>
-                            <td class="border border-slate-300 p-2" colspan="3">${p.tipoCambio || ''}</td>
-                        </tr>
-                    `).join('') : `
-                        <tr>
-                            <td class="border border-slate-300 p-2">&nbsp;</td>
-                            <td class="border border-slate-300 p-2" colspan="3">&nbsp;</td>
-                        </tr>
-                    `}
-                    <tr class="bg-slate-100">
-                        <td class="border border-slate-300 p-2 font-semibold" colspan="4">Momento(s) o situación(es) cuando se realizará el pago</td>
-                    </tr>
-                    ${precioPorPagar.length > 0 ? precioPorPagar.map(p => `
-                        <tr>
-                            <td class="border border-slate-300 p-2" colspan="4">${p.momentoSituacion || ''}</td>
-                        </tr>
-                    `).join('') : `
-                        <tr>
-                            <td class="border border-slate-300 p-2" colspan="4">&nbsp;</td>
-                        </tr>
-                    `}
-                </table>
-            </div>
-            
-            <!-- Compenso pago -->
-            <div class="border-b-2 border-slate-300 pb-4">
-                <h3 class="text-sm font-bold text-slate-700 mb-3 border-b border-slate-200 pb-1">Compenso pago</h3>
-                <table class="w-full text-xs">
-                    <tr class="bg-slate-100">
-                        <td class="border border-slate-300 p-2 font-semibold">Fecha de pago</td>
-                        <td class="border border-slate-300 p-2 font-semibold">Forma de pago</td>
-                        <td class="border border-slate-300 p-2 font-semibold">Especifique</td>
-                    </tr>
-                    ${compensoPago.length > 0 ? compensoPago.map(c => `
-                        <tr>
-                            <td class="border border-slate-300 p-2">${c.fecha || ''}</td>
-                            <td class="border border-slate-300 p-2">${c.formaPagoText || c.formaPago || ''}</td>
-                            <td class="border border-slate-300 p-2">${c.especifique || ''}</td>
-                        </tr>
-                    `).join('') : `
-                        <tr>
-                            <td class="border border-slate-300 p-2">&nbsp;</td>
-                            <td class="border border-slate-300 p-2">&nbsp;</td>
-                            <td class="border border-slate-300 p-2">&nbsp;</td>
-                        </tr>
-                    `}
-                    <tr class="bg-slate-100">
-                        <td class="border border-slate-300 p-2 font-semibold" colspan="3">Motivo por lo que se realizó</td>
-                    </tr>
-                    ${compensoPago.length > 0 ? compensoPago.map(c => `
-                        <tr>
-                            <td class="border border-slate-300 p-2" colspan="3">${c.motivo || ''}</td>
-                        </tr>
-                    `).join('') : `
-                        <tr>
-                            <td class="border border-slate-300 p-2" colspan="3">&nbsp;</td>
-                        </tr>
-                    `}
-                    <tr class="bg-slate-100">
-                        <td class="border border-slate-300 p-2 font-semibold" colspan="3">Prestación de la mercancía</td>
-                    </tr>
-                    ${compensoPago.length > 0 ? compensoPago.map(c => `
-                        <tr>
-                            <td class="border border-slate-300 p-2" colspan="3">${c.prestacionMercancia || ''}</td>
-                        </tr>
-                    `).join('') : `
-                        <tr>
-                            <td class="border border-slate-300 p-2" colspan="3">&nbsp;</td>
-                        </tr>
-                    `}
-                </table>
-            </div>
-            
-            <!-- Valor en aduana -->
+            <!-- Valor en aduana (totales across all COVEs) -->
             <div class="border-b-2 border-slate-300 pb-4">
                 <h3 class="text-sm font-bold text-slate-700 mb-3 border-b border-slate-200 pb-1">Valor en aduana</h3>
                 <table class="w-full text-xs">

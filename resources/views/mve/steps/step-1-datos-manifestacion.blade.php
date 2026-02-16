@@ -47,12 +47,7 @@
                             RFC
                             <span class="text-red-500">*</span>
                         </label>
-                        <div class="relative">
-                            <input type="text" id="rfcConsultaInput" class="form-input pr-10 text-uppercase" placeholder="Ingrese el RFC" maxlength="13" minlength="12" oninput="validateRfcInput(this)">
-                            <button type="button" onclick="searchRfcConsulta()" class="absolute right-2 top-1/2 -translate-y-1/2 text-[#003399] hover:text-[#001a4d] transition-colors">
-                                <i data-lucide="search" class="w-5 h-5"></i>
-                            </button>
-                        </div>
+                        <input type="text" id="rfcConsultaInput" class="form-input text-uppercase" placeholder="Ingrese el RFC" maxlength="13" minlength="12" oninput="validateRfcInput(this)">
                     </div>
 
                     <div class="form-group flex-1">
@@ -98,11 +93,12 @@
                                 <th>RFC de consulta</th>
                                 <th>Nombre o Razón Social</th>
                                 <th>Tipo Figura</th>
+                                <th class="w-16 text-center">Editar</th>
                             </tr>
                         </thead>
                         <tbody id="rfcConsultaTableBody">
                             <tr>
-                                <td colspan="4" class="table-empty">
+                                <td colspan="5" class="table-empty">
                                     <i data-lucide="inbox" class="w-8 h-8 text-slate-300"></i>
                                     <p class="text-sm text-slate-400 mt-2">No hay RFC's agregados</p>
                                 </td>

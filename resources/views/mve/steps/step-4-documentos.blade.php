@@ -53,14 +53,8 @@
                     {{-- Se llena dinámicamente por JS --}}
                 </div>
 
-                {{-- RFC Consulta (opcional) --}}
-                <div class="form-group">
-                    <label class="form-label">
-                        RFC DE CONSULTA (OPCIONAL)
-                    </label>
-                    <input type="text" class="form-input" id="rfcConsultaDigit" placeholder="Solo si es Agente Aduanal" maxlength="13">
-                    <p class="text-xs text-slate-400 mt-1">Déjelo vacío si el trámite es propio. Solo para agentes aduanales.</p>
-                </div>
+                {{-- RFC Consulta - No se muestra, se asigna automáticamente --}}
+                <input type="hidden" id="rfcConsultaDigit" value="">
 
                 {{-- Sección de firma manual (solo si NO tiene credenciales almacenadas) --}}
                 <div id="digitFirmaManualSection" class="{{ $applicant->hasVucemCredentials() && $applicant->hasWebserviceKey() ? 'hidden' : '' }}">

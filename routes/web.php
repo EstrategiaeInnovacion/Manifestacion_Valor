@@ -6,7 +6,6 @@ use App\Http\Controllers\ApplicantController;
 use App\Http\Controllers\MveController;
 use App\Http\Controllers\DocumentUploadController;
 use App\Http\Controllers\EDocumentConsultaController;
-use App\Http\Controllers\Api\ExchangeRateController;
 use App\Http\Controllers\DigitalizacionController;
 use App\Http\Controllers\SupportController;
 use App\Models\MvClientApplicant;
@@ -37,14 +36,6 @@ Route::get('/dashboard', function () {
 
     return view('dashboard', compact('mvePendientesCount', 'mveCompletadasCount'));
 })->middleware(['auth', 'verified'])->name('dashboard');
-
-// API Routes for Exchange Rates (con rate limiting)
-Route::prefix('api')->middleware('throttle:60,1')->group(function () {
-    Route::get('/exchange-rate', [ExchangeRateController::class , 'getRate'])->name('api.exchange-rate');
-    Route::get('/exchange-rate/currencies', [ExchangeRateController::class , 'getSupportedCurrencies'])->name('api.exchange-rate.currencies');
-    Route::get('/exchange-rate/test', [ExchangeRateController::class , 'testConnection'])->name('api.exchange-rate.test');
-    Route::post('/exchange-rate/clear-cache', [ExchangeRateController::class , 'clearCache'])->name('api.exchange-rate.clear-cache');
-});
 
 Route::middleware('auth')->group(function () {
     // Soporte técnico

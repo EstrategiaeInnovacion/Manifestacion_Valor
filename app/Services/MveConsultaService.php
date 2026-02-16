@@ -398,16 +398,21 @@ class MveConsultaService
         $datos = [];
 
         try {
-            // ===== Persona Consulta =====
-            if (preg_match('/<personaConsulta>(.*?)<\/personaConsulta>/s', $xmlDatos, $m)) {
-                $pcXml = $m[1];
-                $datos['persona_consulta'] = [];
-
-                if (preg_match('/<rfc>(.*?)<\/rfc>/', $pcXml, $rfc)) {
-                    $datos['persona_consulta']['rfc'] = trim($rfc[1]);
-                }
-                if (preg_match('/<tipoFigura>(.*?)<\/tipoFigura>/', $pcXml, $fig)) {
-                    $datos['persona_consulta']['tipo_figura'] = trim($fig[1]);
+            // ===== Persona Consulta (múltiples) =====
+            $datos['persona_consulta'] = [];
+            if (preg_match_all('/<personaConsulta>(.*?)<\/personaConsulta>/s', $xmlDatos, $pcMatches, PREG_SET_ORDER)) {
+                foreach ($pcMatches as $pcMatch) {
+                    $pcXml = $pcMatch[1];
+                    $persona = [];
+                    if (preg_match('/<rfc>(.*?)<\/rfc>/', $pcXml, $rfc)) {
+                        $persona['rfc'] = trim($rfc[1]);
+                    }
+                    if (preg_match('/<tipoFigura>(.*?)<\/tipoFigura>/', $pcXml, $fig)) {
+                        $persona['tipo_figura'] = trim($fig[1]);
+                    }
+                    if (!empty($persona)) {
+                        $datos['persona_consulta'][] = $persona;
+                    }
                 }
             }
 

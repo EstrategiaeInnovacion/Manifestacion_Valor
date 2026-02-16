@@ -91,19 +91,15 @@ class ManifestacionValorService
             }
         }
 
-        // --- 2. INFORMACIÓN COVE ---
-        // FUSIÓN DE DATOS (Igual que en MveSignService)
+        // --- 2. INFORMACIÓN COVE (Multi-COVE: sub-datos anidados por COVE) ---
         $covesList = $informacionCove->informacion_cove ?? [];
-        $pedimentosList = $informacionCove->pedimentos ?? [];
-        $preciosPagadosList = $informacionCove->precios_pagados ?? $informacionCove->precio_pagado ?? [];
-        $incrementablesList = $informacionCove->incrementables ?? [];
-        $decrementablesList = $informacionCove->decrementables ?? [];
 
-        if (!empty($covesList)) {
-            if (empty($covesList[0]['pedimentos']) && !empty($pedimentosList)) $covesList[0]['pedimentos'] = $pedimentosList;
-            if (empty($covesList[0]['precios_pagados']) && !empty($preciosPagadosList)) $covesList[0]['precios_pagados'] = $preciosPagadosList;
-            if (empty($covesList[0]['incrementables']) && !empty($incrementablesList)) $covesList[0]['incrementables'] = $incrementablesList;
-            if (empty($covesList[0]['decrementables']) && !empty($decrementablesList)) $covesList[0]['decrementables'] = $decrementablesList;
+        // Compatibilidad: si el primer COVE no tiene sub-datos, intentar migrar desde campos planos
+        if (!empty($covesList) && empty($covesList[0]['pedimentos']) && !empty($informacionCove->pedimentos)) {
+            $covesList[0]['pedimentos'] = $informacionCove->pedimentos ?? [];
+            $covesList[0]['precios_pagados'] = $informacionCove->precios_pagados ?? $informacionCove->precio_pagado ?? [];
+            $covesList[0]['incrementables'] = $informacionCove->incrementables ?? [];
+            $covesList[0]['decrementables'] = $informacionCove->decrementables ?? [];
         }
         
         if (count($covesList) > 0) {
@@ -121,7 +117,6 @@ class ManifestacionValorService
 
                 // B. Precio Pagado
                 $preciosPagados = $cove['precios_pagados'] ?? $cove['precio_pagado'] ?? [];
-                if (empty($preciosPagados) && !empty($informacionCove->precio_pagado)) $preciosPagados = $informacionCove->precio_pagado;
 
                 foreach ($preciosPagados as $precio) {
                     $addField($this->formatVucemDate($precio['fecha'] ?? $precio['fechaPago'] ?? ''));
@@ -165,7 +160,6 @@ class ManifestacionValorService
 
                 // F. Incrementables
                 $incrementables = $cove['incrementables'] ?? $cove['incrementable'] ?? [];
-                if (empty($incrementables) && !empty($informacionCove->incrementables)) $incrementables = $informacionCove->incrementables;
 
                 foreach ($incrementables as $inc) {
                     $addField($inc['incrementable'] ?? $inc['tipoIncrementable'] ?? '');
@@ -179,7 +173,6 @@ class ManifestacionValorService
 
                 // G. Decrementables
                 $decrementables = $cove['decrementables'] ?? $cove['decrementable'] ?? [];
-                if (empty($decrementables) && !empty($informacionCove->decrementables)) $decrementables = $informacionCove->decrementables;
                 
                 foreach ($decrementables as $dec) {
                     $addField($dec['decrementable'] ?? $dec['tipoDecrementable'] ?? '');
@@ -319,6 +312,7 @@ class ManifestacionValorService
                 'patente' => null,
                 'pedimento' => null,
                 'fecha_entrada' => null,
+                'rfc_agente_aduanal' => null,
             ],
             'informacion_cove' => [],
             'pedimentos' => [],
@@ -328,6 +322,7 @@ class ManifestacionValorService
             'vinculacion' => null,
             'incrementables' => [],
             'decrementables' => [],
+            'fechas_expedicion' => [], // Fechas del registro 506 indexadas por secuencia
         ];
 
         // Normalizar saltos de línea
@@ -367,9 +362,14 @@ class ManifestacionValorService
                     $result['datos_manifestacion']['aduana'] = $aduana;
                     $result['datos_manifestacion']['clave_pedimento'] = $clavePedimento;
 
-                    // Nombre del importador (campo 22 si existe)
-                    if (isset($fields[22]) && !empty(trim($fields[22]))) {
-                        $result['datos_manifestacion']['nombre_importador'] = trim($fields[22]);
+                    // Tipo de cambio (campo 10)
+                    if (isset($fields[10]) && is_numeric(trim($fields[10])) && floatval(trim($fields[10])) > 0) {
+                        $result['datos_manifestacion']['tipo_cambio'] = trim($fields[10]);
+                    }
+
+                    // Nombre del importador (campo 21 si existe)
+                    if (isset($fields[21]) && !empty(trim($fields[21]))) {
+                        $result['datos_manifestacion']['nombre_importador'] = trim($fields[21]);
                     }
 
                     // Fecha de entrada (campo 23 si existe, formato AAAAMMDD)
@@ -383,6 +383,15 @@ class ManifestacionValorService
                         }
                     }
 
+                    // RFC del agente/agencia aduanal (campo 29 si existe)
+                    if (isset($fields[29]) && !empty(trim($fields[29]))) {
+                        $rfcAgente = strtoupper(trim($fields[29]));
+                        // Validar que parece un RFC (12-13 caracteres alfanuméricos)
+                        if (preg_match('/^[A-ZÑ&]{3,4}\d{6}[A-Z0-9]{3}$/', $rfcAgente)) {
+                            $result['datos_manifestacion']['rfc_agente_aduanal'] = $rfcAgente;
+                        }
+                    }
+
                     $result['pedimentos'][] = [
                         'patente' => $patente,
                         'pedimento' => $numPedimento,
@@ -393,9 +402,20 @@ class ManifestacionValorService
 
                 case '505':
                     // 505|num_pedimento||numero_cove|incoterm||||||id_fiscal|nombre_proveedor||||||
+                    $rawIncoterm = strtoupper(trim($fields[4] ?? ''));
+                    $incotermValue = '';
+                    if (!empty($rawIncoterm)) {
+                        // Mapear al formato VUCEM: TIPINC.XXX
+                        $incotermKey = 'TIPINC.' . $rawIncoterm;
+                        if (array_key_exists($incotermKey, \App\Constants\VucemCatalogs::$incoterms)) {
+                            $incotermValue = $incotermKey;
+                        } else {
+                            $incotermValue = $rawIncoterm; // Fallback: usar valor original
+                        }
+                    }
                     $proveedor = [
                         'numero_cove' => trim($fields[3] ?? ''),
-                        'incoterm' => trim($fields[4] ?? ''),
+                        'incoterm' => $incotermValue,
                         'id_fiscal' => trim($fields[10] ?? ''),
                         'nombre' => trim($fields[11] ?? ''),
                     ];
@@ -403,10 +423,33 @@ class ManifestacionValorService
                         $result['proveedores'][] = $proveedor;
                     }
                     if (!empty($proveedor['numero_cove'])) {
+                        // Incluir emisor (proveedor) en informacion_cove
+                        $emisor = '';
+                        if (!empty($proveedor['id_fiscal']) && !empty($proveedor['nombre'])) {
+                            $emisor = $proveedor['id_fiscal'] . ' - ' . $proveedor['nombre'];
+                        } elseif (!empty($proveedor['nombre'])) {
+                            $emisor = $proveedor['nombre'];
+                        } elseif (!empty($proveedor['id_fiscal'])) {
+                            $emisor = $proveedor['id_fiscal'];
+                        }
                         $result['informacion_cove'][] = [
                             'numero_cove' => $proveedor['numero_cove'],
                             'incoterm' => $proveedor['incoterm'],
+                            'emisor_original' => $emisor,
+                            'id_fiscal_emisor' => $proveedor['id_fiscal'],
+                            'nombre_emisor' => $proveedor['nombre'],
                         ];
+                    }
+                    break;
+
+                case '506':
+                    // 506|num_pedimento|secuencia|fecha_DDMMAAAA|
+                    $secuencia = intval(trim($fields[2] ?? '0'));
+                    $fechaRaw = trim($fields[3] ?? '');
+                    if ($secuencia > 0 && strlen($fechaRaw) === 8 && is_numeric($fechaRaw)) {
+                        // Formato DDMMAAAA → AAAA-MM-DD (para input type="date")
+                        $fechaFormateada = substr($fechaRaw, 4, 4) . '-' . substr($fechaRaw, 2, 2) . '-' . substr($fechaRaw, 0, 2);
+                        $result['fechas_expedicion'][$secuencia] = $fechaFormateada;
                     }
                     break;
 
@@ -423,7 +466,7 @@ class ManifestacionValorService
                     break;
 
                 case '551':
-                    // 551|num_pedimento|fraccion|secuencia|unidad_tarifa|descripcion|valor_dolares|val_comercial|val_aduana|precio_unitario|cantidad|unidad_medida|peso_kg|...||vinculacion|...
+                    // 551|num_pedimento|fraccion|secuencia|unidad_tarifa|descripcion|valor_dolares|val_comercial|val_aduana|precio_unitario|cantidad|unidad_medida|peso_kg|...|vinculacion(16)|...
                     $mercancia = [
                         'fraccion' => trim($fields[2] ?? ''),
                         'secuencia' => trim($fields[3] ?? ''),
@@ -440,10 +483,15 @@ class ManifestacionValorService
                         $result['mercancias'][] = $mercancia;
                     }
 
-                    // Vinculación (campo 16): 0 = No, 1 = Sí
-                    if (isset($fields[16]) && trim($fields[16]) !== '') {
-                        $claveVinculacion = trim($fields[16]);
-                        $result['vinculacion'] = $claveVinculacion === '1' ? 'SI' : 'NO';
+                    // Vinculación (campo 15 en datos reales — spec indica 17 pero Archivo M omite 2 pipes)
+                    // Valores: 0 = No existe, 1 = Sí no afecta, 2 = Sí afecta
+                    if (isset($fields[15]) && trim($fields[15]) !== '') {
+                        $claveVinculacion = trim($fields[15]);
+                        if (in_array($claveVinculacion, ['0', '1', '2'])) {
+                            $result['vinculacion'] = ($claveVinculacion === '1' || $claveVinculacion === '2') ? '1' : '0';
+                        }
+                    } elseif (!isset($result['vinculacion'])) {
+                        $result['vinculacion'] = '0';
                     }
                     break;
 
@@ -481,6 +529,61 @@ class ManifestacionValorService
             }
             $result['datos_manifestacion']['total_valor_aduana'] = $totalValorAduana;
         }
+
+        // Post-procesamiento: asignar fecha expedición (506) y destinatario (501) a cada COVE
+        $destinatario = '';
+        $rfcImportador = $result['datos_manifestacion']['rfc_importador'] ?? '';
+        $nombreImportador = $result['datos_manifestacion']['nombre_importador'] ?? '';
+        if (!empty($rfcImportador) && !empty($nombreImportador)) {
+            $destinatario = $rfcImportador . ' - ' . $nombreImportador;
+        } elseif (!empty($nombreImportador)) {
+            $destinatario = $nombreImportador;
+        } elseif (!empty($rfcImportador)) {
+            $destinatario = $rfcImportador;
+        }
+
+        // Construir número de pedimento completo: año(2) + aduana(3) + patente(4) + número(7)
+        // El año se extrae de la primera fecha de expedición (506)
+        $anio = '';
+        if (!empty($result['fechas_expedicion'])) {
+            $primeraFecha = reset($result['fechas_expedicion']); // formato AAAA-MM-DD
+            $anio = substr($primeraFecha, 2, 2); // últimos 2 dígitos del año
+        }
+        if (empty($anio)) {
+            // Fallback: usar año actual
+            $anio = date('y');
+        }
+        
+        $aduana = $result['datos_manifestacion']['aduana'] ?? '';
+        $patente = $result['datos_manifestacion']['patente'] ?? '';
+        $numPed = $result['datos_manifestacion']['pedimento'] ?? '';
+        
+        if (!empty($aduana) && !empty($patente) && !empty($numPed)) {
+            // Formatear: año(2 dígitos) + aduana(3 dígitos padded) + patente(4 dígitos padded) + número(7 dígitos padded)
+            $pedimentoCompleto = str_pad($anio, 2, '0', STR_PAD_LEFT)
+                . str_pad($aduana, 3, '0', STR_PAD_LEFT)
+                . str_pad($patente, 4, '0', STR_PAD_LEFT)
+                . str_pad($numPed, 7, '0', STR_PAD_LEFT);
+            $result['datos_manifestacion']['pedimento_completo'] = $pedimentoCompleto;
+        }
+
+        foreach ($result['informacion_cove'] as $index => &$cove) {
+            // Secuencia es 1-based (index + 1)
+            $secuencia = $index + 1;
+            if (isset($result['fechas_expedicion'][$secuencia])) {
+                $cove['fecha_expedicion'] = $result['fechas_expedicion'][$secuencia];
+            }
+            // Destinatario = importador
+            $cove['destinatario'] = $destinatario;
+            // Vinculación del registro 551 (aplica a todos los COVEs del pedimento)
+            if (isset($result['vinculacion']) && $result['vinculacion'] !== '') {
+                $cove['vinculacion'] = $result['vinculacion'];
+            }
+        }
+        unset($cove);
+
+        // Limpiar campo temporal
+        unset($result['fechas_expedicion']);
 
         return $result;
     }

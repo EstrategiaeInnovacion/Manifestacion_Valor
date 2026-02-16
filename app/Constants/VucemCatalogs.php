@@ -379,7 +379,7 @@ class VucemCatalogs
      * Tipos de Documento aceptados por VUCEM para digitalización.
      */
     public static $tiposDocumento = [
-        '466' => 'Factura Comercial',
+        '421' => 'Factura Comercial',
         '112' => 'Acta Constitutiva',
         '368' => 'Otros (Documento Universal)',
         '479' => 'Lista de Empaque',

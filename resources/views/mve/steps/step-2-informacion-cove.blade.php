@@ -100,11 +100,12 @@
                                 <th>Fecha expedición</th>
                                 <th>Emisor original</th>
                                 <th>Destinatario</th>
+                                <th class="w-16 text-center">Editar</th>
                             </tr>
                         </thead>
                         <tbody id="informacionCoveTableBody">
                             <tr>
-                                <td colspan="7" class="table-empty">
+                                <td colspan="8" class="table-empty">
                                     <i data-lucide="inbox" class="w-8 h-8 text-slate-300"></i>
                                     <p class="text-sm text-slate-400 mt-2">No hay COVE agregados</p>
                                 </td>
@@ -272,15 +273,19 @@
                     </div>
                     {{-- Sección de Incrementables --}}
                 <div class="bg-slate-50 p-6 rounded-lg border border-slate-200 mt-6">
-                    <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center justify-between">
                         <div>
                             <h4 class="text-lg font-semibold text-slate-900">INCREMENTABLES</h4>
                             <p class="text-sm text-slate-500">INCREMENTABLES CONFORME AL ARTÍCULO 65 DE LA LEY</p>
                         </div>
+                        <button type="button" onclick="toggleSection('incrementables')" id="toggleIncrementablesBtn" class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors">
+                            <i data-lucide="plus" class="w-4 h-4" id="toggleIncrementablesIcon"></i>
+                            <span id="toggleIncrementablesText">Agregar Incrementable</span>
+                        </button>
                     </div>
 
                     {{-- Formulario de Incrementables --}}
-                    <div class="mve-form">
+                    <div id="incrementablesContent" class="hidden mt-4">
                         <div class="form-row">
                             <div class="form-group flex-1">
                                 <label class="form-label">
@@ -300,7 +305,7 @@
                                     Fecha de la erogación
                                     <span class="text-red-500">*</span>
                                 </label>
-                                <input type="date" id="fechaErogacionInput" class="form-input" data-exchange-date data-row="incrementable-form">
+                                <input type="date" id="fechaErogacionInput" class="form-input">
                             </div>
                         </div>
 
@@ -318,7 +323,7 @@
                                     Tipo de moneda
                                     <span class="text-red-500">*</span>
                                 </label>
-                                <select id="tipoMonedaIncrementableSelect" class="form-select" data-exchange-currency data-row="incrementable-form">
+                                <select id="tipoMonedaIncrementableSelect" class="form-select">
                                     <option value="">Seleccione un valor</option>
                                     @foreach(App\Constants\VucemCatalogs::$monedas as $codigo => $descripcion)
                                         <option value="{{ $codigo }}">{{ $codigo }} - {{ $descripcion }}</option>
@@ -333,13 +338,7 @@
                                     Tipo de cambio
                                     <span class="text-red-500">*</span>
                                 </label>
-                                <div class="relative">
-                                    <input type="number" id="tipoCambioIncrementableInput" class="form-input pr-20" placeholder="0.0000" step="0.0001" min="0" max="9999999999999.9999" oninput="validateExchangeRateInput(this)" data-exchange-rate data-row="incrementable-form">
-                                    <button type="button" class="absolute right-1 top-1 bottom-1 px-3 py-1 text-xs bg-blue-50 text-blue-600 rounded border border-blue-200 hover:bg-blue-100 transition-colors" style="display: none;" data-exchange-auto data-row="incrementable-form">
-                                        Usar automático
-                                    </button>
-                                </div>
-                                <div class="mt-1 text-xs text-slate-500" data-exchange-status data-row="incrementable-form"></div>
+                                <input type="number" id="tipoCambioIncrementableInput" class="form-input" placeholder="0.0000" step="0.0001" min="0" max="9999999999999.9999">
                             </div>
 
                             <div class="form-group flex-1">
@@ -402,15 +401,19 @@
 
                 {{-- Sección de Decrementables --}}
                 <div class="bg-slate-50 p-6 rounded-lg border border-slate-200 mt-6">
-                    <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center justify-between">
                         <div>
                             <h4 class="text-lg font-semibold text-slate-900">DECREMENTABLES</h4>
                             <p class="text-sm text-slate-500">INFORMACIÓN QUE NO INTEGRA EL VALOR DE TRANSACCIÓN CONFORME EL ARTÍCULO 66 DE LA LEY ADUANERA (DECREMENTABLES) (SE CONSIDERA QUE SE DISTINGUEN DEL PRECIO PAGADO LAS CANTIDADES QUE SE MENCIONAN, SE DETALLAN O ESPECIFICAN SEPARADAMENTE DEL PRECIO PAGADO EN EL COMPROBANTE FISCAL DIGITAL O EN EL DOCUMENTO EQUIVALENTE)</p>
                         </div>
+                        <button type="button" onclick="toggleSection('decrementables')" id="toggleDecrementablesBtn" class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors flex-shrink-0">
+                            <i data-lucide="plus" class="w-4 h-4" id="toggleDecrementablesIcon"></i>
+                            <span id="toggleDecrementablesText">Agregar Decrementable</span>
+                        </button>
                     </div>
 
                     {{-- Formulario de Decrementables --}}
-                    <div class="mve-form">
+                    <div id="decrementablesContent" class="hidden mt-4">
                         <div class="form-row">
                             <div class="form-group flex-1">
                                 <label class="form-label">
@@ -430,7 +433,7 @@
                                     Fecha de su erogación
                                     <span class="text-red-500">*</span>
                                 </label>
-                                <input type="date" id="fechaErogacionDecrementableInput" class="form-input" data-exchange-date data-row="decrementable-form">
+                                <input type="date" id="fechaErogacionDecrementableInput" class="form-input">
                             </div>
                         </div>
 
@@ -448,7 +451,7 @@
                                     Tipo de moneda
                                     <span class="text-red-500">*</span>
                                 </label>
-                                <select id="tipoMonedaDecrementableSelect" class="form-select" data-exchange-currency data-row="decrementable-form">
+                                <select id="tipoMonedaDecrementableSelect" class="form-select">
                                     <option value="">Seleccione un valor</option>
                                     @foreach(App\Constants\VucemCatalogs::$monedas as $codigo => $descripcion)
                                         <option value="{{ $codigo }}">{{ $codigo }} - {{ $descripcion }}</option>
@@ -463,13 +466,7 @@
                                     Tipo de cambio
                                     <span class="text-red-500">*</span>
                                 </label>
-                                <div class="relative">
-                                    <input type="number" id="tipoCambioDecrementableInput" class="form-input pr-20" placeholder="0.0000" step="0.0001" min="0" max="9999999999999.9999" oninput="validateExchangeRateInput(this)" data-exchange-rate data-row="decrementable-form">
-                                    <button type="button" class="absolute right-1 top-1 bottom-1 px-3 py-1 text-xs bg-blue-50 text-blue-600 rounded border border-blue-200 hover:bg-blue-100 transition-colors" style="display: none;" data-exchange-auto data-row="decrementable-form">
-                                        Usar automático
-                                    </button>
-                                </div>
-                                <div class="mt-1 text-xs text-slate-500" data-exchange-status data-row="decrementable-form"></div>
+                                <input type="number" id="tipoCambioDecrementableInput" class="form-input" placeholder="0.0000" step="0.0001" min="0" max="9999999999999.9999">
                             </div>
 
                             <div class="form-group flex-1">
@@ -517,21 +514,25 @@
 
                 {{-- Sección de Precio Pagado --}}
                 <div class="bg-slate-50 p-6 rounded-lg border border-slate-200 mt-6">
-                    <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center justify-between">
                         <div>
                             <h4 class="text-lg font-semibold text-slate-900">PRECIO PAGADO</h4>
                         </div>
+                        <button type="button" onclick="toggleSection('precioPagado')" id="togglePrecioPagadoBtn" class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors">
+                            <i data-lucide="plus" class="w-4 h-4" id="togglePrecioPagadoIcon"></i>
+                            <span id="togglePrecioPagadoText">Agregar Precio Pagado</span>
+                        </button>
                     </div>
 
                     {{-- Formulario de Precio Pagado --}}
-                    <div class="mve-form">
+                    <div id="precioPagadoContent" class="hidden mt-4">
                         <div class="form-row">
                             <div class="form-group flex-1">
                                 <label class="form-label">
                                     Fecha
                                     <span class="text-red-500">*</span>
                                 </label>
-                                <input type="date" id="fechaPrecioPagadoInput" class="form-input" data-exchange-date data-row="precio-pagado-form">
+                                <input type="date" id="fechaPrecioPagadoInput" class="form-input">
                             </div>
 
                             <div class="form-group flex-1">
@@ -562,7 +563,7 @@
                                     Tipo de moneda
                                     <span class="text-red-500">*</span>
                                 </label>
-                                <select id="tipoMonedaPrecioPagadoSelect" class="form-select" data-exchange-currency data-row="precio-pagado-form">
+                                <select id="tipoMonedaPrecioPagadoSelect" class="form-select">
                                     <option value="">Seleccione un valor</option>
                                     @foreach(App\Constants\VucemCatalogs::$monedas as $codigo => $descripcion)
                                         <option value="{{ $codigo }}">{{ $codigo }} - {{ $descripcion }}</option>
@@ -577,13 +578,7 @@
                                     Tipo de cambio
                                     <span class="text-red-500">*</span>
                                 </label>
-                                <div class="relative">
-                                    <input type="number" id="tipoCambioPrecioPagadoInput" class="form-input pr-20" placeholder="0.0000" step="0.0001" min="0" max="9999999999999.9999" oninput="validateExchangeRateInput(this)" data-exchange-rate data-row="precio-pagado-form">
-                                    <button type="button" class="absolute right-1 top-1 bottom-1 px-3 py-1 text-xs bg-blue-50 text-blue-600 rounded border border-blue-200 hover:bg-blue-100 transition-colors" style="display: none;" data-exchange-auto data-row="precio-pagado-form">
-                                        Usar automático
-                                    </button>
-                                </div>
-                                <div class="mt-1 text-xs text-slate-500" data-exchange-status data-row="precio-pagado-form"></div>
+                                <input type="number" id="tipoCambioPrecioPagadoInput" class="form-input" placeholder="0.0000" step="0.0001" min="0" max="9999999999999.9999">
                             </div>
 
                             <div class="form-group flex-1">
@@ -632,21 +627,25 @@
 
                 {{-- Sección de Precio por Pagar --}}
                 <div class="bg-slate-50 p-6 rounded-lg border border-slate-200 mt-6">
-                    <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center justify-between">
                         <div>
                             <h4 class="text-lg font-semibold text-slate-900">PRECIO POR PAGAR</h4>
                         </div>
+                        <button type="button" onclick="toggleSection('precioPorPagar')" id="togglePrecioPorPagarBtn" class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors">
+                            <i data-lucide="plus" class="w-4 h-4" id="togglePrecioPorPagarIcon"></i>
+                            <span id="togglePrecioPorPagarText">Agregar Precio por Pagar</span>
+                        </button>
                     </div>
 
                     {{-- Formulario de Precio por Pagar --}}
-                    <div class="mve-form">
+                    <div id="precioPorPagarContent" class="hidden mt-4">
                         <div class="form-row">
                             <div class="form-group flex-1">
                                 <label class="form-label">
                                     Fecha
                                     <span class="text-red-500">*</span>
                                 </label>
-                                <input type="date" id="fechaPrecioPorPagarInput" class="form-input" data-exchange-date data-row="precio-por-pagar-form">
+                                <input type="date" id="fechaPrecioPorPagarInput" class="form-input">
                             </div>
 
                             <div class="form-group flex-1">
@@ -677,7 +676,7 @@
                                     Tipo de moneda
                                     <span class="text-red-500">*</span>
                                 </label>
-                                <select id="tipoMonedaPrecioPorPagarSelect" class="form-select" data-exchange-currency data-row="precio-por-pagar-form">
+                                <select id="tipoMonedaPrecioPorPagarSelect" class="form-select">
                                     <option value="">Seleccione un valor</option>
                                     @foreach(App\Constants\VucemCatalogs::$monedas as $codigo => $descripcion)
                                         <option value="{{ $codigo }}">{{ $codigo }} - {{ $descripcion }}</option>
@@ -692,13 +691,7 @@
                                     Tipo de cambio
                                     <span class="text-red-500">*</span>
                                 </label>
-                                <div class="relative">
-                                    <input type="number" id="tipoCambioPrecioPorPagarInput" class="form-input pr-20" placeholder="0.0000" step="0.0001" min="0" max="9999999999999.9999" oninput="validateExchangeRateInput(this)" data-exchange-rate data-row="precio-por-pagar-form">
-                                    <button type="button" class="absolute right-1 top-1 bottom-1 px-3 py-1 text-xs bg-blue-50 text-blue-600 rounded border border-blue-200 hover:bg-blue-100 transition-colors" style="display: none;" data-exchange-auto data-row="precio-por-pagar-form">
-                                        Usar automático
-                                    </button>
-                                </div>
-                                <div class="mt-1 text-xs text-slate-500" data-exchange-status data-row="precio-por-pagar-form"></div>
+                                <input type="number" id="tipoCambioPrecioPorPagarInput" class="form-input" placeholder="0.0000" step="0.0001" min="0" max="9999999999999.9999">
                             </div>
 
                             <div class="form-group flex-1">
@@ -755,14 +748,18 @@
 
                 {{-- Sección de Compenso Pago --}}
                 <div class="bg-slate-50 p-6 rounded-lg border border-slate-200 mt-6">
-                    <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center justify-between">
                         <div>
                             <h4 class="text-lg font-semibold text-slate-900">COMPENSO PAGO</h4>
                         </div>
+                        <button type="button" onclick="toggleSection('compensoPago')" id="toggleCompensoPagoBtn" class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors">
+                            <i data-lucide="plus" class="w-4 h-4" id="toggleCompensoPagoIcon"></i>
+                            <span id="toggleCompensoPagoText">Agregar Compenso Pago</span>
+                        </button>
                     </div>
 
                     {{-- Formulario de Compenso Pago --}}
-                    <div class="mve-form">
+                    <div id="compensoPagoContent" class="hidden mt-4">
                         <div class="form-row">
                             <div class="form-group flex-1">
                                 <label class="form-label">
