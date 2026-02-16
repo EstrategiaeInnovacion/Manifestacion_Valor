@@ -315,14 +315,16 @@ class ManifestacionValorService
                 'nombre_importador' => null,
                 'tipo_operacion' => null,
                 'clave_pedimento' => null,
-                'aduana_entrada' => null,
-                'numero_pedimento' => null,
+                'aduana' => null,
+                'patente' => null,
+                'pedimento' => null,
                 'fecha_entrada' => null,
             ],
             'informacion_cove' => [],
             'pedimentos' => [],
             'proveedores' => [],
             'mercancias' => [],
+            'documentos' => [],
             'vinculacion' => null,
             'incrementables' => [],
             'decrementables' => [],
@@ -334,94 +336,138 @@ class ManifestacionValorService
 
         foreach ($lines as $line) {
             $line = trim($line);
-            if (strlen($line) < 3) continue;
+            if (empty($line)) continue;
 
-            $codigo = substr($line, 0, 3);
-            $datos = substr($line, 3);
+            // El archivo M usa formato pipe-delimited: CODIGO|campo1|campo2|...
+            $fields = explode('|', $line);
+            $codigo = trim($fields[0] ?? '');
+
+            if (empty($codigo)) continue;
 
             switch ($codigo) {
                 case '500':
-                    // Encabezado: Tipo operación (1), RFC (13), Nombre (40+)
-                    $result['datos_manifestacion']['tipo_operacion'] = trim(substr($datos, 0, 1));
-                    $result['datos_manifestacion']['rfc_importador'] = trim(substr($datos, 1, 13));
-                    $result['datos_manifestacion']['nombre_importador'] = trim(substr($datos, 14, 40));
+                    // 500|tipo_op|patente|num_pedimento|aduana||
+                    $result['datos_manifestacion']['tipo_operacion'] = trim($fields[1] ?? '');
+                    $result['datos_manifestacion']['patente'] = trim($fields[2] ?? '');
+                    $result['datos_manifestacion']['pedimento'] = trim($fields[3] ?? '');
+                    $result['datos_manifestacion']['aduana'] = trim($fields[4] ?? '');
                     break;
 
                 case '501':
-                    // Datos generales: Aduana (3), Patente (4), Año (2), Número (7), Clave pedimento (2)
-                    $aduana = trim(substr($datos, 0, 3));
-                    $patente = trim(substr($datos, 3, 4));
-                    $anio = trim(substr($datos, 7, 2));
-                    $numero = trim(substr($datos, 9, 7));
-                    $clavePedimento = trim(substr($datos, 16, 2));
+                    // 501|patente|num_pedimento|aduana|secuencia|clave_ped|aduana2||RFC|curp|...
+                    $patente = trim($fields[1] ?? '');
+                    $numPedimento = trim($fields[2] ?? '');
+                    $aduana = trim($fields[3] ?? '');
+                    $clavePedimento = trim($fields[5] ?? '');
+                    $rfcImportador = trim($fields[8] ?? '');
 
-                    $result['datos_manifestacion']['aduana_entrada'] = $aduana;
+                    $result['datos_manifestacion']['rfc_importador'] = $rfcImportador;
+                    $result['datos_manifestacion']['patente'] = $patente;
+                    $result['datos_manifestacion']['pedimento'] = $numPedimento;
+                    $result['datos_manifestacion']['aduana'] = $aduana;
                     $result['datos_manifestacion']['clave_pedimento'] = $clavePedimento;
-                    $result['datos_manifestacion']['numero_pedimento'] = "{$anio}-{$patente}-{$numero}";
 
-                    // Fecha de entrada (posición puede variar según versión del archivo)
-                    if (strlen($datos) > 50) {
-                        $fechaStr = trim(substr($datos, 50, 8)); // AAAAMMDD
+                    // Nombre del importador (campo 22 si existe)
+                    if (isset($fields[22]) && !empty(trim($fields[22]))) {
+                        $result['datos_manifestacion']['nombre_importador'] = trim($fields[22]);
+                    }
+
+                    // Fecha de entrada (campo 23 si existe, formato AAAAMMDD)
+                    if (isset($fields[23])) {
+                        $fechaStr = trim($fields[23]);
                         if (strlen($fechaStr) === 8 && is_numeric($fechaStr)) {
-                            $result['datos_manifestacion']['fecha_entrada'] = 
-                                substr($fechaStr, 6, 2) . '/' . 
-                                substr($fechaStr, 4, 2) . '/' . 
+                            $result['datos_manifestacion']['fecha_entrada'] =
+                                substr($fechaStr, 6, 2) . '/' .
+                                substr($fechaStr, 4, 2) . '/' .
                                 substr($fechaStr, 0, 4);
                         }
                     }
+
+                    $result['pedimentos'][] = [
+                        'patente' => $patente,
+                        'pedimento' => $numPedimento,
+                        'aduana' => $aduana,
+                        'clave_pedimento' => $clavePedimento,
+                    ];
                     break;
 
                 case '505':
-                    // Proveedor: ID fiscal (30), Nombre (40), País (3)
+                    // 505|num_pedimento||numero_cove|incoterm||||||id_fiscal|nombre_proveedor||||||
                     $proveedor = [
-                        'id_fiscal' => trim(substr($datos, 0, 30)),
-                        'nombre' => trim(substr($datos, 30, 40)),
-                        'pais' => trim(substr($datos, 70, 3)),
+                        'numero_cove' => trim($fields[3] ?? ''),
+                        'incoterm' => trim($fields[4] ?? ''),
+                        'id_fiscal' => trim($fields[10] ?? ''),
+                        'nombre' => trim($fields[11] ?? ''),
                     ];
                     if (!empty($proveedor['id_fiscal']) || !empty($proveedor['nombre'])) {
                         $result['proveedores'][] = $proveedor;
                     }
+                    if (!empty($proveedor['numero_cove'])) {
+                        $result['informacion_cove'][] = [
+                            'numero_cove' => $proveedor['numero_cove'],
+                            'incoterm' => $proveedor['incoterm'],
+                        ];
+                    }
                     break;
 
-                case '510':
-                    // Partida de mercancía
-                    $mercancia = [
-                        'secuencia' => trim(substr($datos, 0, 5)),
-                        'fraccion' => trim(substr($datos, 5, 8)),
-                        'descripcion' => trim(substr($datos, 20, 80)),
-                        'cantidad' => $this->parseNumeroArchivoM(substr($datos, 100, 14)),
-                        'unidad' => trim(substr($datos, 114, 2)),
-                        'valor_dolares' => $this->parseNumeroArchivoM(substr($datos, 130, 14)),
-                        'valor_aduana' => $this->parseNumeroArchivoM(substr($datos, 144, 14)),
-                    ];
-                    if (!empty($mercancia['fraccion'])) {
-                        $result['mercancias'][] = $mercancia;
+                case '507':
+                    // 507|num_pedimento|tipo_doc|folio|||
+                    $tipoDoc = trim($fields[2] ?? '');
+                    $folio = trim($fields[3] ?? '');
+                    if (!empty($folio)) {
+                        $result['documentos'][] = [
+                            'tipo_documento' => $tipoDoc,
+                            'folio_edocument' => $folio,
+                        ];
                     }
                     break;
 
                 case '551':
-                    // Vinculación: Clave (1)
-                    // 0 = No existe vinculación
-                    // 1 = Sí existe vinculación
-                    $claveVinculacion = trim(substr($datos, 0, 1));
-                    $result['vinculacion'] = $claveVinculacion === '1' ? 'SI' : 'NO';
-                    break;
-
-                case '552':
-                    // Incrementables/Decrementables
-                    $tipoAjuste = trim(substr($datos, 0, 1)); // I = Incrementable, D = Decrementable
-                    $claveConcepto = trim(substr($datos, 1, 3));
-                    $importe = $this->parseNumeroArchivoM(substr($datos, 4, 14));
-
-                    $ajuste = [
-                        'clave' => $claveConcepto,
-                        'importe' => $importe,
+                    // 551|num_pedimento|fraccion|secuencia|unidad_tarifa|descripcion|valor_dolares|val_comercial|val_aduana|precio_unitario|cantidad|unidad_medida|peso_kg|...||vinculacion|...
+                    $mercancia = [
+                        'fraccion' => trim($fields[2] ?? ''),
+                        'secuencia' => trim($fields[3] ?? ''),
+                        'descripcion' => trim($fields[5] ?? ''),
+                        'valor_dolares' => $this->parseNumeroArchivoM($fields[6] ?? ''),
+                        'valor_comercial' => $this->parseNumeroArchivoM($fields[7] ?? ''),
+                        'valor_aduana' => $this->parseNumeroArchivoM($fields[8] ?? ''),
+                        'precio_unitario' => $this->parseNumeroArchivoM($fields[9] ?? ''),
+                        'cantidad' => $this->parseNumeroArchivoM($fields[10] ?? ''),
+                        'unidad' => trim($fields[11] ?? ''),
                     ];
 
-                    if ($tipoAjuste === 'I') {
-                        $result['incrementables'][] = $ajuste;
-                    } elseif ($tipoAjuste === 'D') {
-                        $result['decrementables'][] = $ajuste;
+                    if (!empty($mercancia['fraccion'])) {
+                        $result['mercancias'][] = $mercancia;
+                    }
+
+                    // Vinculación (campo 16): 0 = No, 1 = Sí
+                    if (isset($fields[16]) && trim($fields[16]) !== '') {
+                        $claveVinculacion = trim($fields[16]);
+                        $result['vinculacion'] = $claveVinculacion === '1' ? 'SI' : 'NO';
+                    }
+                    break;
+
+                case '554':
+                    // Incrementables: 554|num_pedimento|clave|importe|...
+                    $clave = trim($fields[2] ?? '');
+                    $importe = $this->parseNumeroArchivoM($fields[3] ?? '');
+                    if (!empty($clave)) {
+                        $result['incrementables'][] = [
+                            'clave' => $clave,
+                            'importe' => $importe,
+                        ];
+                    }
+                    break;
+
+                case '556':
+                    // Decrementables: 556|num_pedimento|clave|importe|...
+                    $clave = trim($fields[2] ?? '');
+                    $importe = $this->parseNumeroArchivoM($fields[3] ?? '');
+                    if (!empty($clave)) {
+                        $result['decrementables'][] = [
+                            'clave' => $clave,
+                            'importe' => $importe,
+                        ];
                     }
                     break;
             }

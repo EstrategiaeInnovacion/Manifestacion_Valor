@@ -184,6 +184,26 @@ class MveController extends Controller
                 ->limit(50)
                 ->pluck('folio_edocument');
             
+            // Tipos de documento VUCEM para digitalización
+            $tiposDocumento = VucemCatalogs::$tiposDocumento;
+
+            // Determinar el paso inicial según las secciones ya guardadas
+            $initialStep = 1;
+            if ($datosManifestacion) {
+                $initialStep = 2;
+                if ($informacionCove) {
+                    $initialStep = 3;
+                    if ($informacionCove->valor_en_aduana) {
+                        $initialStep = 4;
+                        $docsGuardados = $documentos?->documentos ?? [];
+                        $hasDocWithFolio = collect($docsGuardados)->contains(fn($d) => !empty($d['folio_edocument']));
+                        if ($hasDocWithFolio) {
+                            $initialStep = 5;
+                        }
+                    }
+                }
+            }
+
             // Retornar la vista con los datos extraídos del Archivo M
             return view('mve.create-manual', compact(
                 'applicant',
@@ -198,7 +218,9 @@ class MveController extends Controller
                 'informacionCove',
                 'documentos',
                 'edocumentSuggestions',
-                'datosExtraidos' // Nueva variable con los datos del Archivo M
+                'tiposDocumento',
+                'initialStep',
+                'datosExtraidos'
             ));
             
         } catch (\Exception $e) {
