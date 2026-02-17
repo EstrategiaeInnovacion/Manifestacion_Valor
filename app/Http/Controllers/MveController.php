@@ -694,7 +694,7 @@ class MveController extends Controller
 
         try {
             $rfc = $applicant->applicant_rfc;
-            $email = auth()->user()->email;
+            $email = $applicant->applicant_email ?? auth()->user()->email;
             $rfcConsulta = $request->rfc_consulta ? strtoupper(trim($request->rfc_consulta)) : '';
 
             // Determinar credenciales: almacenadas vs manuales

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\License;
 use App\Models\User;
+use App\Mail\LicenseAssigned;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
@@ -66,6 +67,13 @@ class LicenseController extends Controller
             'expires_at'  => $expiresAt->toDateTimeString(),
         ]);
 
+        // Enviar correo de notificación al admin
+        try {
+            (new LicenseAssigned($admin, $license))->send();
+        } catch (\Exception $e) {
+            Log::error('[LICENSE] Error al enviar correo de licencia asignada', ['error' => $e->getMessage()]);
+        }
+
         return back()->with('success', 
             "Licencia {$license->license_key} asignada a {$admin->full_name}. Expira: {$expiresAt->format('d/m/Y H:i')}"
         );
@@ -103,6 +111,13 @@ class LicenseController extends Controller
             'new_key' => $newLicense->license_key,
             'admin'   => $license->admin->full_name,
         ]);
+
+        // Enviar correo de notificación al admin
+        try {
+            (new LicenseAssigned($license->admin, $newLicense))->send();
+        } catch (\Exception $e) {
+            Log::error('[LICENSE] Error al enviar correo de licencia renovada', ['error' => $e->getMessage()]);
+        }
 
         return back()->with('success', 
             "Licencia renovada para {$license->admin->full_name}. Nueva clave: {$newLicense->license_key}. Expira: {$expiresAt->format('d/m/Y H:i')}"

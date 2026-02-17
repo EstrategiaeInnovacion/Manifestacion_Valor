@@ -92,9 +92,9 @@
 
                         <div class="form-row">
                             <div class="form-group">
-                                <label for="applicant_email" class="form-label">Correo Electrónico del Solicitante</label>
+                                <label for="applicant_email" class="form-label">Correo Electrónico del Solicitante <span class="text-red-500">*</span></label>
                                 <input type="email" id="applicant_email" name="applicant_email" value="{{ old('applicant_email') }}"
-                                       class="form-input" placeholder="correo@ejemplo.com">
+                                       class="form-input" placeholder="correo@ejemplo.com" required>
                                 <p class="text-xs text-slate-500 mt-1">Ingresa el correo electrónico del solicitante (puede ser diferente al de tu cuenta)</p>
                             </div>
                         </div>

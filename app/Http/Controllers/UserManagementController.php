@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Mail\WelcomeNewUser;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rules;
 
@@ -81,6 +83,17 @@ class UserManagementController extends Controller
             'password' => Hash::make($randomPassword),
             'created_by' => $authUser->id,
         ]);
+
+        // Enviar correo de bienvenida con credenciales
+        try {
+            $welcomeMail = new WelcomeNewUser($user, $authUser, $randomPassword);
+            $welcomeMail->send();
+        } catch (\Exception $e) {
+            Log::error('Error al enviar correo de bienvenida', [
+                'user_id' => $user->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
 
         return redirect()->route('users.create')
             ->with('success', 'Usuario creado exitosamente.')

@@ -35,4 +35,11 @@ return [
         ],
     ],
 
+    'microsoft_graph' => [
+        'tenant_id' => env('MICROSOFT_GRAPH_TENANT_ID'),
+        'client_id' => env('MICROSOFT_GRAPH_CLIENT_ID'),
+        'client_secret' => env('MICROSOFT_GRAPH_CLIENT_SECRET'),
+        'from_address' => env('MAIL_FROM_ADDRESS', 'sistemas@estrategiaeinnovacion.com.mx'),
+    ],
+
 ];

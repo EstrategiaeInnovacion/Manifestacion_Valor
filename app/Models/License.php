@@ -16,6 +16,7 @@ class License extends Model
         'starts_at',
         'expires_at',
         'status',
+        'expiry_notified',
         'created_by',
         'notes',
     ];

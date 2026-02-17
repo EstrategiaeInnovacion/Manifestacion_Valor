@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\ApplicantAdded;
 use App\Models\MvClientApplicant;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -63,7 +64,7 @@ class ApplicantController extends Controller
         $validated = $request->validate([
             'applicant_rfc' => ['required', 'string', 'max:13', 'unique:mv_client_applicants,applicant_rfc'],
             'business_name' => ['required', 'string', 'max:255'],
-            'applicant_email' => ['nullable', 'email', 'max:255'],
+            'applicant_email' => ['required', 'email', 'max:255'],
             'vucem_key_file' => ['nullable', 'file', 'max:10240'],
             'vucem_cert_file' => ['nullable', 'file', 'max:10240'],
             'vucem_password' => ['nullable', 'string', 'max:255'],
@@ -75,7 +76,7 @@ class ApplicantController extends Controller
             'user_email' => $ownerEmail,
             'applicant_rfc' => $validated['applicant_rfc'],
             'business_name' => $validated['business_name'],
-            'applicant_email' => $validated['applicant_email'] ?? null,
+            'applicant_email' => $validated['applicant_email'],
         ];
 
         // Procesar archivos VUCEM si se proporcionaron
@@ -105,7 +106,14 @@ class ApplicantController extends Controller
             $data['privacy_consent_at'] = now();
         }
 
-        MvClientApplicant::create($data);
+        $applicant = MvClientApplicant::create($data);
+
+        // Enviar correo de notificación al usuario
+        try {
+            (new ApplicantAdded($user, $applicant))->send();
+        } catch (\Throwable $e) {
+            Log::warning('No se pudo enviar correo de nuevo solicitante: ' . $e->getMessage());
+        }
 
         return redirect()->route('applicants.index')
             ->with('success', 'Solicitante registrado exitosamente.');
@@ -136,7 +144,7 @@ class ApplicantController extends Controller
         $validated = $request->validate([
             'applicant_rfc' => ['required', 'string', 'max:13', 'unique:mv_client_applicants,applicant_rfc,' . $applicant->id],
             'business_name' => ['required', 'string', 'max:255'],
-            'applicant_email' => ['nullable', 'email', 'max:255'],
+            'applicant_email' => ['required', 'email', 'max:255'],
             'vucem_key_file' => ['nullable', 'file', 'max:10240'],
             'vucem_cert_file' => ['nullable', 'file', 'max:10240'],
             'vucem_password' => ['nullable', 'string', 'max:255'],
@@ -147,7 +155,7 @@ class ApplicantController extends Controller
         $data = [
             'applicant_rfc' => $validated['applicant_rfc'],
             'business_name' => $validated['business_name'],
-            'applicant_email' => $validated['applicant_email'] ?? $applicant->applicant_email,
+            'applicant_email' => $validated['applicant_email'],
         ];
 
         // Procesar archivos VUCEM si se proporcionaron (reemplazan los existentes)
