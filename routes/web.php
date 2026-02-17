@@ -8,6 +8,7 @@ use App\Http\Controllers\DocumentUploadController;
 use App\Http\Controllers\EDocumentConsultaController;
 use App\Http\Controllers\DigitalizacionController;
 use App\Http\Controllers\SupportController;
+use App\Http\Controllers\LicenseController;
 use App\Models\MvClientApplicant;
 use App\Models\MvDatosManifestacion;
 use App\Models\MvInformacionCove;
@@ -35,9 +36,9 @@ Route::get('/dashboard', function () {
     $mveCompletadasCount = MvAcuse::whereIn('applicant_id', $applicantIds)->count();
 
     return view('dashboard', compact('mvePendientesCount', 'mveCompletadasCount'));
-})->middleware(['auth', 'verified'])->name('dashboard');
+})->middleware(['auth', 'verified', 'license'])->name('dashboard');
 
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', 'license'])->group(function () {
     // Soporte técnico
     Route::post('/support/send', [SupportController::class, 'send'])->name('support.send');
 
@@ -53,6 +54,15 @@ Route::middleware('auth')->group(function () {
             Route::delete('/users/{user}', [UserManagementController::class , 'destroy'])->name('users.destroy');
         }
         );
+
+        // Rutas de gestión de licencias (solo SuperAdmin)
+        Route::middleware('role:SuperAdmin')->prefix('admin/licenses')->name('admin.licenses.')->group(function () {
+            Route::get('/', [LicenseController::class, 'index'])->name('index');
+            Route::post('/', [LicenseController::class, 'store'])->name('store');
+            Route::post('/{license}/renew', [LicenseController::class, 'renew'])->name('renew');
+            Route::patch('/{license}/revoke', [LicenseController::class, 'revoke'])->name('revoke');
+            Route::patch('/limits/{user}', [LicenseController::class, 'updateLimits'])->name('limits');
+        });
 
         // Rutas de gestión de solicitantes
         Route::resource('applicants', ApplicantController::class);

@@ -128,7 +128,7 @@
                     <div class="admin-accordion">
                         @foreach($admins as $admin)
                             <div class="accordion-item shadow-sm">
-                                <button class="accordion-header" onclick="toggleAccordion({{ $admin->id }})">
+                                <div class="accordion-header" onclick="toggleAccordion({{ $admin->id }})" style="cursor:pointer;">
                                     <div class="flex items-center gap-4 flex-1">
                                         <div class="user-avatar admin">{{ substr($admin->full_name, 0, 1) }}</div>
                                         <div class="flex-1 text-left">
@@ -138,19 +138,19 @@
                                         <div class="flex items-center gap-6">
                                             <div class="text-center">
                                                 <span class="user-stat-label">Usuarios Creados</span>
-                                                <span class="user-stat-value">{{ $admin->createdUsers->count() }}/5</span>
+                                                <span class="user-stat-value">{{ $admin->createdUsers->count() }}/{{ $admin->max_users ?? 5 }}</span>
                                             </div>
-                                            <button onclick="confirmDeleteUser({{ $admin->id }})" class="btn-delete-user" title="Eliminar administrador">
+                                            <button type="button" onclick="event.stopPropagation(); confirmDeleteUser({{ $admin->id }})" class="btn-delete-user" title="Eliminar administrador">
                                                 <i data-lucide="trash-2" class="w-4 h-4"></i>
                                             </button>
-                                            <form id="delete-user-form-{{ $admin->id }}" action="{{ route('users.destroy', $admin) }}" method="POST" class="hidden">
-                                                @csrf
-                                                @method('DELETE')
-                                            </form>
                                             <i data-lucide="chevron-down" class="w-5 h-5 text-slate-400 transition-transform" id="icon-{{ $admin->id }}"></i>
                                         </div>
                                     </div>
-                                </button>
+                                </div>
+                                <form id="delete-user-form-{{ $admin->id }}" action="{{ route('users.destroy', $admin) }}" method="POST" class="hidden">
+                                    @csrf
+                                    @method('DELETE')
+                                </form>
                                 
                                 <div class="accordion-content" id="content-{{ $admin->id }}">
                                     @if($admin->createdUsers->count() > 0)
@@ -166,15 +166,15 @@
                                                     </div>
                                                     <div class="flex items-center gap-3">
                                                         <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{{ $user->username }}</span>
-                                                        <button onclick="confirmDeleteUser({{ $user->id }})" class="btn-delete-mini" title="Eliminar usuario">
+                                                        <button type="button" onclick="confirmDeleteUser({{ $user->id }})" class="btn-delete-mini" title="Eliminar usuario">
                                                             <i data-lucide="trash-2" class="w-3 h-3"></i>
                                                         </button>
-                                                        <form id="delete-user-form-{{ $user->id }}" action="{{ route('users.destroy', $user) }}" method="POST" class="hidden">
-                                                            @csrf
-                                                            @method('DELETE')
-                                                        </form>
                                                     </div>
                                                 </div>
+                                                <form id="delete-user-form-{{ $user->id }}" action="{{ route('users.destroy', $user) }}" method="POST" class="hidden">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                </form>
                                             @endforeach
                                         </div>
                                     @else
@@ -192,7 +192,7 @@
                     <div class="section-header">
                         <div class="flex items-center gap-3">
                             <div class="role-icon admin"><i data-lucide="users" class="w-6 h-6"></i></div>
-                            <h3 class="section-title">Mis Usuarios Creados ({{ $usuarios->count() }}/5)</h3>
+                            <h3 class="section-title">Mis Usuarios Creados ({{ $usuarios->count() }}/{{ auth()->user()->max_users ?? 5 }})</h3>
                         </div>
                     </div>
                     
@@ -209,15 +209,15 @@
                                     </div>
                                     <div class="flex items-center gap-3">
                                         <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{{ $user->role }}</span>
-                                        <button onclick="confirmDeleteUser({{ $user->id }})" class="btn-delete-mini" title="Eliminar usuario">
+                                        <button type="button" onclick="confirmDeleteUser({{ $user->id }})" class="btn-delete-mini" title="Eliminar usuario">
                                             <i data-lucide="trash-2" class="w-3 h-3"></i>
                                         </button>
-                                        <form id="delete-user-form-{{ $user->id }}" action="{{ route('users.destroy', $user) }}" method="POST" class="hidden">
-                                            @csrf
-                                            @method('DELETE')
-                                        </form>
                                     </div>
                                 </div>
+                                <form id="delete-user-form-{{ $user->id }}" action="{{ route('users.destroy', $user) }}" method="POST" class="hidden">
+                                    @csrf
+                                    @method('DELETE')
+                                </form>
                             @endforeach
                         </div>
                     @else

@@ -84,8 +84,8 @@
                     </div>
 
                     <div class="detail-item">
-                        <span class="detail-label">Correo Electrónico</span>
-                        <span class="detail-value">{{ $applicant->user_email }}</span>
+                        <span class="detail-label">Correo Electrónico del Solicitante</span>
+                        <span class="detail-value">{{ $applicant->applicant_email ?? 'No especificado' }}</span>
                     </div>
 
                     <div class="detail-item">

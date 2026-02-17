@@ -14,6 +14,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // Middleware de roles: uso -> middleware('role:SuperAdmin,Admin')
         $middleware->alias([
             'role' => \App\Http\Middleware\RoleMiddleware::class,
+            'license' => \App\Http\Middleware\CheckLicenseMiddleware::class,
         ]);
 
         // Security headers globales

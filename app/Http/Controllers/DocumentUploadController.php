@@ -19,7 +19,7 @@ class DocumentUploadController extends Controller
     }
 
     /**
-     * Subir documento PDF con validación y conversión automática VUCEM
+     * Subir documento PDF con validaciÃ³n y conversiÃ³n automÃ¡tica VUCEM
      */
     public function uploadDocument(Request $request)
     {
@@ -29,7 +29,7 @@ class DocumentUploadController extends Controller
             $request->validate([
                 'applicant_id' => 'required|exists:mv_client_applicants,id',
                 'document_name' => 'required|string|max:255',
-                'document_file' => "required|file|mimes:pdf|max:{$maxSizeKb}", // Máx configurable
+                'document_file' => "required|file|mimes:pdf|max:{$maxSizeKb}", // MÃ¡x configurable
             ]);
 
             $applicantId = $request->input('applicant_id');
@@ -38,7 +38,7 @@ class DocumentUploadController extends Controller
 
             // Verificar que el solicitante pertenece al usuario actual
             $applicant = MvClientApplicant::findOrFail($applicantId);
-            if ($applicant->user_email !== auth()->user()->email) {
+            if ($applicant->user_email !== auth()->user()->getApplicantOwnerEmail()) {
                 return response()->json([
                     'success' => false,
                     'error' => 'No tienes permiso para subir documentos a este solicitante.'
@@ -53,7 +53,7 @@ class DocumentUploadController extends Controller
             ]);
 
             // Procesar archivo (validar y convertir si es necesario)
-            $result = $this->documentService->processUploadedPdf($file); // Sin parámetro destinationPath
+            $result = $this->documentService->processUploadedPdf($file); // Sin parÃ¡metro destinationPath
 
             if (!$result['success']) {
                 return response()->json([
@@ -62,7 +62,7 @@ class DocumentUploadController extends Controller
                 ], 422);
             }
 
-            // Guardar información del documento en base de datos con contenido base64
+            // Guardar informaciÃ³n del documento en base de datos con contenido base64
             $documento = new MvDocumentos();
             $documento->applicant_id = $applicantId;
             $documento->document_name = $documentName;
@@ -102,7 +102,7 @@ class DocumentUploadController extends Controller
         catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
                 'success' => false,
-                'error' => 'Datos de entrada inválidos',
+                'error' => 'Datos de entrada invÃ¡lidos',
                 'validation_errors' => $e->errors()
             ], 422);
 
@@ -128,7 +128,7 @@ class DocumentUploadController extends Controller
         try {
             // Verificar que el solicitante pertenece al usuario actual
             $applicant = MvClientApplicant::findOrFail($applicantId);
-            if ($applicant->user_email !== auth()->user()->email) {
+            if ($applicant->user_email !== auth()->user()->getApplicantOwnerEmail()) {
                 return response()->json([
                     'success' => false,
                     'error' => 'No tienes permiso para ver los documentos de este solicitante.'
@@ -183,14 +183,14 @@ class DocumentUploadController extends Controller
 
             // Verificar que el documento pertenece al usuario actual
             $applicant = MvClientApplicant::findOrFail($document->applicant_id);
-            if ($applicant->user_email !== auth()->user()->email) {
+            if ($applicant->user_email !== auth()->user()->getApplicantOwnerEmail()) {
                 return response()->json([
                     'success' => false,
                     'error' => 'No tienes permiso para eliminar este documento.'
                 ], 403);
             }
 
-            // Ya no necesitamos eliminar archivo físico (se almacena en base64)
+            // Ya no necesitamos eliminar archivo fÃ­sico (se almacena en base64)
             // Eliminar registro de base de datos
             $document->delete();
 
@@ -228,7 +228,7 @@ class DocumentUploadController extends Controller
 
             // Verificar que el documento pertenece al usuario actual
             $applicant = MvClientApplicant::findOrFail($document->applicant_id);
-            if ($applicant->user_email !== auth()->user()->email) {
+            if ($applicant->user_email !== auth()->user()->getApplicantOwnerEmail()) {
                 return response()->json([
                     'success' => false,
                     'error' => 'No tienes permiso para descargar este documento.'
@@ -276,7 +276,7 @@ class DocumentUploadController extends Controller
 
             // Verificar que el documento pertenece al usuario actual
             $applicant = MvClientApplicant::findOrFail($document->applicant_id);
-            if ($applicant->user_email !== auth()->user()->email) {
+            if ($applicant->user_email !== auth()->user()->getApplicantOwnerEmail()) {
                 return response()->json([
                     'success' => false,
                     'error' => 'No tienes permiso para visualizar este documento.'
@@ -315,14 +315,14 @@ class DocumentUploadController extends Controller
     }
 
     /**
-     * Validar PDF sin subirlo (preview de validación)
+     * Validar PDF sin subirlo (preview de validaciÃ³n)
      */
     public function validatePdfPreview(Request $request)
     {
         try {
             $maxSizeKb = config('pdftools.max_size_mb', 50) * 1024; // Convertir MB a KB
             $request->validate([
-                'pdf_file' => "required|file|mimes:pdf|max:{$maxSizeKb}", // Máx configurable
+                'pdf_file' => "required|file|mimes:pdf|max:{$maxSizeKb}", // MÃ¡x configurable
             ]);
 
             $file = $request->file('pdf_file');
@@ -344,7 +344,7 @@ class DocumentUploadController extends Controller
                 'details' => $validationResult['details'],
                 'message' => $validationResult['is_valid']
                 ? 'El archivo cumple con los requisitos VUCEM'
-                : 'El archivo requiere conversión para cumplir con VUCEM'
+                : 'El archivo requiere conversiÃ³n para cumplir con VUCEM'
             ]);
 
         }
@@ -357,7 +357,7 @@ class DocumentUploadController extends Controller
     }
 
     /**
-     * Formatear tamaño de archivo
+     * Formatear tamaÃ±o de archivo
      */
     protected function formatFileSize(int $bytes): string
     {

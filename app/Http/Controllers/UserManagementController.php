@@ -59,12 +59,13 @@ class UserManagementController extends Controller
             'role' => ['required', 'string', 'in:' . implode(',', $availableRoles)],
         ]);
         
-        // Validar límite de 5 usuarios para administradores
+        // Validar límite de usuarios para administradores
         if ($authUser->role === 'Admin') {
             $userCount = User::where('created_by', $authUser->id)->count();
-            if ($userCount >= 5) {
+            $maxUsers = $authUser->max_users ?? 5;
+            if ($userCount >= $maxUsers) {
                 return redirect()->back()
-                    ->withErrors(['limit' => 'Has alcanzado el límite máximo de 5 usuarios. No puedes crear más usuarios.'])
+                    ->withErrors(['limit' => "Has alcanzado el límite máximo de {$maxUsers} usuarios. No puedes crear más usuarios."])
                     ->withInput();
             }
         }

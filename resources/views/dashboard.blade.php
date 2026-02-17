@@ -135,6 +135,25 @@
                         </a>
                     @endif
 
+                    {{-- TARJETA: LICENCIAS (Solo SuperAdmin) --}}
+                    @if(auth()->user()->role === 'SuperAdmin')
+                        <a href="{{ route('admin.licenses.index') }}" class="modern-card group border-t-4 border-t-amber-500">
+                            <div class="card-content">
+                                <div class="icon-box bg-amber-50 text-amber-600 group-hover:bg-amber-500 group-hover:text-white transition-all duration-500">
+                                    <i data-lucide="key-round" class="w-8 h-8"></i>
+                                </div>
+                                <h3 class="text-xl font-bold text-[#001a4d] mt-6">Licencias & Límites</h3>
+                                <p class="text-slate-500 text-sm mt-3 leading-relaxed">
+                                    Gestiona licencias y límites de administradores.
+                                </p>
+                                <div class="mt-8 flex items-center text-amber-600 font-bold text-sm">
+                                    Administrar 
+                                    <i data-lucide="move-right" class="w-4 h-4 ml-2 group-hover:translate-x-2 transition-transform"></i>
+                                </div>
+                            </div>
+                        </a>
+                    @endif
+
                     {{-- TARJETA: SOLICITANTES (Para todos) --}}
                     <a href="{{ route('applicants.index') }}" class="modern-card group border-t-4 border-t-slate-600">
                         <div class="card-content">

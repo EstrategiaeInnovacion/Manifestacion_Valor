@@ -92,9 +92,10 @@
 
                         <div class="form-row">
                             <div class="form-group">
-                                <label for="user_email" class="form-label">Correo Electrónico del Usuario</label>
-                                <input type="text" class="form-input form-input-readonly" value="{{ auth()->user()->email }}" readonly>
-                                <p class="text-xs text-slate-500 mt-1">El solicitante se asociará automáticamente a tu cuenta</p>
+                                <label for="applicant_email" class="form-label">Correo Electrónico del Solicitante</label>
+                                <input type="email" id="applicant_email" name="applicant_email" value="{{ old('applicant_email') }}"
+                                       class="form-input" placeholder="correo@ejemplo.com">
+                                <p class="text-xs text-slate-500 mt-1">Ingresa el correo electrónico del solicitante (puede ser diferente al de tu cuenta)</p>
                             </div>
                         </div>
 

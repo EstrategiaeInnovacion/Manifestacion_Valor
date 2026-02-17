@@ -27,7 +27,7 @@ class MveController extends Controller
         $mode = $request->query('mode', 'manual'); // manual o archivo_m
         
         // Obtener solicitantes del usuario actual
-        $applicants = MvClientApplicant::where('user_email', auth()->user()->email)
+        $applicants = MvClientApplicant::where('user_email', auth()->user()->getApplicantOwnerEmail())
             ->orderBy('business_name')
             ->get();
         
@@ -39,11 +39,11 @@ class MveController extends Controller
         $applicant = MvClientApplicant::findOrFail($applicantId);
         
         // Verificar que el solicitante pertenece al usuario actual
-        if ($applicant->user_email !== auth()->user()->email) {
+        if ($applicant->user_email !== auth()->user()->getApplicantOwnerEmail()) {
             abort(403, 'No tienes permiso para acceder a este solicitante.');
         }
         
-        // Pasar catálogos VUCEM
+        // Pasar catÃ¡logos VUCEM
         $tiposFigura = VucemCatalogs::$tiposFigura;
         $metodosValoracion = VucemCatalogs::$metodosValoracion;
         $incoterms = VucemCatalogs::$incoterms;
@@ -72,10 +72,10 @@ class MveController extends Controller
             ->limit(50)
             ->pluck('folio_edocument');
 
-        // Tipos de documento VUCEM para digitalización
+        // Tipos de documento VUCEM para digitalizaciÃ³n
         $tiposDocumento = VucemCatalogs::$tiposDocumento;
 
-        // Determinar el paso inicial según las secciones ya guardadas
+        // Determinar el paso inicial segÃºn las secciones ya guardadas
         $initialStep = 1;
         if ($datosManifestacion) {
             $initialStep = 2;
@@ -115,7 +115,7 @@ class MveController extends Controller
         $applicant = MvClientApplicant::findOrFail($applicantId);
         
         // Verificar que el solicitante pertenece al usuario actual
-        if ($applicant->user_email !== auth()->user()->email) {
+        if ($applicant->user_email !== auth()->user()->getApplicantOwnerEmail()) {
             abort(403, 'No tienes permiso para acceder a este solicitante.');
         }
         
@@ -139,12 +139,12 @@ class MveController extends Controller
             // Parsear el archivo M
             $datosExtraidos = $mveService->parseArchivoMForMV($content);
             
-            // VALIDACIÓN CRÍTICA: Verificar que el RFC del archivo coincide con el del solicitante
+            // VALIDACIÃ“N CRÃTICA: Verificar que el RFC del archivo coincide con el del solicitante
             $rfcArchivoM = $datosExtraidos['datos_manifestacion']['rfc_importador'] ?? null;
             
             if (empty($rfcArchivoM)) {
                 return redirect()->back()
-                    ->withErrors(['archivo_m' => 'El archivo no contiene un RFC de importador válido.'])
+                    ->withErrors(['archivo_m' => 'El archivo no contiene un RFC de importador vÃ¡lido.'])
                     ->withInput();
             }
             
@@ -156,7 +156,7 @@ class MveController extends Controller
                     ->withInput();
             }
             
-            // Pasar catálogos VUCEM
+            // Pasar catÃ¡logos VUCEM
             $tiposFigura = VucemCatalogs::$tiposFigura;
             $metodosValoracion = VucemCatalogs::$metodosValoracion;
             $incoterms = VucemCatalogs::$incoterms;
@@ -184,10 +184,10 @@ class MveController extends Controller
                 ->limit(50)
                 ->pluck('folio_edocument');
             
-            // Tipos de documento VUCEM para digitalización
+            // Tipos de documento VUCEM para digitalizaciÃ³n
             $tiposDocumento = VucemCatalogs::$tiposDocumento;
 
-            // Determinar el paso inicial según las secciones ya guardadas
+            // Determinar el paso inicial segÃºn las secciones ya guardadas
             $initialStep = 1;
             if ($datosManifestacion) {
                 $initialStep = 2;
@@ -204,7 +204,7 @@ class MveController extends Controller
                 }
             }
 
-            // Retornar la vista con los datos extraídos del Archivo M
+            // Retornar la vista con los datos extraÃ­dos del Archivo M
             return view('mve.create-manual', compact(
                 'applicant',
                 'tiposFigura',
@@ -282,7 +282,7 @@ class MveController extends Controller
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error de validación',
+                'message' => 'Error de validaciÃ³n',
                 'errors' => $e->errors()
             ], 422);
         }
@@ -300,7 +300,7 @@ class MveController extends Controller
         if ($exists) {
             return response()->json([
                 'success' => false,
-                'message' => 'Este RFC de consulta ya está registrado'
+                'message' => 'Este RFC de consulta ya estÃ¡ registrado'
             ], 422);
         }
         
@@ -359,19 +359,19 @@ class MveController extends Controller
 
     
     /**
-     * Ver MVE Pendientes (borradores por sección)
+     * Ver MVE Pendientes (borradores por secciÃ³n)
      */
     public function pendientes()
     {
         // Obtener todos los solicitantes del usuario
-        $applicantIds = MvClientApplicant::where('user_email', auth()->user()->email)
+        $applicantIds = MvClientApplicant::where('user_email', auth()->user()->getApplicantOwnerEmail())
             ->pluck('id');
 
-        // Estados que requieren acción del usuario (borrador, guardado, rechazado)
+        // Estados que requieren acciÃ³n del usuario (borrador, guardado, rechazado)
         $estadosPendientes = ['borrador', 'guardado', 'rechazado'];
 
-        // IMPORTANTE: Excluir applicants que ya tienen una manifestación enviada
-        // Esto previene mostrar secciones huérfanas de manifestaciones completadas
+        // IMPORTANTE: Excluir applicants que ya tienen una manifestaciÃ³n enviada
+        // Esto previene mostrar secciones huÃ©rfanas de manifestaciones completadas
         $applicantsConMveEnviada = MvDatosManifestacion::whereIn('applicant_id', $applicantIds)
             ->where('status', 'enviado')
             ->pluck('applicant_id')
@@ -380,7 +380,7 @@ class MveController extends Controller
         $applicantIdsPendientes = array_diff($applicantIds->toArray(), $applicantsConMveEnviada);
 
         // Obtener pendientes de todas las secciones (incluyendo guardadas sin enviar y rechazadas)
-        // SOLO de applicants que NO tienen manifestación enviada
+        // SOLO de applicants que NO tienen manifestaciÃ³n enviada
         $datosMvPendientes = MvDatosManifestacion::with('applicant')
             ->whereIn('applicant_id', $applicantIdsPendientes)
             ->whereIn('status', $estadosPendientes)
@@ -405,7 +405,7 @@ class MveController extends Controller
     public function completadas()
     {
         // Obtener todos los solicitantes del usuario
-        $applicantIds = MvClientApplicant::where('user_email', auth()->user()->email)
+        $applicantIds = MvClientApplicant::where('user_email', auth()->user()->getApplicantOwnerEmail())
             ->pluck('id');
         
         // Obtener manifestaciones enviadas (con acuse)
@@ -419,14 +419,14 @@ class MveController extends Controller
 
 
     /**
-     * Guardar Sección: Datos de Manifestación
+     * Guardar SecciÃ³n: Datos de ManifestaciÃ³n
      */
     public function saveDatosManifestacion(Request $request, $applicantId)
     {
         $applicant = MvClientApplicant::findOrFail($applicantId);
         
         // Verificar que el solicitante pertenece al usuario actual
-        if ($applicant->user_email !== auth()->user()->email) {
+        if ($applicant->user_email !== auth()->user()->getApplicantOwnerEmail()) {
             return response()->json([
                 'success' => false,
                 'message' => 'No tienes permiso para acceder a este solicitante.'
@@ -456,20 +456,20 @@ class MveController extends Controller
         
         return response()->json([
             'success' => true,
-            'message' => 'Datos de Manifestación guardados exitosamente',
+            'message' => 'Datos de ManifestaciÃ³n guardados exitosamente',
             'section_id' => $datosManifestacion->id
         ]);
     }
 
     /**
-     * Guardar Sección: Información COVE
+     * Guardar SecciÃ³n: InformaciÃ³n COVE
      */
     public function saveInformacionCove(Request $request, $applicantId)
     {
         $applicant = MvClientApplicant::findOrFail($applicantId);
         
         // Verificar que el solicitante pertenece al usuario actual
-        if ($applicant->user_email !== auth()->user()->email) {
+        if ($applicant->user_email !== auth()->user()->getApplicantOwnerEmail()) {
             return response()->json([
                 'success' => false,
                 'message' => 'No tienes permiso para acceder a este solicitante.'
@@ -530,31 +530,31 @@ class MveController extends Controller
         
         return response()->json([
             'success' => true,
-            'message' => 'Información COVE guardada exitosamente',
+            'message' => 'InformaciÃ³n COVE guardada exitosamente',
             'section_id' => $informacionCove->id
         ]);
     }
 
     /**
-     * Guardar Sección: Valor en Aduana
-     * NOTA: Ahora se guarda junto con Información COVE en saveInformacionCove
-     * Este método se mantiene por compatibilidad pero redirige a saveInformacionCove
+     * Guardar SecciÃ³n: Valor en Aduana
+     * NOTA: Ahora se guarda junto con InformaciÃ³n COVE en saveInformacionCove
+     * Este mÃ©todo se mantiene por compatibilidad pero redirige a saveInformacionCove
      */
     public function saveValorAduana(Request $request, $applicantId)
     {
-        // Redirigir a saveInformacionCove ya que ahora todo está en una sola tabla
+        // Redirigir a saveInformacionCove ya que ahora todo estÃ¡ en una sola tabla
         return $this->saveInformacionCove($request, $applicantId);
     }
 
     /**
-     * Guardar Sección: Documentos
+     * Guardar SecciÃ³n: Documentos
      */
     public function saveDocumentos(Request $request, $applicantId)
     {
         $applicant = MvClientApplicant::findOrFail($applicantId);
         
         // Verificar que el solicitante pertenece al usuario actual
-        if ($applicant->user_email !== auth()->user()->email) {
+        if ($applicant->user_email !== auth()->user()->getApplicantOwnerEmail()) {
             return response()->json([
                 'success' => false,
                 'message' => 'No tienes permiso para acceder a este solicitante.'
@@ -571,7 +571,7 @@ class MveController extends Controller
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error de validación',
+                'message' => 'Error de validaciÃ³n',
                 'errors' => $validator->errors()
             ], 422);
         }
@@ -629,7 +629,7 @@ class MveController extends Controller
 
     /**
      * Valida un PDF contra los requisitos de VUCEM (AJAX).
-     * Si no cumple, intenta convertirlo automáticamente.
+     * Si no cumple, intenta convertirlo automÃ¡ticamente.
      * Retorna el contenido base64 listo para digitalizar.
      */
     public function validarPdf(Request $request)
@@ -645,7 +645,7 @@ class MveController extends Controller
             if (!$resultado['success']) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Error al procesar PDF: ' . ($resultado['error'] ?? 'Formato no válido'),
+                    'message' => 'Error al procesar PDF: ' . ($resultado['error'] ?? 'Formato no vÃ¡lido'),
                 ], 422);
             }
 
@@ -668,15 +668,15 @@ class MveController extends Controller
     }
 
     /**
-     * Digitaliza un documento y lo envía a VUCEM.
-     * Usa credenciales almacenadas si están disponibles,
+     * Digitaliza un documento y lo envÃ­a a VUCEM.
+     * Usa credenciales almacenadas si estÃ¡n disponibles,
      * o las recibidas manualmente en el request.
      */
     public function digitalizarDocumento(Request $request, $applicantId)
     {
         $applicant = MvClientApplicant::findOrFail($applicantId);
 
-        if ($applicant->user_email !== auth()->user()->email) {
+        if ($applicant->user_email !== auth()->user()->getApplicantOwnerEmail()) {
             return response()->json(['success' => false, 'message' => 'Sin permiso.'], 403);
         }
 
@@ -729,7 +729,7 @@ class MveController extends Controller
                     Log::info('[DIGITALIZAR] Usando credenciales almacenadas', ['applicant' => $applicantId]);
                 } else {
                     if (!$request->hasFile('certificado') || !$request->hasFile('llave_privada') || !$request->filled('contrasena_llave')) {
-                        return response()->json(['success' => false, 'message' => 'Se requieren los archivos de firma electrónica.'], 422);
+                        return response()->json(['success' => false, 'message' => 'Se requieren los archivos de firma electrÃ³nica.'], 422);
                     }
                     file_put_contents($tempCertPath, $request->file('certificado')->get());
                     file_put_contents($tempKeyPath, $request->file('llave_privada')->get());
@@ -737,7 +737,7 @@ class MveController extends Controller
                     Log::info('[DIGITALIZAR] Usando credenciales manuales', ['applicant' => $applicantId]);
                 }
 
-                // Llamar al servicio de digitalización
+                // Llamar al servicio de digitalizaciÃ³n
                 $digitalizarService = app(DigitalizarDocumentoService::class);
                 $resultado = $digitalizarService->digitalizarDocumento(
                     $rfc,
@@ -782,7 +782,7 @@ class MveController extends Controller
                 );
 
                 if (!$isPending) {
-                    // Guardar/agregar el eDocument directamente en mv_documentos (asociación con la MVE)
+                    // Guardar/agregar el eDocument directamente en mv_documentos (asociaciÃ³n con la MVE)
                     $this->agregarDocumentoAMve($applicantId, [
                         'tipo_documento' => $tipoDocumento,
                         'nombre_documento' => $nombreDocumento,
@@ -819,7 +819,7 @@ class MveController extends Controller
 
     /**
      * Agrega un documento digitalizado al array de documentos de la MVE (mv_documentos).
-     * Esto garantiza la asociación servidor-lado entre el eDocument y la manifestación.
+     * Esto garantiza la asociaciÃ³n servidor-lado entre el eDocument y la manifestaciÃ³n.
      */
     private function agregarDocumentoAMve(int $applicantId, array $documento): void
     {
@@ -830,7 +830,7 @@ class MveController extends Controller
                 // Obtener array actual de documentos
                 $documentosActuales = $mvDocumentos->documentos ?? [];
                 
-                // Verificar que no esté duplicado (mismo folio_edocument)
+                // Verificar que no estÃ© duplicado (mismo folio_edocument)
                 $folioNuevo = $documento['folio_edocument'] ?? '';
                 $yaExiste = false;
                 foreach ($documentosActuales as $doc) {
@@ -854,7 +854,7 @@ class MveController extends Controller
                 ]);
             }
         } catch (\Exception $e) {
-            Log::warning('[DIGITALIZAR] Error al guardar documento en mv_documentos (no crítico)', [
+            Log::warning('[DIGITALIZAR] Error al guardar documento en mv_documentos (no crÃ­tico)', [
                 'applicant_id' => $applicantId,
                 'error' => $e->getMessage(),
             ]);
@@ -868,7 +868,7 @@ class MveController extends Controller
             
             // Verificar que el applicant pertenece al usuario actual
             $applicant = MvClientApplicant::findOrFail($applicantId);
-            if ($applicant->user_email !== auth()->user()->email) {
+            if ($applicant->user_email !== auth()->user()->getApplicantOwnerEmail()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'No tienes permiso para eliminar este borrador.'
@@ -903,21 +903,21 @@ class MveController extends Controller
     }
 
     /**
-     * Verificar si todas las secciones están completas
+     * Verificar si todas las secciones estÃ¡n completas
      */
     public function checkCompletion($applicantId)
     {
         try {
             // Verificar que el applicant pertenece al usuario actual
             $applicant = MvClientApplicant::findOrFail($applicantId);
-            if ($applicant->user_email !== auth()->user()->email) {
+            if ($applicant->user_email !== auth()->user()->getApplicantOwnerEmail()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'No autorizado'
                 ], 403);
             }
 
-            // Verificar cada sección
+            // Verificar cada secciÃ³n
             $datosManifestacion = MvDatosManifestacion::where('applicant_id', $applicantId)->exists();
             $informacionCove = MvInformacionCove::where('applicant_id', $applicantId)->exists();
             
@@ -951,21 +951,21 @@ class MveController extends Controller
     }
 
     /**
-     * Guardar la manifestación final (cambiar status a 'guardado' - lista para firmar)
+     * Guardar la manifestaciÃ³n final (cambiar status a 'guardado' - lista para firmar)
      */
     public function saveFinalManifestacion($applicantId)
     {
         try {
             // Verificar que el applicant pertenece al usuario actual
             $applicant = MvClientApplicant::findOrFail($applicantId);
-            if ($applicant->user_email !== auth()->user()->email) {
+            if ($applicant->user_email !== auth()->user()->getApplicantOwnerEmail()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'No autorizado'
                 ], 403);
             }
 
-            // Verificar que todas las secciones están completas
+            // Verificar que todas las secciones estÃ¡n completas
             $completionCheck = $this->checkCompletion($applicantId);
             $completionData = json_decode($completionCheck->getContent(), true);
             
@@ -993,7 +993,7 @@ class MveController extends Controller
             
             return response()->json([
                 'success' => true,
-                'message' => 'Manifestación de Valor guardada exitosamente. Ahora puede firmar y enviar a VUCEM.',
+                'message' => 'ManifestaciÃ³n de Valor guardada exitosamente. Ahora puede firmar y enviar a VUCEM.',
                 'manifestacion_id' => $datosManifestacion ? $datosManifestacion->id : null,
                 'applicant_id' => $applicantId,
                 'status' => 'guardado'
@@ -1002,7 +1002,7 @@ class MveController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error al guardar la manifestación: ' . $e->getMessage()
+                'message' => 'Error al guardar la manifestaciÃ³n: ' . $e->getMessage()
             ], 500);
         }
     }
@@ -1015,14 +1015,14 @@ class MveController extends Controller
         try {
             // Verificar que el applicant pertenece al usuario actual
             $applicant = MvClientApplicant::findOrFail($applicantId);
-            if ($applicant->user_email !== auth()->user()->email) {
+            if ($applicant->user_email !== auth()->user()->getApplicantOwnerEmail()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'No autorizado'
                 ], 403);
             }
 
-            // Obtener datos de cada sección
+            // Obtener datos de cada secciÃ³n
             $datosManifestacion = MvDatosManifestacion::where('applicant_id', $applicantId)->first();
             $informacionCove = MvInformacionCove::where('applicant_id', $applicantId)->first();
             $documentosRecord = MvDocumentos::where('applicant_id', $applicantId)
@@ -1054,10 +1054,10 @@ class MveController extends Controller
                     'persona_consulta' => $datosManifestacion->persona_consulta,
                     'guardado_en' => $datosManifestacion->updated_at->format('d/m/Y H:i:s')
                 ] : null,
-                // Multi-COVE: sub-datos están anidados dentro de cada COVE en informacion_cove
+                // Multi-COVE: sub-datos estÃ¡n anidados dentro de cada COVE en informacion_cove
                 'informacion_cove' => $informacionCove ? [
                     'informacion_cove' => $informacionCove->informacion_cove,
-                    // Campos planos por compatibilidad (pueden estar vacíos en multi-COVE)
+                    // Campos planos por compatibilidad (pueden estar vacÃ­os en multi-COVE)
                     'pedimentos' => $informacionCove->pedimentos,
                     'incrementables' => $informacionCove->incrementables,
                     'decrementables' => $informacionCove->decrementables,
@@ -1133,7 +1133,7 @@ class MveController extends Controller
             $documento = MvDocumentos::findOrFail($documentId);
             
             // Verificar que el documento pertenece al usuario actual
-            if ($documento->applicant->user_email !== auth()->user()->email) {
+            if ($documento->applicant->user_email !== auth()->user()->getApplicantOwnerEmail()) {
                 return response()->json(['message' => 'No autorizado'], 403);
             }
 
@@ -1160,7 +1160,7 @@ class MveController extends Controller
             $documento = MvDocumentos::findOrFail($documentId);
             
             // Verificar que el documento pertenece al usuario actual
-            if ($documento->applicant->user_email !== auth()->user()->email) {
+            if ($documento->applicant->user_email !== auth()->user()->getApplicantOwnerEmail()) {
                 return response()->json(['message' => 'No autorizado'], 403);
             }
 
@@ -1180,7 +1180,7 @@ class MveController extends Controller
     }
     
     /**
-     * Firmar y enviar manifestación a VUCEM mediante AJAX
+     * Firmar y enviar manifestaciÃ³n a VUCEM mediante AJAX
      * Usa PhpCfdi para procesar los archivos de e.firma
      * Valida el XML SOAP antes de enviar
      */
@@ -1189,7 +1189,7 @@ class MveController extends Controller
         try {
             // Verificar que el applicant pertenece al usuario actual
             $applicant = MvClientApplicant::findOrFail($applicantId);
-            if ($applicant->user_email !== auth()->user()->email) {
+            if ($applicant->user_email !== auth()->user()->getApplicantOwnerEmail()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'No autorizado'
@@ -1202,13 +1202,13 @@ class MveController extends Controller
             $useStoredWs = $request->input('use_stored_credentials') === '1'
                 && $applicant->hasWebserviceKey();
             
-            // Validación dinámica según origen de credenciales
+            // ValidaciÃ³n dinÃ¡mica segÃºn origen de credenciales
             $rules = [
                 'confirmacion' => 'required|accepted',
             ];
             $messages = [
-                'confirmacion.required' => 'Debe confirmar que la información es correcta',
-                'confirmacion.accepted' => 'Debe confirmar que la información es correcta',
+                'confirmacion.required' => 'Debe confirmar que la informaciÃ³n es correcta',
+                'confirmacion.accepted' => 'Debe confirmar que la informaciÃ³n es correcta',
             ];
             
             if (!$useStoredCreds) {
@@ -1217,7 +1217,7 @@ class MveController extends Controller
                 $rules['password_llave'] = 'required|string';
                 $messages['certificado.required'] = 'El archivo de certificado (.cer) es obligatorio';
                 $messages['llave_privada.required'] = 'El archivo de llave privada (.key) es obligatorio';
-                $messages['password_llave.required'] = 'La contraseña de la llave privada es obligatoria';
+                $messages['password_llave.required'] = 'La contraseÃ±a de la llave privada es obligatoria';
             }
             if (!$useStoredWs) {
                 $rules['clave_webservice'] = 'required|string';
@@ -1233,7 +1233,7 @@ class MveController extends Controller
                 ], 422);
             }
             
-            // Obtener los datos de la manifestación
+            // Obtener los datos de la manifestaciÃ³n
             $datosManifestacion = MvDatosManifestacion::where('applicant_id', $applicantId)->first();
             $informacionCove = MvInformacionCove::where('applicant_id', $applicantId)->first();
             $documentosRecord = MvDocumentos::where('applicant_id', $applicantId)->first();
@@ -1241,7 +1241,7 @@ class MveController extends Controller
             if (!$datosManifestacion || $datosManifestacion->status !== 'guardado') {
                 return response()->json([
                     'success' => false,
-                    'message' => 'La manifestación debe estar en estado "guardado" para poder firmar'
+                    'message' => 'La manifestaciÃ³n debe estar en estado "guardado" para poder firmar'
                 ], 400);
             }
 
@@ -1257,7 +1257,7 @@ class MveController extends Controller
             }
 
             // =====================================================
-            // VALIDACIÓN DEL XML SOAP ANTES DE PROCESAR
+            // VALIDACIÃ“N DEL XML SOAP ANTES DE PROCESAR
             // =====================================================
             $soapService = new \App\Services\MvVucemSoapService();
             
@@ -1269,20 +1269,20 @@ class MveController extends Controller
                 $documentosRecord,
                 strtoupper($applicant->applicant_rfc),
                 $claveWebservice,
-                [] // Sin firma en validación inicial
+                [] // Sin firma en validaciÃ³n inicial
             );
             
             // Si hay errores en la estructura del XML, devolver sin continuar
             if (!$xmlValidation['success'] || !empty($xmlValidation['errors'])) {
                 $errores = $xmlValidation['errors'] ?? ['Error desconocido en la estructura del XML'];
-                Log::warning('MVE AJAX - Validación XML fallida', [
+                Log::warning('MVE AJAX - ValidaciÃ³n XML fallida', [
                     'applicant_id' => $applicantId,
                     'errors' => $errores
                 ]);
                 
                 return response()->json([
                     'success' => false,
-                    'message' => 'Error en los datos de la manifestación: ' . implode(', ', $errores),
+                    'message' => 'Error en los datos de la manifestaciÃ³n: ' . implode(', ', $errores),
                     'validation_errors' => $errores
                 ], 400);
             }
@@ -1297,14 +1297,14 @@ class MveController extends Controller
                 ], 400);
             }
 
-            Log::info('MVE AJAX - Validación XML exitosa', [
+            Log::info('MVE AJAX - ValidaciÃ³n XML exitosa', [
                 'applicant_id' => $applicantId,
                 'xml_valid' => true,
                 'credenciales' => $useStoredCreds ? 'almacenadas' : 'manuales'
             ]);
             // =====================================================
             
-            // Preparar archivos de firma según origen
+            // Preparar archivos de firma segÃºn origen
             $certificadoPath = null;
             $llavePrivadaPath = null;
             $password = null;
@@ -1409,7 +1409,7 @@ class MveController extends Controller
                         'redirect_url' => isset($resultado['acuse_id']) ? route('mve.acuse', $datosManifestacion->id) : null
                     ]);
                 } else {
-                    // Si VUCEM rechazó, actualizar status a 'rechazado' en TODAS las secciones
+                    // Si VUCEM rechazÃ³, actualizar status a 'rechazado' en TODAS las secciones
                     if (isset($resultado['status']) && $resultado['status'] === 'RECHAZADO') {
                         $datosManifestacion->update(['status' => 'rechazado']);
                         MvInformacionCove::where('applicant_id', $applicantId)
@@ -1455,14 +1455,14 @@ class MveController extends Controller
     }
     
     /**
-     * Descartar/eliminar una manifestación de valor
+     * Descartar/eliminar una manifestaciÃ³n de valor
      */
     public function descartarManifestacion($applicantId)
     {
         try {
             // Verificar que el applicant pertenece al usuario actual
             $applicant = MvClientApplicant::findOrFail($applicantId);
-            if ($applicant->user_email !== auth()->user()->email) {
+            if ($applicant->user_email !== auth()->user()->getApplicantOwnerEmail()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'No autorizado'
@@ -1472,12 +1472,12 @@ class MveController extends Controller
             // Obtener datos para verificar estado
             $datosManifestacion = MvDatosManifestacion::where('applicant_id', $applicantId)->first();
             
-            // Solo permitir descartar si está en estado borrador, guardado o rechazado
+            // Solo permitir descartar si estÃ¡ en estado borrador, guardado o rechazado
             $estadosPermitidos = ['borrador', 'guardado', 'rechazado'];
             if ($datosManifestacion && !in_array($datosManifestacion->status, $estadosPermitidos)) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'No se puede descartar una manifestación que ya fue enviada a VUCEM'
+                    'message' => 'No se puede descartar una manifestaciÃ³n que ya fue enviada a VUCEM'
                 ], 400);
             }
             
@@ -1486,31 +1486,31 @@ class MveController extends Controller
             MvInformacionCove::where('applicant_id', $applicantId)->delete();
             MvDatosManifestacion::where('applicant_id', $applicantId)->delete();
             
-            Log::info('MVE - Manifestación descartada', [
+            Log::info('MVE - ManifestaciÃ³n descartada', [
                 'applicant_id' => $applicantId,
                 'user' => auth()->user()->email
             ]);
             
             return response()->json([
                 'success' => true,
-                'message' => 'Manifestación de Valor descartada exitosamente'
+                'message' => 'ManifestaciÃ³n de Valor descartada exitosamente'
             ]);
             
         } catch (\Exception $e) {
-            Log::error('MVE - Error al descartar manifestación', [
+            Log::error('MVE - Error al descartar manifestaciÃ³n', [
                 'applicant_id' => $applicantId,
                 'error' => $e->getMessage()
             ]);
             
             return response()->json([
                 'success' => false,
-                'message' => 'Error al descartar la manifestación: ' . $e->getMessage()
+                'message' => 'Error al descartar la manifestaciÃ³n: ' . $e->getMessage()
             ], 500);
         }
     }
     
     /**
-     * Mostrar formulario de firma para una manifestación de valor
+     * Mostrar formulario de firma para una manifestaciÃ³n de valor
      */
     public function showSign($manifestacionId)
     {
@@ -1518,13 +1518,13 @@ class MveController extends Controller
             ->findOrFail($manifestacionId);
         
         // Verificar que el solicitante pertenece al usuario actual
-        if ($manifestacion->applicant->user_email !== auth()->user()->email) {
-            abort(403, 'No tienes permiso para acceder a esta manifestación.');
+        if ($manifestacion->applicant->user_email !== auth()->user()->getApplicantOwnerEmail()) {
+            abort(403, 'No tienes permiso para acceder a esta manifestaciÃ³n.');
         }
         
-        // Verificar que la manifestación está en estado adecuado para firmar
+        // Verificar que la manifestaciÃ³n estÃ¡ en estado adecuado para firmar
         if ($manifestacion->status !== 'completado' && $manifestacion->status !== 'rechazada') {
-            return redirect()->back()->with('error', 'La manifestación debe estar completada para poder firmarla.');
+            return redirect()->back()->with('error', 'La manifestaciÃ³n debe estar completada para poder firmarla.');
         }
         
         // Verificar si ya existe un acuse
@@ -1534,7 +1534,7 @@ class MveController extends Controller
     }
     
     /**
-     * Procesar firma y envío a VUCEM
+     * Procesar firma y envÃ­o a VUCEM
      */
     public function processSign(Request $request, $manifestacionId)
     {
@@ -1542,8 +1542,8 @@ class MveController extends Controller
             ->findOrFail($manifestacionId);
         
         // Verificar que el solicitante pertenece al usuario actual
-        if ($manifestacion->applicant->user_email !== auth()->user()->email) {
-            abort(403, 'No tienes permiso para acceder a esta manifestación.');
+        if ($manifestacion->applicant->user_email !== auth()->user()->getApplicantOwnerEmail()) {
+            abort(403, 'No tienes permiso para acceder a esta manifestaciÃ³n.');
         }
         
         // Validar archivos de certificado
@@ -1585,7 +1585,7 @@ class MveController extends Controller
     }
     
     /**
-     * Ver el acuse de una manifestación
+     * Ver el acuse de una manifestaciÃ³n
      */
     public function showAcuse($manifestacionId)
     {
@@ -1593,8 +1593,8 @@ class MveController extends Controller
             ->findOrFail($manifestacionId);
         
         // Verificar que el solicitante pertenece al usuario actual
-        if ($manifestacion->applicant->user_email !== auth()->user()->email) {
-            abort(403, 'No tienes permiso para acceder a esta manifestación.');
+        if ($manifestacion->applicant->user_email !== auth()->user()->getApplicantOwnerEmail()) {
+            abort(403, 'No tienes permiso para acceder a esta manifestaciÃ³n.');
         }
         
         // Obtener el acuse
@@ -1621,13 +1621,13 @@ class MveController extends Controller
             }
             
             // 2. Verificar permisos de seguridad
-            if ($acuse->applicant->user_email !== auth()->user()->email) {
+            if ($acuse->applicant->user_email !== auth()->user()->getApplicantOwnerEmail()) {
                 abort(403, 'No tienes permiso para acceder a este acuse.');
             }
             
             // 3. Verificar si realmente tenemos el archivo
             if (empty($acuse->acuse_pdf)) {
-                return back()->with('error', 'El archivo PDF aún no está disponible. Por favor, haga clic en "Consultar Estatus" primero para recuperarlo de VUCEM.');
+                return back()->with('error', 'El archivo PDF aÃºn no estÃ¡ disponible. Por favor, haga clic en "Consultar Estatus" primero para recuperarlo de VUCEM.');
             }
             
             // 4. Decodificar: De texto Base64 a binario PDF
@@ -1639,18 +1639,18 @@ class MveController extends Controller
             
             $pdfContent = base64_decode($base64Clean, true);
             
-            // Verificar que el PDF sea válido
+            // Verificar que el PDF sea vÃ¡lido
             if ($pdfContent === false || substr($pdfContent, 0, 4) !== '%PDF') {
-                \Log::error('PDF acuse inválido', [
+                \Log::error('PDF acuse invÃ¡lido', [
                     'acuse_id' => $acuse->id,
                     'base64_length' => strlen($acuse->acuse_pdf),
                     'decoded_length' => strlen($pdfContent ?? ''),
                     'starts_with' => substr($pdfContent ?? '', 0, 10)
                 ]);
-                return back()->with('error', 'El archivo PDF está corrupto. Intente consultar el estatus nuevamente.');
+                return back()->with('error', 'El archivo PDF estÃ¡ corrupto. Intente consultar el estatus nuevamente.');
             }
             
-            // 5. Generar nombre del archivo (Preferimos el MVE real "MNVA...", si no, el folio de operación)
+            // 5. Generar nombre del archivo (Preferimos el MVE real "MNVA...", si no, el folio de operaciÃ³n)
             $nombreArchivo = 'Acuse_MVE_' . ($acuse->numero_cove ?? $acuse->folio_manifestacion) . '.pdf';
             
             // 6. Entregar al navegador para descarga
@@ -1661,7 +1661,7 @@ class MveController extends Controller
 
         } catch (\Exception $e) {
             \Log::error('Error al descargar PDF acuse: ' . $e->getMessage());
-            return back()->with('error', 'Ocurrió un error al procesar el archivo.');
+            return back()->with('error', 'OcurriÃ³ un error al procesar el archivo.');
         }
     }
     
@@ -1674,7 +1674,7 @@ class MveController extends Controller
 
         // Verificar permisos
         $manifestacion = MvDatosManifestacion::with('applicant')->findOrFail($manifestacionId);
-        if ($manifestacion->applicant->user_email !== auth()->user()->email) {
+        if ($manifestacion->applicant->user_email !== auth()->user()->getApplicantOwnerEmail()) {
             abort(403, 'No tienes permiso para acceder a este acuse.');
         }
 
@@ -1689,8 +1689,8 @@ class MveController extends Controller
     }
 
     /**
-     * Limpiar datos huérfanos - Sincronizar status de todas las secciones
-     * Actualiza documentos e información COVE que tienen status inconsistente
+     * Limpiar datos huÃ©rfanos - Sincronizar status de todas las secciones
+     * Actualiza documentos e informaciÃ³n COVE que tienen status inconsistente
      */
     public function limpiarDatosHuerfanos()
     {
@@ -1715,19 +1715,19 @@ class MveController extends Controller
                 $actualizados += $updated;
             }
 
-            Log::info('[MVE] Limpieza de datos huérfanos completada', [
+            Log::info('[MVE] Limpieza de datos huÃ©rfanos completada', [
                 'registros_actualizados' => $actualizados,
                 'applicants_procesados' => count($applicantsEnviados)
             ]);
 
             return response()->json([
                 'success' => true,
-                'message' => "Limpieza completada. Se actualizaron {$actualizados} registros huérfanos.",
+                'message' => "Limpieza completada. Se actualizaron {$actualizados} registros huÃ©rfanos.",
                 'applicants_procesados' => count($applicantsEnviados)
             ]);
 
         } catch (\Exception $e) {
-            Log::error('[MVE] Error en limpieza de datos huérfanos', [
+            Log::error('[MVE] Error en limpieza de datos huÃ©rfanos', [
                 'error' => $e->getMessage()
             ]);
 
@@ -1739,8 +1739,8 @@ class MveController extends Controller
     }
 
     /**
-     * Consultar manifestación en VUCEM para obtener número de MV (MNVA) y acuse PDF
-     * Soluciona el problema de tener solo el Número de Operación (folio pequeño).
+     * Consultar manifestaciÃ³n en VUCEM para obtener nÃºmero de MV (MNVA) y acuse PDF
+     * Soluciona el problema de tener solo el NÃºmero de OperaciÃ³n (folio pequeÃ±o).
      */
     public function consultarManifestacion(Request $request, $acuseId)
     {
@@ -1748,23 +1748,23 @@ class MveController extends Controller
             // 1. Obtener el acuse y verificar permisos
             $acuse = MvAcuse::with(['applicant', 'datosManifestacion'])->findOrFail($acuseId);
 
-            if ($acuse->applicant->user_email !== auth()->user()->email) {
+            if ($acuse->applicant->user_email !== auth()->user()->getApplicantOwnerEmail()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'No tienes permiso para consultar este acuse.'
                 ], 403);
             }
 
-            // 2. Determinar qué folio usar para la consulta
-            // Prioridad 1: Si el usuario lo escribe manualmente (corrección de errores)
+            // 2. Determinar quÃ© folio usar para la consulta
+            // Prioridad 1: Si el usuario lo escribe manualmente (correcciÃ³n de errores)
             if ($request->has('folio') && !empty($request->input('folio'))) {
                 $folioConsulta = trim($request->input('folio'));
             } 
-            // Prioridad 2: Si ya tenemos el Número de MVE (MNVA...), usarlo para intentar bajar el PDF de nuevo
+            // Prioridad 2: Si ya tenemos el NÃºmero de MVE (MNVA...), usarlo para intentar bajar el PDF de nuevo
             elseif (!empty($acuse->numero_cove)) {
                 $folioConsulta = $acuse->numero_cove;
             } 
-            // Prioridad 3: Usar el "Folio Pequeño" (Número de Operación) que nos dio VUCEM al registrar
+            // Prioridad 3: Usar el "Folio PequeÃ±o" (NÃºmero de OperaciÃ³n) que nos dio VUCEM al registrar
             else {
                 $folioConsulta = $acuse->folio_manifestacion;
             }
@@ -1773,7 +1773,7 @@ class MveController extends Controller
             if (empty($folioConsulta)) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'No hay folio de operación ni número de MVE para consultar.'
+                    'message' => 'No hay folio de operaciÃ³n ni nÃºmero de MVE para consultar.'
                 ], 400);
             }
 
@@ -1797,7 +1797,7 @@ class MveController extends Controller
             Log::info('[MV_CONSULTA] Iniciando consulta inteligente', [
                 'acuse_id' => $acuseId,
                 'folio_usado' => $folioConsulta,
-                'tipo_origen' => !empty($acuse->numero_cove) ? 'MVE Existente' : 'Operación (Folio Pequeño)',
+                'tipo_origen' => !empty($acuse->numero_cove) ? 'MVE Existente' : 'OperaciÃ³n (Folio PequeÃ±o)',
                 'rfc' => $rfc
             ]);
 
@@ -1810,10 +1810,10 @@ class MveController extends Controller
             );
 
             if ($resultado['success']) {
-                // 4. LÓGICA CRÍTICA: Conversión de Folio Pequeño a MVE Real
-                // Si la consulta nos devuelve un 'numero_mv' y nosotros NO lo teníamos (o era diferente)
+                // 4. LÃ“GICA CRÃTICA: ConversiÃ³n de Folio PequeÃ±o a MVE Real
+                // Si la consulta nos devuelve un 'numero_mv' y nosotros NO lo tenÃ­amos (o era diferente)
                 if (!empty($resultado['numero_mv']) && $acuse->numero_cove !== $resultado['numero_mv']) {
-                    Log::info('[MV_CONSULTA] ¡Éxito! Folio de operación convertido a MVE Real', [
+                    Log::info('[MV_CONSULTA] Â¡Ã‰xito! Folio de operaciÃ³n convertido a MVE Real', [
                         'operacion' => $folioConsulta,
                         'nuevo_mve' => $resultado['numero_mv']
                     ]);
@@ -1842,7 +1842,7 @@ class MveController extends Controller
                 ]);
 
             } else {
-                // VUCEM respondió con error o "No encontrado"
+                // VUCEM respondiÃ³ con error o "No encontrado"
                 return response()->json([
                     'success' => false,
                     'message' => $resultado['message'],
@@ -1851,14 +1851,14 @@ class MveController extends Controller
             }
 
         } catch (\Exception $e) {
-            Log::error('[MV_CONSULTA] Error crítico en controlador', [
+            Log::error('[MV_CONSULTA] Error crÃ­tico en controlador', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
 
             return response()->json([
                 'success' => false,
-                'message' => 'Error interno al consultar la manifestación: ' . $e->getMessage()
+                'message' => 'Error interno al consultar la manifestaciÃ³n: ' . $e->getMessage()
             ], 500);
         }
     }
@@ -1872,7 +1872,7 @@ class MveController extends Controller
         $acuse = MvAcuse::with('applicant')->findOrFail($acuseId);
 
         // Verificar permisos
-        if ($acuse->applicant->user_email !== auth()->user()->email) {
+        if ($acuse->applicant->user_email !== auth()->user()->getApplicantOwnerEmail()) {
             abort(403, 'No tienes permiso para acceder a este acuse.');
         }
 

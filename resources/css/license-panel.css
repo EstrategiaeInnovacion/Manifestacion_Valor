@@ -1,0 +1,51 @@
+/* License Panel - Estilos */
+
+/* Modal transitions */
+#licenseModal, #limitsModal {
+    transition: opacity 0.3s ease;
+}
+
+#licenseModal.active, #limitsModal.active {
+    display: flex !important;
+    opacity: 1;
+}
+
+/* Duration option cards */
+.license-duration-option div {
+    transition: all 0.2s ease;
+}
+
+.license-duration-option:hover div {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.08);
+}
+
+/* Table row animations */
+table tbody tr {
+    transition: background-color 0.2s;
+}
+
+/* Pulse animation for active indicator */
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+.animate-pulse {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Scrollbar styling */
+.overflow-x-auto::-webkit-scrollbar {
+    height: 6px;
+}
+
+.overflow-x-auto::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 3px;
+}
+
+.overflow-x-auto::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 3px;
+}

@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class User extends Authenticatable
 {
@@ -20,6 +21,8 @@ class User extends Authenticatable
         'username',
         'password',
         'role',
+        'max_users',
+        'max_applicants',
         'created_by',
         'rfc',
     ];
@@ -37,11 +40,12 @@ class User extends Authenticatable
      */
     protected $casts = [
         'rfc' => 'encrypted',
+        'max_users' => 'integer',
+        'max_applicants' => 'integer',
     ];
 
     /**
      * Relación: Un usuario (Representante Legal) puede tener varios RFCs asociados.
-     * Se utiliza 'user_email' en la tabla de destino y 'email' en esta tabla.
      */
     public function clientApplicants(): HasMany
     {
@@ -64,4 +68,109 @@ class User extends Authenticatable
         return $this->belongsTo(User::class, 'created_by');
     }
 
+    /**
+     * Relación: Todas las licencias asignadas a este admin
+     */
+    public function licenses(): HasMany
+    {
+        return $this->hasMany(License::class, 'admin_id');
+    }
+
+    /**
+     * Relación: Licencia activa actual de este admin
+     */
+    public function activeLicense(): HasOne
+    {
+        return $this->hasOne(License::class, 'admin_id')
+            ->where('status', 'active')
+            ->where('expires_at', '>', now())
+            ->latest('expires_at');
+    }
+
+    /**
+     * Verificar si este usuario (Admin) tiene una licencia activa.
+     * SuperAdmin siempre retorna true.
+     * Usuario regular hereda la licencia de su Admin creador.
+     */
+    public function hasActiveLicense(): bool
+    {
+        if ($this->role === 'SuperAdmin') {
+            return true;
+        }
+
+        if ($this->role === 'Admin') {
+            return $this->activeLicense()->exists();
+        }
+
+        // Usuario regular: verificar la licencia de su admin creador
+        if ($this->created_by) {
+            $admin = User::find($this->created_by);
+            if ($admin) {
+                return $admin->hasActiveLicense();
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Obtener la licencia activa del admin asociado (para usuarios regulares).
+     */
+    public function getEffectiveLicense(): ?License
+    {
+        if ($this->role === 'SuperAdmin') {
+            return null;
+        }
+
+        if ($this->role === 'Admin') {
+            return $this->activeLicense;
+        }
+
+        // Usuario regular
+        if ($this->created_by) {
+            $admin = User::find($this->created_by);
+            if ($admin) {
+                return $admin->activeLicense;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Obtener el admin asociado a este usuario (para herencia de licencia).
+     */
+    public function getAdminOwner(): ?User
+    {
+        if ($this->role === 'Admin') {
+            return $this;
+        }
+
+        if ($this->created_by) {
+            return User::find($this->created_by);
+        }
+
+        return null;
+    }
+
+    /**
+     * Obtener el email "dueño" de los solicitantes para este usuario.
+     * - Admin: su propio email (él registra los solicitantes)
+     * - Usuario: el email de su Admin (comparten los mismos solicitantes)
+     * - SuperAdmin: null (no tiene acceso a solicitantes)
+     */
+    public function getApplicantOwnerEmail(): ?string
+    {
+        if ($this->role === 'SuperAdmin') {
+            return null;
+        }
+
+        if ($this->role === 'Admin') {
+            return $this->email;
+        }
+
+        // Usuario: usar el email de su Admin
+        $admin = $this->getAdminOwner();
+        return $admin ? $admin->email : $this->email;
+    }
 }

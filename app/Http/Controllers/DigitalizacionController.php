@@ -23,7 +23,7 @@ class DigitalizacionController extends Controller
     public function create()
     {
         // Obtener solicitantes (RFCs Dueños)
-        $solicitantes = MvClientApplicant::where('user_email', auth()->user()->email)
+        $solicitantes = MvClientApplicant::where('user_email', auth()->user()->getApplicantOwnerEmail())
             ->select('id', 'applicant_rfc', 'business_name')
             ->get();
 

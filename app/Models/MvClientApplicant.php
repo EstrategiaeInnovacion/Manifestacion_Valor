@@ -16,6 +16,7 @@ class MvClientApplicant extends Model
         'user_email',
         'applicant_rfc',
         'business_name',
+        'applicant_email',
         'vucem_key_file',
         'vucem_cert_file',
         'vucem_password',
@@ -33,6 +34,7 @@ class MvClientApplicant extends Model
     protected $casts = [
         'applicant_rfc' => 'encrypted',
         'business_name' => 'encrypted',
+        'applicant_email' => 'encrypted',
         'vucem_key_file' => 'encrypted',
         'vucem_cert_file' => 'encrypted',
         'vucem_password' => 'encrypted',

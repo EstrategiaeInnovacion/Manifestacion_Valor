@@ -57,11 +57,16 @@ class ApplicantPolicy
     }
 
     /**
-     * Lógica central de propiedad: el email del usuario debe coincidir
-     * con el user_email del applicant.
+     * Lógica central de propiedad: el usuario pertenece al mismo grupo admin
+     * que el dueño del applicant (Admin + sus Usuarios comparten solicitantes).
+     * SuperAdmin nunca tiene acceso.
      */
     private function isOwner(User $user, MvClientApplicant $applicant): bool
     {
-        return $applicant->user_email === $user->email;
+        if ($user->role === 'SuperAdmin') {
+            return false;
+        }
+
+        return $applicant->user_email === $user->getApplicantOwnerEmail();
     }
 }

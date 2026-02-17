@@ -14,7 +14,19 @@ class ApplicantController extends Controller
      */
     public function index()
     {
-        $applicants = MvClientApplicant::with('user')->latest()->get();
+        $user = auth()->user();
+
+        // SuperAdmin no tiene acceso a solicitantes (información confidencial)
+        if ($user->role === 'SuperAdmin') {
+            return view('applicants.index', ['applicants' => collect()]);
+        }
+
+        $ownerEmail = $user->getApplicantOwnerEmail();
+        $applicants = MvClientApplicant::with('user')
+            ->where('user_email', $ownerEmail)
+            ->latest()
+            ->get();
+
         return view('applicants.index', compact('applicants'));
     }
 
@@ -31,9 +43,27 @@ class ApplicantController extends Controller
      */
     public function store(Request $request)
     {
+        // SuperAdmin no puede crear solicitantes
+        $user = auth()->user();
+        if ($user->role === 'SuperAdmin') {
+            abort(403);
+        }
+
+        $ownerEmail = $user->getApplicantOwnerEmail();
+
+        // Validar límite de solicitantes (basado en el admin dueño)
+        $maxApplicants = $user->max_applicants ?? 10;
+        $currentCount = \App\Models\MvClientApplicant::where('user_email', $ownerEmail)->count();
+        if ($currentCount >= $maxApplicants) {
+            return redirect()->back()
+                ->withErrors(['limit' => "Has alcanzado el límite máximo de {$maxApplicants} solicitantes. No puedes crear más."])
+                ->withInput();
+        }
+
         $validated = $request->validate([
             'applicant_rfc' => ['required', 'string', 'max:13', 'unique:mv_client_applicants,applicant_rfc'],
             'business_name' => ['required', 'string', 'max:255'],
+            'applicant_email' => ['nullable', 'email', 'max:255'],
             'vucem_key_file' => ['nullable', 'file', 'max:10240'],
             'vucem_cert_file' => ['nullable', 'file', 'max:10240'],
             'vucem_password' => ['nullable', 'string', 'max:255'],
@@ -42,9 +72,10 @@ class ApplicantController extends Controller
         ]);
 
         $data = [
-            'user_email' => auth()->user()->email,
+            'user_email' => $ownerEmail,
             'applicant_rfc' => $validated['applicant_rfc'],
             'business_name' => $validated['business_name'],
+            'applicant_email' => $validated['applicant_email'] ?? null,
         ];
 
         // Procesar archivos VUCEM si se proporcionaron
@@ -105,6 +136,7 @@ class ApplicantController extends Controller
         $validated = $request->validate([
             'applicant_rfc' => ['required', 'string', 'max:13', 'unique:mv_client_applicants,applicant_rfc,' . $applicant->id],
             'business_name' => ['required', 'string', 'max:255'],
+            'applicant_email' => ['nullable', 'email', 'max:255'],
             'vucem_key_file' => ['nullable', 'file', 'max:10240'],
             'vucem_cert_file' => ['nullable', 'file', 'max:10240'],
             'vucem_password' => ['nullable', 'string', 'max:255'],
@@ -115,6 +147,7 @@ class ApplicantController extends Controller
         $data = [
             'applicant_rfc' => $validated['applicant_rfc'],
             'business_name' => $validated['business_name'],
+            'applicant_email' => $validated['applicant_email'] ?? $applicant->applicant_email,
         ];
 
         // Procesar archivos VUCEM si se proporcionaron (reemplazan los existentes)

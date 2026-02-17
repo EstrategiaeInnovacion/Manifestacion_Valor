@@ -62,6 +62,61 @@
             </div>
 
             <div class="space-y-8">
+                {{-- Información de Licencia (Admin y Usuario) --}}
+                @if(auth()->user()->role !== 'SuperAdmin')
+                    @php
+                        $license = auth()->user()->getEffectiveLicense();
+                    @endphp
+                    <div class="profile-card">
+                        <div class="flex items-center gap-3 mb-6">
+                            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-[#001a4d] to-[#003399] flex items-center justify-center">
+                                <i data-lucide="key-round" class="w-5 h-5 text-white"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-black text-[#001a4d]">Licencia</h3>
+                                <p class="text-xs text-slate-400">Información de tu licencia de acceso al sistema.</p>
+                            </div>
+                        </div>
+
+                        @if($license && $license->isActive())
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                <div class="bg-slate-50 rounded-xl p-4 text-center">
+                                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Clave de Licencia</p>
+                                    <p class="text-sm font-mono font-bold text-[#003399] mt-1.5">{{ $license->license_key }}</p>
+                                </div>
+                                <div class="bg-slate-50 rounded-xl p-4 text-center">
+                                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Fecha de Vencimiento</p>
+                                    <p class="text-sm font-bold text-[#001a4d] mt-1.5">{{ $license->expires_at->format('d/m/Y H:i') }}</p>
+                                </div>
+                                <div class="bg-slate-50 rounded-xl p-4 text-center">
+                                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Tiempo Restante</p>
+                                    @php
+                                        $diff = now()->diff($license->expires_at);
+                                        $totalDays = $diff->days;
+                                    @endphp
+                                    <p class="text-sm font-bold mt-1.5 {{ $totalDays <= 7 ? 'text-amber-600' : 'text-emerald-600' }}">
+                                        @if($totalDays > 0)
+                                            {{ $totalDays }} días, {{ $diff->h }}h {{ $diff->i }}m
+                                        @else
+                                            {{ $diff->h }}h {{ $diff->i }}m
+                                        @endif
+                                    </p>
+                                </div>
+                            </div>
+                        @else
+                            <div class="bg-red-50 border border-red-200 rounded-xl p-5 flex items-center gap-4">
+                                <div class="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+                                    <i data-lucide="alert-triangle" class="w-5 h-5 text-red-500"></i>
+                                </div>
+                                <div>
+                                    <p class="text-sm font-bold text-red-700">Sin licencia activa</p>
+                                    <p class="text-xs text-red-500 mt-0.5">Contacta a tu administrador para obtener o renovar tu licencia de acceso.</p>
+                                </div>
+                            </div>
+                        @endif
+                    </div>
+                @endif
+
                 <div class="profile-card">
                     @include('profile.partials.update-profile-information-form')
                 </div>
