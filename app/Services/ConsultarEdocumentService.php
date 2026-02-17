@@ -45,6 +45,7 @@ class ConsultarEdocumentService
                 'verify_peer_name' => false,
                 'allow_self_signed' => true,
                 'crypto_method' => STREAM_CRYPTO_METHOD_TLSv1_2_CLIENT, // Indispensable
+                'ciphers' => 'DEFAULT@SECLEVEL=1',
             ],
             'http' => [
                 'timeout' => 120,

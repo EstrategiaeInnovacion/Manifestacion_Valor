@@ -120,7 +120,11 @@ class DigitalizarDocumentoService
                 'xml_total_length' => strlen($xml),
             ]);
 
-            $response = Http::withOptions(['verify' => false, 'timeout' => 300])
+            $response = Http::withOptions([
+                    'verify' => false,
+                    'timeout' => 300,
+                    'curl' => [CURLOPT_SSL_CIPHER_LIST => 'DEFAULT@SECLEVEL=1'],
+                ])
                 ->withHeaders(['Content-Type' => 'text/xml; charset=utf-8', 'SOAPAction' => ''])
                 ->withBody(trim($xml), 'text/xml')
                 ->post($this->endpoint);
@@ -306,7 +310,11 @@ class DigitalizarDocumentoService
    </soapenv:Body>
 </soapenv:Envelope>';
 
-            $response = Http::withOptions(['verify' => false, 'timeout' => 30])
+            $response = Http::withOptions([
+                    'verify' => false,
+                    'timeout' => 30,
+                    'curl' => [CURLOPT_SSL_CIPHER_LIST => 'DEFAULT@SECLEVEL=1'],
+                ])
                 ->withHeaders([
                     'Content-Type' => 'text/xml; charset=utf-8',
                     'SOAPAction' => 'http://www.ventanillaunica.gob.mx/ConsultaEDocumentDigitalizarDocumento',
@@ -410,7 +418,11 @@ class DigitalizarDocumentoService
    </soapenv:Body>
 </soapenv:Envelope>';
 
-            $response = Http::withOptions(['verify' => false, 'timeout' => 60])
+            $response = Http::withOptions([
+                    'verify' => false,
+                    'timeout' => 60,
+                    'curl' => [CURLOPT_SSL_CIPHER_LIST => 'DEFAULT@SECLEVEL=1'],
+                ])
                 ->withHeaders(['Content-Type' => 'text/xml; charset=utf-8', 'SOAPAction' => ''])
                 ->withBody(trim($xml), 'text/xml')
                 ->post($this->endpoint);

@@ -609,7 +609,8 @@ class MvVucemSoapService
         try {
             $response = Http::withOptions([
                 'verify' => false,
-                'timeout' => config('vucem.soap_timeout', 60)
+                'timeout' => config('vucem.soap_timeout', 60),
+                'curl' => [CURLOPT_SSL_CIPHER_LIST => 'DEFAULT@SECLEVEL=1'],
             ])
             ->withHeaders([
                 'Content-Type' => 'text/xml; charset=utf-8',

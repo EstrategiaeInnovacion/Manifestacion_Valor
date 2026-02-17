@@ -299,6 +299,7 @@ class MveSignService
                 CURLOPT_RETURNTRANSFER => true,
                 CURLOPT_TIMEOUT => 120,
                 CURLOPT_SSL_VERIFYPEER => false,
+                CURLOPT_SSL_CIPHER_LIST => 'DEFAULT@SECLEVEL=1',
                 CURLOPT_HTTPHEADER => [
                     'Content-Type: text/xml; charset=utf-8',
                     'SOAPAction: ""',
