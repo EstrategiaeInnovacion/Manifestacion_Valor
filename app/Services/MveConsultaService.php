@@ -428,62 +428,84 @@ class MveConsultaService
                 }
             }
 
-            // ===== Información COVE =====
-            // COVE
-            if (preg_match('/<cove>(.*?)<\/cove>/', $xmlDatos, $m)) {
-                $datos['cove'] = trim($m[1]);
+            // ===== Información COVE (múltiples) =====
+            $datos['informacion_coves'] = [];
+            if (preg_match_all('/<informacionCove>(.*?)<\/informacionCove>/s', $xmlDatos, $coveMatches, PREG_SET_ORDER)) {
+                foreach ($coveMatches as $coveMatch) {
+                    $coveXml = $coveMatch[1];
+                    $coveData = [];
+
+                    // COVE
+                    if (preg_match('/<cove>(.*?)<\/cove>/', $coveXml, $m)) {
+                        $coveData['cove'] = trim($m[1]);
+                    }
+
+                    // Incoterm
+                    if (preg_match('/<incoterm>(.*?)<\/incoterm>/', $coveXml, $m)) {
+                        $coveData['incoterm'] = trim($m[1]);
+                    }
+
+                    // Vinculación
+                    if (preg_match('/<existeVinculacion>(.*?)<\/existeVinculacion>/', $coveXml, $m)) {
+                        $coveData['existe_vinculacion'] = trim($m[1]) === '1' ? 'Sí' : 'No';
+                    }
+
+                    // Pedimento
+                    if (preg_match('/<pedimento>(\d+)<\/pedimento>/', $coveXml, $m)) {
+                        $coveData['pedimento_numero'] = trim($m[1]);
+                    }
+                    if (preg_match('/<patente>(.*?)<\/patente>/', $coveXml, $m)) {
+                        $coveData['patente'] = trim($m[1]);
+                    }
+                    if (preg_match('/<aduana>(.*?)<\/aduana>/', $coveXml, $m)) {
+                        $coveData['aduana'] = trim($m[1]);
+                    }
+
+                    // Método de valoración
+                    if (preg_match('/<metodoValoracion>(.*?)<\/metodoValoracion>/', $coveXml, $m)) {
+                        $coveData['metodo_valoracion'] = trim($m[1]);
+                    }
+
+                    // Precio Pagado
+                    if (preg_match('/<precioPagado>(.*?)<\/precioPagado>/s', $coveXml, $m)) {
+                        $ppXml = $m[1];
+                        $coveData['precio_pagado'] = [];
+
+                        if (preg_match('/<fechaPago>(.*?)<\/fechaPago>/', $ppXml, $fecha)) {
+                            $coveData['precio_pagado']['fecha_pago'] = trim($fecha[1]);
+                        }
+                        if (preg_match('/<total>(.*?)<\/total>/', $ppXml, $total)) {
+                            $coveData['precio_pagado']['total'] = trim($total[1]);
+                        }
+                        if (preg_match('/<tipoMoneda>(.*?)<\/tipoMoneda>/', $ppXml, $mon)) {
+                            $coveData['precio_pagado']['moneda'] = trim($mon[1]);
+                        }
+                        if (preg_match('/<tipoCambio>(.*?)<\/tipoCambio>/', $ppXml, $tc)) {
+                            $coveData['precio_pagado']['tipo_cambio'] = trim($tc[1]);
+                        }
+                        if (preg_match('/<tipoPago>(.*?)<\/tipoPago>/', $ppXml, $tp)) {
+                            $coveData['precio_pagado']['tipo_pago'] = trim($tp[1]);
+                        }
+                        if (preg_match('/<especifique>(.*?)<\/especifique>/', $ppXml, $esp)) {
+                            $coveData['precio_pagado']['especifique'] = trim($esp[1]);
+                        }
+                    }
+
+                    $datos['informacion_coves'][] = $coveData;
+                }
             }
 
-            // Pedimento - estructura anidada: <pedimento><pedimento>NUMERO</pedimento>...</pedimento>
-            // Buscar el número de pedimento (el tag interno que solo contiene dígitos)
-            if (preg_match('/<pedimento>(\d+)<\/pedimento>/', $xmlDatos, $m)) {
-                $datos['pedimento_numero'] = trim($m[1]);
-            }
-            if (preg_match('/<patente>(.*?)<\/patente>/', $xmlDatos, $m)) {
-                $datos['patente'] = trim($m[1]);
-            }
-            if (preg_match('/<aduana>(.*?)<\/aduana>/', $xmlDatos, $m)) {
-                $datos['aduana'] = trim($m[1]);
-            }
-
-            // Incoterm
-            if (preg_match('/<incoterm>(.*?)<\/incoterm>/', $xmlDatos, $m)) {
-                $datos['incoterm'] = trim($m[1]);
-            }
-
-            // Vinculación
-            if (preg_match('/<existeVinculacion>(.*?)<\/existeVinculacion>/', $xmlDatos, $m)) {
-                $datos['existe_vinculacion'] = trim($m[1]) === '1' ? 'Sí' : 'No';
-            }
-
-            // Método de valoración
-            if (preg_match('/<metodoValoracion>(.*?)<\/metodoValoracion>/', $xmlDatos, $m)) {
-                $datos['metodo_valoracion'] = trim($m[1]);
-            }
-
-            // ===== Precio Pagado =====
-            if (preg_match('/<precioPagado>(.*?)<\/precioPagado>/s', $xmlDatos, $m)) {
-                $ppXml = $m[1];
-                $datos['precio_pagado'] = [];
-
-                if (preg_match('/<fechaPago>(.*?)<\/fechaPago>/', $ppXml, $fecha)) {
-                    $datos['precio_pagado']['fecha_pago'] = trim($fecha[1]);
-                }
-                if (preg_match('/<total>(.*?)<\/total>/', $ppXml, $total)) {
-                    $datos['precio_pagado']['total'] = trim($total[1]);
-                }
-                if (preg_match('/<tipoMoneda>(.*?)<\/tipoMoneda>/', $ppXml, $mon)) {
-                    $datos['precio_pagado']['moneda'] = trim($mon[1]);
-                }
-                if (preg_match('/<tipoCambio>(.*?)<\/tipoCambio>/', $ppXml, $tc)) {
-                    $datos['precio_pagado']['tipo_cambio'] = trim($tc[1]);
-                }
-                if (preg_match('/<tipoPago>(.*?)<\/tipoPago>/', $ppXml, $tp)) {
-                    $datos['precio_pagado']['tipo_pago'] = trim($tp[1]);
-                }
-                if (preg_match('/<especifique>(.*?)<\/especifique>/', $ppXml, $esp)) {
-                    $datos['precio_pagado']['especifique'] = trim($esp[1]);
-                }
+            // Compatibilidad: mantener campos simples del primer COVE
+            if (!empty($datos['informacion_coves'])) {
+                $primerCove = $datos['informacion_coves'][0];
+                $datos['cove'] = $primerCove['cove'] ?? null;
+                $datos['pedimento_numero'] = $primerCove['pedimento_numero'] ?? null;
+                $datos['patente'] = $primerCove['patente'] ?? null;
+                $datos['aduana'] = $primerCove['aduana'] ?? null;
+                $datos['incoterm'] = $primerCove['incoterm'] ?? null;
+                $datos['existe_vinculacion'] = $primerCove['existe_vinculacion'] ?? null;
+                $datos['metodo_valoracion'] = $primerCove['metodo_valoracion'] ?? null;
+                $datos['precio_pagado'] = $primerCove['precio_pagado'] ?? null;
             }
 
             // ===== Precios Por Pagar (múltiples) =====

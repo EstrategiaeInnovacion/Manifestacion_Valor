@@ -196,7 +196,7 @@
     <div id="previewModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center z-[70]">
         <div class="bg-white rounded-xl shadow-2xl max-w-6xl w-full mx-4 my-8 max-h-[90vh] overflow-hidden flex flex-col">
             <!-- Header del Modal -->
-            <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-gradient-to-r from-blue-600 to-blue-700 text-white">
+            <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-gradient-to-r from-slate-600 to-slate-700 text-white">
                 <div class="flex items-center gap-3">
                     <i data-lucide="eye" class="w-6 h-6"></i>
                     <h3 class="text-xl font-semibold">Vista Previa - Manifestación de Valor</h3>
@@ -348,7 +348,7 @@
                     cerrarModalBorrarBorrador();
 
                     // Mostrar notificación de éxito
-                    showNotification('success', 'Borrador Eliminado', 'El borrador se ha eliminado correctamente.');
+                    window.showNotification('El borrador se ha eliminado correctamente.', 'success', 'Borrador Eliminado');
 
                     // Redirigir al dashboard después de un breve delay
                     setTimeout(() => {
@@ -366,38 +366,12 @@
                 btnBorrar.innerHTML = 'Sí, Borrar';
 
                 // Mostrar notificación de error
-                showNotification('error', 'Error', 'Ocurrió un error al borrar el borrador. Por favor, intenta de nuevo.');
+                window.showNotification('Ocurrió un error al borrar el borrador. Por favor, intenta de nuevo.', 'error', 'Error');
             }
         }
 
-        // Función auxiliar para mostrar notificaciones (si no existe ya)
-        function showNotification(type, title, message) {
-            const modal = document.getElementById('notificationModal');
-            const titleEl = document.getElementById('notificationTitle');
-            const messageEl = document.getElementById('notificationMessage');
-            const iconEl = document.querySelector('#notificationIcon i');
-            const headerEl = document.getElementById('notificationHeader');
-
-            titleEl.textContent = title;
-            messageEl.textContent = message;
-
-            // Configurar estilos según el tipo
-            if (type === 'success') {
-                iconEl.setAttribute('data-lucide', 'check-circle');
-                headerEl.className = 'px-6 py-4 border-b border-slate-200 flex items-center gap-3 bg-green-50';
-            } else if (type === 'error') {
-                iconEl.setAttribute('data-lucide', 'x-circle');
-                headerEl.className = 'px-6 py-4 border-b border-slate-200 flex items-center gap-3 bg-red-50';
-            }
-
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
-
-            // Re-inicializar lucide para los nuevos iconos
-            if (typeof lucide !== 'undefined') {
-                lucide.createIcons();
-            }
-        }
+        // showNotification se usa la versión global definida en mve-manual.js
+        // Firma: window.showNotification(message, type, title)
     </script>
 
 </x-app-layout>

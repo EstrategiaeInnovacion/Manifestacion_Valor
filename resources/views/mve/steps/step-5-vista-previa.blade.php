@@ -1,13 +1,13 @@
 {{-- Step 5: Vista Previa --}}
 <div id="step-5" class="step-content hidden" data-step="5">
     <div class="mve-section-card">
-        <div class="mve-card-header bg-gradient-to-r from-[#003399] to-[#0055cc]">
+        <div class="mve-card-header bg-gradient-to-r from-slate-600 to-slate-700">
             <div class="mve-card-icon bg-white/20 text-white">
                 <i data-lucide="eye" class="w-6 h-6"></i>
             </div>
             <div>
                 <h3 class="mve-card-title text-white">Vista Previa de la Manifestación</h3>
-                <p class="text-blue-200 text-sm">Revise cuidadosamente todos los datos antes de confirmar</p>
+                <p class="text-slate-300 text-sm">Revise cuidadosamente todos los datos antes de confirmar</p>
             </div>
         </div>
         <div class="mve-card-body p-0">

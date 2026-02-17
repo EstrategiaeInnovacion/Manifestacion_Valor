@@ -761,22 +761,49 @@ class MveController extends Controller
 
                 $eDocument = $resultado['eDocument'];
                 $isPending = str_starts_with($eDocument, 'PENDIENTE-Op-');
+                $numeroOperacion = $resultado['numero_operacion'] ?? null;
+                $tipoDocumento = $request->input('tipo_documento');
+                $nombreDocumento = $request->input('nombre_documento');
+
+                // Guardar en edocuments_registrados (siempre, incluso pendientes para tracking)
+                EdocumentRegistrado::updateOrCreate(
+                    ['folio_edocument' => $eDocument],
+                    [
+                        'applicant_id' => $applicantId,
+                        'numero_operacion' => $numeroOperacion,
+                        'tipo_documento' => $tipoDocumento,
+                        'nombre_documento' => $nombreDocumento,
+                        'existe_en_vucem' => !$isPending,
+                        'fecha_ultima_consulta' => now(),
+                        'response_message' => $isPending
+                            ? 'Pendiente - Op: ' . $numeroOperacion
+                            : 'Digitalizado para ' . $rfc . ' (Tipo ' . $tipoDocumento . ')',
+                    ]
+                );
 
                 if (!$isPending) {
-                    // Guardar folio real en edocuments_registrados
-                    EdocumentRegistrado::updateOrCreate(
-                        ['folio_edocument' => $eDocument],
-                        [
-                            'existe_en_vucem' => true,
-                            'fecha_ultima_consulta' => now(),
-                            'response_message' => 'Digitalizado para ' . $rfc . ' (Tipo ' . $request->input('tipo_documento') . ')',
-                        ]
-                    );
+                    // Guardar/agregar el eDocument directamente en mv_documentos (asociación con la MVE)
+                    $this->agregarDocumentoAMve($applicantId, [
+                        'tipo_documento' => $tipoDocumento,
+                        'nombre_documento' => $nombreDocumento,
+                        'folio_edocument' => $eDocument,
+                        'numero_operacion' => $numeroOperacion,
+                        'created_at' => now()->toDateTimeString(),
+                        'updated_at' => now()->toDateTimeString(),
+                    ]);
+
+                    Log::info('[DIGITALIZAR] eDocument guardado y asociado a MVE', [
+                        'applicant_id' => $applicantId,
+                        'eDocument' => $eDocument,
+                        'numero_operacion' => $numeroOperacion,
+                        'tipo_documento' => $tipoDocumento,
+                    ]);
                 }
 
                 return response()->json([
                     'success' => true,
                     'eDocument' => $eDocument,
+                    'numero_operacion' => $numeroOperacion,
                     'pending' => $isPending,
                     'message' => $resultado['mensaje'] ?? 'Documento digitalizado exitosamente.',
                 ]);
@@ -787,6 +814,50 @@ class MveController extends Controller
         } catch (\Exception $e) {
             Log::error('[DIGITALIZAR] Error: ' . $e->getMessage());
             return response()->json(['success' => false, 'message' => 'Error: ' . $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Agrega un documento digitalizado al array de documentos de la MVE (mv_documentos).
+     * Esto garantiza la asociación servidor-lado entre el eDocument y la manifestación.
+     */
+    private function agregarDocumentoAMve(int $applicantId, array $documento): void
+    {
+        try {
+            $mvDocumentos = MvDocumentos::where('applicant_id', $applicantId)->first();
+
+            if ($mvDocumentos) {
+                // Obtener array actual de documentos
+                $documentosActuales = $mvDocumentos->documentos ?? [];
+                
+                // Verificar que no esté duplicado (mismo folio_edocument)
+                $folioNuevo = $documento['folio_edocument'] ?? '';
+                $yaExiste = false;
+                foreach ($documentosActuales as $doc) {
+                    if (($doc['folio_edocument'] ?? '') === $folioNuevo) {
+                        $yaExiste = true;
+                        break;
+                    }
+                }
+
+                if (!$yaExiste) {
+                    $documentosActuales[] = $documento;
+                    $mvDocumentos->documentos = $documentosActuales;
+                    $mvDocumentos->save();
+                }
+            } else {
+                // Crear registro nuevo con el primer documento
+                MvDocumentos::create([
+                    'applicant_id' => $applicantId,
+                    'documentos' => [$documento],
+                    'status' => 'borrador',
+                ]);
+            }
+        } catch (\Exception $e) {
+            Log::warning('[DIGITALIZAR] Error al guardar documento en mv_documentos (no crítico)', [
+                'applicant_id' => $applicantId,
+                'error' => $e->getMessage(),
+            ]);
         }
     }
     
@@ -1125,21 +1196,35 @@ class MveController extends Controller
                 ], 403);
             }
             
-            // Validar archivos de e.firma y clave webservice
-            $validator = Validator::make($request->all(), [
-                'certificado' => 'required|file',
-                'llave_privada' => 'required|file',
-                'password_llave' => 'required|string',
-                'clave_webservice' => 'required|string',
-                'confirmacion' => 'required|accepted'
-            ], [
-                'certificado.required' => 'El archivo de certificado (.cer) es obligatorio',
-                'llave_privada.required' => 'El archivo de llave privada (.key) es obligatorio',
-                'password_llave.required' => 'La contraseña de la llave privada es obligatoria',
-                'clave_webservice.required' => 'La clave del web service de VUCEM es obligatoria',
+            // Determinar si usar credenciales almacenadas
+            $useStoredCreds = $request->input('use_stored_credentials') === '1'
+                && $applicant->hasVucemCredentials();
+            $useStoredWs = $request->input('use_stored_credentials') === '1'
+                && $applicant->hasWebserviceKey();
+            
+            // Validación dinámica según origen de credenciales
+            $rules = [
+                'confirmacion' => 'required|accepted',
+            ];
+            $messages = [
                 'confirmacion.required' => 'Debe confirmar que la información es correcta',
-                'confirmacion.accepted' => 'Debe confirmar que la información es correcta'
-            ]);
+                'confirmacion.accepted' => 'Debe confirmar que la información es correcta',
+            ];
+            
+            if (!$useStoredCreds) {
+                $rules['certificado'] = 'required|file';
+                $rules['llave_privada'] = 'required|file';
+                $rules['password_llave'] = 'required|string';
+                $messages['certificado.required'] = 'El archivo de certificado (.cer) es obligatorio';
+                $messages['llave_privada.required'] = 'El archivo de llave privada (.key) es obligatorio';
+                $messages['password_llave.required'] = 'La contraseña de la llave privada es obligatoria';
+            }
+            if (!$useStoredWs) {
+                $rules['clave_webservice'] = 'required|string';
+                $messages['clave_webservice.required'] = 'La clave del web service de VUCEM es obligatoria';
+            }
+            
+            $validator = Validator::make($request->all(), $rules, $messages);
             
             if ($validator->fails()) {
                 return response()->json([
@@ -1161,9 +1246,19 @@ class MveController extends Controller
             }
 
             // =====================================================
+            // RESOLVER CREDENCIALES: almacenadas vs manuales
+            // =====================================================
+            $claveWebservice = $useStoredWs
+                ? $applicant->vucem_webservice_key
+                : $request->input('clave_webservice');
+
+            if (empty($claveWebservice)) {
+                return response()->json(['success' => false, 'message' => 'Se requiere la clave del Web Service VUCEM.'], 422);
+            }
+
+            // =====================================================
             // VALIDACIÓN DEL XML SOAP ANTES DE PROCESAR
             // =====================================================
-            $claveWebservice = $request->input('clave_webservice');
             $soapService = new \App\Services\MvVucemSoapService();
             
             // Generar y validar XML sin firma (para verificar estructura de datos)
@@ -1204,14 +1299,46 @@ class MveController extends Controller
 
             Log::info('MVE AJAX - Validación XML exitosa', [
                 'applicant_id' => $applicantId,
-                'xml_valid' => true
+                'xml_valid' => true,
+                'credenciales' => $useStoredCreds ? 'almacenadas' : 'manuales'
             ]);
             // =====================================================
             
-            // Guardar archivos temporalmente
-            $certificadoPath = $request->file('certificado')->store('temp/efirma');
-            $llavePrivadaPath = $request->file('llave_privada')->store('temp/efirma');
-            $password = $request->input('password_llave');
+            // Preparar archivos de firma según origen
+            $certificadoPath = null;
+            $llavePrivadaPath = null;
+            $password = null;
+            $tempCertPath = null;
+            $tempKeyPath = null;
+            
+            if ($useStoredCreds) {
+                // Usar credenciales almacenadas en la BD
+                $certContent = base64_decode($applicant->vucem_cert_file);
+                $keyContent = base64_decode($applicant->vucem_key_file);
+                $password = $applicant->vucem_password;
+                
+                if (!$certContent || !$keyContent || !$password) {
+                    return response()->json(['success' => false, 'message' => 'Credenciales almacenadas incompletas.'], 422);
+                }
+                
+                // Guardar en archivos temporales
+                $tempCertPath = tempnam(sys_get_temp_dir(), 'cert_');
+                $tempKeyPath = tempnam(sys_get_temp_dir(), 'key_');
+                file_put_contents($tempCertPath, $certContent);
+                file_put_contents($tempKeyPath, $keyContent);
+                
+                Log::info('[FIRMAR] Usando credenciales almacenadas', ['applicant' => $applicantId]);
+            } else {
+                // Usar archivos subidos manualmente
+                $certificadoPath = $request->file('certificado')->store('temp/efirma');
+                $llavePrivadaPath = $request->file('llave_privada')->store('temp/efirma');
+                $password = $request->input('password_llave');
+                
+                $tempCertPath = Storage::path($certificadoPath);
+                $tempKeyPath = Storage::path($llavePrivadaPath);
+                
+                Log::info('[FIRMAR] Usando credenciales manuales', ['applicant' => $applicantId]);
+            }
             
             try {
                 // Usar EFirmaService con PhpCfdi para generar la firma
@@ -1235,8 +1362,8 @@ class MveController extends Controller
                 $firmaResult = $efirmaService->generarFirmaElectronicaConArchivos(
                     $cadenaOriginal,
                     strtoupper($applicant->applicant_rfc),
-                    Storage::path($certificadoPath),
-                    Storage::path($llavePrivadaPath),
+                    $tempCertPath,
+                    $tempKeyPath,
                     $password
                 );
                 
@@ -1251,14 +1378,19 @@ class MveController extends Controller
                     $datosManifestacion,
                     $informacionCove,
                     $documentosRecord,
-                    Storage::path($certificadoPath),
-                    Storage::path($llavePrivadaPath),
+                    $tempCertPath,
+                    $tempKeyPath,
                     $password,
-                    $claveWebservice // <--- CORRECCIÓN APLICADA AQUÍ
+                    $claveWebservice
                 );
                 
                 // Limpiar archivos temporales
-                Storage::delete([$certificadoPath, $llavePrivadaPath]);
+                if ($useStoredCreds) {
+                    @unlink($tempCertPath);
+                    @unlink($tempKeyPath);
+                } else {
+                    Storage::delete(array_filter([$certificadoPath, $llavePrivadaPath]));
+                }
                 
                 if ($resultado['success']) {
                     // Actualizar status a 'enviado' en TODAS las secciones
@@ -1294,7 +1426,12 @@ class MveController extends Controller
                 
             } catch (\Exception $e) {
                 // Limpiar archivos temporales en caso de error
-                Storage::delete([$certificadoPath, $llavePrivadaPath]);
+                if ($useStoredCreds) {
+                    @unlink($tempCertPath);
+                    @unlink($tempKeyPath);
+                } else {
+                    Storage::delete(array_filter([$certificadoPath, $llavePrivadaPath]));
+                }
                 
                 Log::error('MVE AJAX - Error en firma', [
                     'applicant_id' => $applicantId,
@@ -1640,13 +1777,19 @@ class MveController extends Controller
                 ], 400);
             }
 
-            // Obtener credenciales (del request o usar las guardadas si fuera necesario)
+            // Obtener credenciales (del request o usar las guardadas)
             $claveWebservice = $request->input('clave_webservice');
             if (empty($claveWebservice)) {
-                 return response()->json([
-                    'success' => false,
-                    'message' => 'La clave Web Service es obligatoria para consultar.'
-                ], 422);
+                // Intentar usar credenciales almacenadas
+                if ($acuse->applicant->hasWebserviceKey()) {
+                    $claveWebservice = $acuse->applicant->vucem_webservice_key;
+                    Log::info('[MV_CONSULTA] Usando credenciales almacenadas', ['applicant' => $acuse->applicant_id]);
+                } else {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'La clave Web Service es obligatoria para consultar.'
+                    ], 422);
+                }
             }
 
             $rfc = strtoupper($acuse->applicant->applicant_rfc);
@@ -1718,6 +1861,31 @@ class MveController extends Controller
                 'message' => 'Error interno al consultar la manifestación: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Descargar XML de respuesta VUCEM por ID de acuse
+     * Usado desde la pantalla de consulta para obtener el acuse WS (XML)
+     */
+    public function downloadConsultaXml($acuseId)
+    {
+        $acuse = MvAcuse::with('applicant')->findOrFail($acuseId);
+
+        // Verificar permisos
+        if ($acuse->applicant->user_email !== auth()->user()->email) {
+            abort(403, 'No tienes permiso para acceder a este acuse.');
+        }
+
+        if (!$acuse->xml_respuesta) {
+            abort(404, 'No hay XML de respuesta disponible. Realice primero la consulta.');
+        }
+
+        $filename = 'acuse_mve_' . ($acuse->numero_cove ?: $acuse->folio_manifestacion) . '.xml';
+
+        return response($acuse->xml_respuesta)
+            ->header('Content-Type', 'application/xml')
+            ->header('Content-Disposition', 'attachment; filename="' . $filename . '"')
+            ->header('Content-Length', strlen($acuse->xml_respuesta));
     }
 
 }

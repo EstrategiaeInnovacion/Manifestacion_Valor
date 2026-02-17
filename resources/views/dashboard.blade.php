@@ -91,9 +91,7 @@
                             <span class="text-xs font-medium text-slate-400 uppercase tracking-widest">Global Asset Management</span>
                         </div>
                         
-                        <h2 class="text-6xl font-light text-[#001a4d] tracking-tighter">
-                            VEXUM<span class="font-black text-[#003399]">CORE</span>
-                        </h2>
+                        <img src="{{ asset('Gemini_Generated_Image_bmz5e9bmz5e9bmz5-removebg-preview.png') }}" alt="Logo" class="h-20 object-contain">
                     </div>
 
                     <div class="mt-8 md:mt-0 text-left md:text-right border-t md:border-t-0 md:border-l border-slate-100 pt-6 md:pt-0 md:pl-12">

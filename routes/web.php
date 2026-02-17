@@ -125,6 +125,7 @@ Route::middleware('auth')->group(function () {
 
         // Ruta para consultar manifestación en VUCEM (obtener número de MV y acuse sellado)
         Route::post('/mve/consultar/{acuse}', [MveController::class , 'consultarManifestacion'])->name('mve.consultar');
+        Route::get('/mve/consultar/{acuse}/xml', [MveController::class , 'downloadConsultaXml'])->name('mve.consultar.xml');
 
         // Rutas para subida de documentos con validación/conversión VUCEM
         Route::post('/documents/upload', [DocumentUploadController::class , 'uploadDocument'])->name('documents.upload');

@@ -103,9 +103,28 @@ const totalSteps = 5;
 
 /**
  * Navega a un paso específico del wizard.
+ * Auto-guarda datos del paso actual antes de navegar.
  */
 window.goToStep = function(stepNumber) {
     if (stepNumber < 1 || stepNumber > totalSteps) return;
+
+    // Auto-guardar datos al salir del paso 2 (Información COVE)
+    if (currentStep === 2 && stepNumber !== 2) {
+        // Guardar datos de trabajo al covesDataMap (si hay COVE en edición)
+        saveWorkingDataToCoveMap();
+    }
+
+    // Al regresar al paso 2, restaurar sub-tablas si el formulario de modificación está abierto
+    if (stepNumber === 2 && currentStep !== 2) {
+        setTimeout(() => {
+            const modificacionForm = document.getElementById('modificacionCoveForm');
+            if (modificacionForm && !modificacionForm.classList.contains('hidden') && editingCoveNumber) {
+                // El formulario de modificación estaba abierto, refrescar las tablas
+                loadCoveDataToWorking(editingCoveNumber);
+                refreshAllSubTables();
+            }
+        }, 150);
+    }
 
     // Si va al paso 5, cargar la vista previa
     if (stepNumber === 5) {
@@ -137,11 +156,24 @@ window.goToStep = function(stepNumber) {
     }, 100);
 };
 
-window.nextStep = function() {
+window.nextStep = async function() {
+    // Auto-guardar al backend al avanzar desde el paso 2
+    if (currentStep === 2) {
+        const coveRows = document.querySelectorAll('#informacionCoveTableBody tr[data-cove]');
+        if (coveRows.length > 0) {
+            // Guardar datos de trabajo al covesDataMap antes de enviar
+            saveWorkingDataToCoveMap();
+            await saveInformacionCove();
+        }
+    }
     goToStep(currentStep + 1);
 };
 
-window.prevStep = function() {
+window.prevStep = async function() {
+    // Auto-guardar al backend al retroceder desde el paso 3
+    if (currentStep === 3) {
+        await saveValorAduana();
+    }
     goToStep(currentStep - 1);
 };
 
@@ -720,8 +752,12 @@ window.showNotification = function(message, type = 'info', title = '') {
     }
     
     messageElement.textContent = message;
-    modal.style.display = 'flex';
-    
+
+    // Mostrar modal usando classList (compatible con Tailwind)
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    modal.style.display = ''; // Limpiar cualquier inline style conflictivo
+
     // Recrear iconos de Lucide
     if (typeof lucide !== 'undefined') {
         lucide.createIcons();
@@ -730,7 +766,10 @@ window.showNotification = function(message, type = 'info', title = '') {
 
 window.closeNotificationModal = function() {
     const modal = document.getElementById('notificationModal');
-    modal.style.display = 'none';
+    // Ocultar modal usando classList (compatible con Tailwind)
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+    modal.style.display = ''; // Limpiar cualquier inline style conflictivo
 };
 
 // ============================================
@@ -770,6 +809,64 @@ const EDOCUMENT_STATUS = {
 
 // Variable para almacenar el PDF validado pendiente de digitalización
 let pdfValidado = null;
+
+/**
+ * Muestra la vista previa del PDF validado en un iframe.
+ */
+window.showPdfPreview = function() {
+    if (!pdfValidado || !pdfValidado.file_content) return;
+
+    const container = document.getElementById('pdfPreviewContainer');
+    const iframe = document.getElementById('pdfPreviewIframe');
+    const filenameEl = document.getElementById('pdfPreviewFilename');
+    const frameDiv = document.getElementById('pdfPreviewFrame');
+
+    if (!container || !iframe) return;
+
+    // Nombre del archivo
+    if (filenameEl) {
+        filenameEl.textContent = pdfValidado.original_name || 'Vista previa del PDF';
+    }
+
+    // Cargar el PDF base64 en el iframe
+    iframe.src = 'data:application/pdf;base64,' + pdfValidado.file_content;
+
+    // Mostrar contenedor y asegurar que el frame esté visible
+    frameDiv.style.display = '';
+    container.classList.remove('hidden');
+    
+    const toggleText = document.getElementById('togglePreviewText');
+    if (toggleText) toggleText.textContent = 'Ocultar';
+
+    setTimeout(() => lucide.createIcons(), 50);
+};
+
+/**
+ * Alterna la visibilidad del iframe de vista previa (colapsar/expandir).
+ */
+window.togglePdfPreview = function() {
+    const frameDiv = document.getElementById('pdfPreviewFrame');
+    const toggleText = document.getElementById('togglePreviewText');
+    if (!frameDiv) return;
+
+    if (frameDiv.style.display === 'none') {
+        frameDiv.style.display = '';
+        if (toggleText) toggleText.textContent = 'Ocultar';
+    } else {
+        frameDiv.style.display = 'none';
+        if (toggleText) toggleText.textContent = 'Mostrar';
+    }
+};
+
+/**
+ * Cierra completamente la vista previa y limpia el iframe.
+ */
+window.closePdfPreview = function() {
+    const container = document.getElementById('pdfPreviewContainer');
+    const iframe = document.getElementById('pdfPreviewIframe');
+    if (container) container.classList.add('hidden');
+    if (iframe) iframe.src = 'about:blank';
+};
 
 function normalizeEdocumentFolio(folio) {
     if (!folio) {
@@ -1020,6 +1117,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             if (!file) {
                 statusDiv.classList.add('hidden');
+                closePdfPreview();
                 return;
             }
 
@@ -1082,7 +1180,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     statusDiv.innerHTML = `<div class="rounded-lg border border-green-200 bg-green-50 p-3 flex items-center gap-2">
                         <i data-lucide="check-circle" class="w-4 h-4 text-green-500"></i>
                         <span class="text-sm text-green-700">PDF válido para VUCEM (${sizeKB} KB) ${convertMsg}</span>
+                        <button type="button" onclick="showPdfPreview()" class="ml-auto text-xs text-blue-600 hover:text-blue-800 flex items-center gap-1 transition-colors">
+                            <i data-lucide="eye" class="w-3.5 h-3.5"></i> Ver PDF
+                        </button>
                     </div>`;
+
+                    // Mostrar vista previa automáticamente
+                    showPdfPreview();
                 } else {
                     statusDiv.innerHTML = `<div class="rounded-lg border border-red-200 bg-red-50 p-3 flex items-center gap-2">
                         <i data-lucide="x-circle" class="w-4 h-4 text-red-500"></i>
@@ -1189,12 +1293,16 @@ window.digitalizarDocumento = async function() {
             document.getElementById('rfcConsultaDigit').value = '';
             document.getElementById('pdfValidationStatus').classList.add('hidden');
             pdfValidado = null;
+            closePdfPreview();
 
             if (result.pending) {
-                // VUCEM aún está procesando, no agregar a la tabla todavía
-                showNotification(`Documento enviado a VUCEM. Está siendo procesado. Consulte el folio eDocument en el portal VUCEM y agréguelo manualmente.`, 'warning');
+                // VUCEM aún está procesando — el servidor ya guardó el tracking
+                const opMsg = result.numero_operacion 
+                    ? ` (Operación: ${result.numero_operacion})` 
+                    : '';
+                showNotification(`Documento enviado a VUCEM${opMsg}. Está siendo procesado. Consulte el folio eDocument en el portal VUCEM y agréguelo manualmente.`, 'warning');
             } else {
-                // Agregar a la tabla solo con folio real
+                // Agregar a la tabla con folio real
                 addEdocumentToTable({
                     tipo_documento: tipoDocId,
                     nombre_documento: nombreDoc,
@@ -1202,9 +1310,12 @@ window.digitalizarDocumento = async function() {
                     created_at: new Date().toISOString()
                 });
 
-                showNotification(`Folio eDocument: ${result.eDocument}`, 'success');
+                const opInfo = result.numero_operacion 
+                    ? ` (Op: ${result.numero_operacion})` 
+                    : '';
+                showNotification(`Documento digitalizado. Folio eDocument: ${result.eDocument}${opInfo}`, 'success');
 
-                // Auto-guardar documentos
+                // Auto-guardar documentos (el servidor ya lo guardó, pero sincronizamos la tabla completa)
                 await saveDocumentos();
             }
         } else {
@@ -3775,10 +3886,10 @@ function generarContenidoVistaPrevia(data) {
         
         return `
             <!-- COVE ${index + 1}: ${cove.numero_cove || ''} -->
-            <div class="border-2 border-purple-200 rounded-lg p-4 bg-purple-50/30">
+            <div class="border border-blue-200 rounded-lg p-4 bg-blue-50">
                 <div class="flex items-center gap-2 mb-4">
-                    <span class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-purple-600 text-white text-xs font-bold">${index + 1}</span>
-                    <h3 class="text-sm font-bold text-purple-800">COVE: ${cove.numero_cove || ''}</h3>
+                    <span class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-slate-600 text-white text-xs font-bold">${index + 1}</span>
+                    <h3 class="text-sm font-bold text-blue-900">COVE: ${cove.numero_cove || ''}</h3>
                 </div>
                 
                 <!-- Información Acuse de Valor -->
@@ -3978,7 +4089,7 @@ function generarContenidoVistaPrevia(data) {
     html += `
     <div class="bg-white border border-slate-300 shadow-lg">
         <!-- Header gob.mx -->
-        <div class="bg-gradient-to-r from-[#6d1a36] to-[#9a2a4d] text-white p-4">
+        <div class="bg-slate-600 text-white p-4">
             <div class="text-2xl font-bold italic">gob.mx</div>
             <div class="text-center mt-2">
                 <div class="text-sm font-bold tracking-wide">MANIFESTACIÓN DE VALOR</div>

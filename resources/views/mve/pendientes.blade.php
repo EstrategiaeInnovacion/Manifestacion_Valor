@@ -316,8 +316,31 @@
             
             <form id="formFirmaEnvio" enctype="multipart/form-data">
                 <input type="hidden" id="firmaApplicantId" name="applicant_id" value="">
+                <input type="hidden" id="useStoredCredentials" name="use_stored_credentials" value="0">
                 
                 <div class="p-6 space-y-6">
+                    
+                    {{-- Banner de credenciales almacenadas --}}
+                    <div id="storedCredsBanner" class="hidden">
+                        <div class="bg-green-50 border border-green-200 rounded-xl p-4">
+                            <div class="flex items-center gap-3">
+                                <div class="flex-shrink-0 w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                                    <i data-lucide="shield-check" class="w-5 h-5 text-green-600"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <p class="text-sm font-bold text-green-800">Credenciales configuradas</p>
+                                    <p class="text-xs text-green-600 mt-0.5">Se usarán automáticamente el certificado, llave privada y clave WS almacenados para este solicitante.</p>
+                                </div>
+                            </div>
+                            <button type="button" onclick="switchToManualCredentials()" 
+                                class="mt-3 text-xs text-green-700 hover:text-green-900 underline font-medium">
+                                Usar credenciales manuales en su lugar
+                            </button>
+                        </div>
+                    </div>
+                    
+                    {{-- Contenedor de campos manuales (se oculta si hay almacenadas) --}}
+                    <div id="manualCredsContainer">
                     {{-- Archivo de Certificado --}}
                     <div>
                         <label for="certificado" class="block text-sm font-bold text-slate-700 mb-2">
@@ -382,6 +405,7 @@
                         </div>
                         <p class="text-xs text-slate-500 mt-1">La clave de autenticación proporcionada por VUCEM para su RFC.</p>
                     </div>
+                    </div>{{-- Cierre manualCredsContainer --}}
                     
                     {{-- Advertencia --}}
                     <div class="bg-amber-50 border-l-4 border-amber-400 p-4 rounded-r-lg">
@@ -465,7 +489,7 @@
             <div class="p-6 border-b border-slate-200 flex-shrink-0">
                 <div class="flex items-center justify-between">
                     <div>
-                        <h3 class="text-2xl font-black text-[#001a4d]">Vista Previa de Manifestación</h3>
+                        <h3 class="text-2xl font-black text-slate-700">Vista Previa de Manifestación</h3>
                         <p id="vistaPreviaEmpresaNombre" class="text-slate-500 mt-1"></p>
                     </div>
                     <button onclick="cerrarVistaPrevia()" class="text-slate-400 hover:text-slate-600">
@@ -547,12 +571,83 @@
         }
         
         // Mostrar modal de firma
-        function mostrarModalFirma(applicantId, empresaNombre) {
+        async function mostrarModalFirma(applicantId, empresaNombre) {
             document.getElementById('firmaApplicantId').value = applicantId;
             document.getElementById('firmaEmpresaNombre').textContent = empresaNombre;
+            
+            // Reset estado
+            document.getElementById('useStoredCredentials').value = '0';
+            document.getElementById('storedCredsBanner').classList.add('hidden');
+            document.getElementById('manualCredsContainer').classList.remove('hidden');
+            
+            // Restaurar required en campos manuales
+            setManualFieldsRequired(true);
+            
             document.getElementById('modalFirma').style.display = 'flex';
             document.getElementById('modalFirma').classList.remove('hidden');
             lucide.createIcons();
+            
+            // Verificar si tiene credenciales almacenadas
+            try {
+                const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                const response = await fetch(`/cove/credenciales/${applicantId}`, {
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.has_credentials && data.has_webservice_key) {
+                        // Tiene todas las credenciales almacenadas
+                        document.getElementById('useStoredCredentials').value = '1';
+                        document.getElementById('storedCredsBanner').classList.remove('hidden');
+                        document.getElementById('manualCredsContainer').classList.add('hidden');
+                        setManualFieldsRequired(false);
+                        lucide.createIcons();
+                    } else if (data.has_credentials) {
+                        // Tiene cert/key pero no clave WS: ocultar solo cert/key
+                        document.getElementById('useStoredCredentials').value = '1';
+                        document.getElementById('storedCredsBanner').classList.remove('hidden');
+                        // Mostrar solo campo de clave WS
+                        document.querySelectorAll('#manualCredsContainer > div').forEach((el, idx) => {
+                            // Ocultar cert (0), key (1), password (2), mantener clave_ws (3)
+                            if (idx < 3) el.classList.add('hidden');
+                        });
+                        setManualFieldsRequired(false);
+                        document.getElementById('clave_webservice').required = true;
+                        lucide.createIcons();
+                    }
+                }
+            } catch (err) {
+                console.log('No se pudo verificar credenciales almacenadas, usando modo manual', err);
+            }
+        }
+        
+        // Cambiar a credenciales manuales
+        function switchToManualCredentials() {
+            document.getElementById('useStoredCredentials').value = '0';
+            document.getElementById('storedCredsBanner').classList.add('hidden');
+            document.getElementById('manualCredsContainer').classList.remove('hidden');
+            // Mostrar todos los campos del contenedor manual
+            document.querySelectorAll('#manualCredsContainer > div').forEach(el => {
+                el.classList.remove('hidden');
+            });
+            setManualFieldsRequired(true);
+            lucide.createIcons();
+        }
+        
+        // Habilitar/deshabilitar required en campos manuales
+        function setManualFieldsRequired(required) {
+            const cert = document.getElementById('certificado');
+            const key = document.getElementById('llave_privada');
+            const pass = document.getElementById('password_llave');
+            const ws = document.getElementById('clave_webservice');
+            if (cert) cert.required = required;
+            if (key) key.required = required;
+            if (pass) pass.required = required;
+            if (ws) ws.required = required;
         }
         
         // Mostrar vista previa antes de firmar
@@ -606,25 +701,227 @@
         function generarContenidoVistaPrevia(data) {
             let html = '';
             
-            // Obtener datos - misma estructura que mve-manual.js
+            // Obtener datos — nuevo formato multi-COVE
             const coves = data.informacion_cove?.informacion_cove || [];
-            const pedimentos = data.informacion_cove?.pedimentos || [];
-            const incrementables = data.informacion_cove?.incrementables || [];
-            const decrementables = data.informacion_cove?.decrementables || [];
-            const precioPagado = data.informacion_cove?.precio_pagado || [];
-            const precioPorPagar = data.informacion_cove?.precio_por_pagar || [];
-            const compensoPago = data.informacion_cove?.compenso_pago || [];
             const valorAduana = data.valor_aduana?.valor_en_aduana_data || {};
             const personasConsulta = data.datos_manifestacion?.persona_consulta || [];
             const documentos = data.documentos || [];
             
-            // Primer COVE para datos generales
-            const primerCove = coves[0] || {};
+            // Función helper para generar bloque de un COVE
+            function generarBloqueCove(cove, index) {
+                const pedimentos = cove.pedimentos || [];
+                const incrementables = cove.incrementables || [];
+                const decrementables = cove.decrementables || [];
+                const precioPagado = cove.precio_pagado || [];
+                const precioPorPagar = cove.precio_por_pagar || [];
+                const compensoPago = cove.compenso_pago || [];
+                
+                return `
+                    <!-- COVE ${index + 1}: ${cove.numero_cove || ''} -->
+                    <div class="border border-blue-200 rounded-lg p-4 bg-blue-50">
+                        <div class="flex items-center gap-2 mb-4">
+                            <span class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-slate-600 text-white text-xs font-bold">${index + 1}</span>
+                            <h3 class="text-sm font-bold text-blue-900">COVE: ${cove.numero_cove || ''}</h3>
+                        </div>
+                        
+                        <!-- Información Acuse de Valor -->
+                        <div class="border-b-2 border-slate-300 pb-4 mb-4">
+                            <h4 class="text-xs font-bold text-slate-700 mb-2 border-b border-slate-200 pb-1">Información Acuse de Valor</h4>
+                            <table class="w-full text-xs">
+                                <tr class="bg-slate-100">
+                                    <td class="border border-slate-300 p-2 font-semibold" colspan="2">Método de valoración aduanera</td>
+                                </tr>
+                                <tr><td class="border border-slate-300 p-2" colspan="2">${cove.metodo_valoracion || ''}</td></tr>
+                                <tr class="bg-slate-100">
+                                    <td class="border border-slate-300 p-2 font-semibold" colspan="2">INCOTERM</td>
+                                </tr>
+                                <tr><td class="border border-slate-300 p-2" colspan="2">${cove.incoterm || ''}</td></tr>
+                                <tr class="bg-slate-100">
+                                    <td class="border border-slate-300 p-2 font-semibold" colspan="2">¿Existe vinculación entre importador y vendedor/proveedor?</td>
+                                </tr>
+                                <tr><td class="border border-slate-300 p-2" colspan="2">${cove.vinculacion === '1' || cove.vinculacion === 1 ? 'Sí' : (cove.vinculacion === '0' || cove.vinculacion === 0 ? 'No' : '')}</td></tr>
+                            </table>
+                        </div>
+                        
+                        <!-- Pedimentos -->
+                        <div class="border-b-2 border-slate-300 pb-4 mb-4">
+                            <h4 class="text-xs font-bold text-slate-700 mb-2 border-b border-slate-200 pb-1">Pedimentos</h4>
+                            <table class="w-full text-xs">
+                                <tr class="bg-slate-100">
+                                    <td class="border border-slate-300 p-2 font-semibold w-1/3">Pedimento</td>
+                                    <td class="border border-slate-300 p-2 font-semibold w-1/3">Patente</td>
+                                    <td class="border border-slate-300 p-2 font-semibold w-1/3">Aduana</td>
+                                </tr>
+                                ${pedimentos.length > 0 ? pedimentos.map(p => `
+                                    <tr>
+                                        <td class="border border-slate-300 p-2">${p.numeroDisplay || p.numero || ''}</td>
+                                        <td class="border border-slate-300 p-2">${p.patente || ''}</td>
+                                        <td class="border border-slate-300 p-2">${p.aduanaText || p.aduana || ''}</td>
+                                    </tr>
+                                `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="3">&nbsp;</td></tr>`}
+                            </table>
+                        </div>
+                        
+                        <!-- Incrementables -->
+                        <div class="border-b-2 border-slate-300 pb-4 mb-4">
+                            <h4 class="text-xs font-bold text-slate-700 mb-1 border-b border-slate-200 pb-1">Incrementables conforme al artículo 65 de la ley</h4>
+                            <table class="w-full text-xs">
+                                <tr class="bg-slate-100">
+                                    <td class="border border-slate-300 p-2 font-semibold">Fecha de erogación</td>
+                                    <td class="border border-slate-300 p-2 font-semibold">Importe</td>
+                                    <td class="border border-slate-300 p-2 font-semibold">Tipo de moneda</td>
+                                </tr>
+                                ${incrementables.length > 0 ? incrementables.map(inc => `
+                                    <tr>
+                                        <td class="border border-slate-300 p-2">${inc.fechaErogacion || ''}</td>
+                                        <td class="border border-slate-300 p-2">${inc.importe ? '$' + parseFloat(inc.importe).toLocaleString('es-MX', {minimumFractionDigits: 2}) : ''}</td>
+                                        <td class="border border-slate-300 p-2">${inc.tipoMonedaText || inc.tipoMoneda || ''}</td>
+                                    </tr>
+                                `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="3">&nbsp;</td></tr>`}
+                                <tr class="bg-slate-100">
+                                    <td class="border border-slate-300 p-2 font-semibold">Tipo de cambio</td>
+                                    <td class="border border-slate-300 p-2 font-semibold" colspan="2">¿Está a cargo del importador?</td>
+                                </tr>
+                                ${incrementables.length > 0 ? incrementables.map(inc => `
+                                    <tr>
+                                        <td class="border border-slate-300 p-2">${inc.tipoCambio || ''}</td>
+                                        <td class="border border-slate-300 p-2" colspan="2">${inc.aCargoImportador !== undefined ? (inc.aCargoImportador ? 'Sí' : 'No') : ''}</td>
+                                    </tr>
+                                `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="3">&nbsp;</td></tr>`}
+                            </table>
+                        </div>
+                        
+                        <!-- Decrementables -->
+                        <div class="border-b-2 border-slate-300 pb-4 mb-4">
+                            <h4 class="text-xs font-bold text-slate-700 mb-1 border-b border-slate-200 pb-1">Decrementables (Art. 66)</h4>
+                            <table class="w-full text-xs">
+                                <tr class="bg-slate-100">
+                                    <td class="border border-slate-300 p-2 font-semibold">Fecha de erogación</td>
+                                    <td class="border border-slate-300 p-2 font-semibold">Importe</td>
+                                    <td class="border border-slate-300 p-2 font-semibold">Tipo de moneda</td>
+                                </tr>
+                                ${decrementables.length > 0 ? decrementables.map(dec => `
+                                    <tr>
+                                        <td class="border border-slate-300 p-2">${dec.fechaErogacion || ''}</td>
+                                        <td class="border border-slate-300 p-2">${dec.importe ? '$' + parseFloat(dec.importe).toLocaleString('es-MX', {minimumFractionDigits: 2}) : ''}</td>
+                                        <td class="border border-slate-300 p-2">${dec.tipoMonedaText || dec.tipoMoneda || ''}</td>
+                                    </tr>
+                                `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="3">&nbsp;</td></tr>`}
+                                <tr class="bg-slate-100">
+                                    <td class="border border-slate-300 p-2 font-semibold" colspan="3">Tipo de cambio</td>
+                                </tr>
+                                ${decrementables.length > 0 ? decrementables.map(dec => `
+                                    <tr><td class="border border-slate-300 p-2" colspan="3">${dec.tipoCambio || ''}</td></tr>
+                                `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="3">&nbsp;</td></tr>`}
+                            </table>
+                        </div>
+                        
+                        <!-- Precio pagado -->
+                        <div class="border-b-2 border-slate-300 pb-4 mb-4">
+                            <h4 class="text-xs font-bold text-slate-700 mb-2 border-b border-slate-200 pb-1">Precio pagado</h4>
+                            <table class="w-full text-xs">
+                                <tr class="bg-slate-100">
+                                    <td class="border border-slate-300 p-2 font-semibold">Fecha de pago</td>
+                                    <td class="border border-slate-300 p-2 font-semibold">Importe</td>
+                                    <td class="border border-slate-300 p-2 font-semibold">Forma de pago</td>
+                                    <td class="border border-slate-300 p-2 font-semibold">Especifique</td>
+                                </tr>
+                                ${precioPagado.length > 0 ? precioPagado.map(p => `
+                                    <tr>
+                                        <td class="border border-slate-300 p-2">${p.fecha || ''}</td>
+                                        <td class="border border-slate-300 p-2">${p.importe ? '$' + parseFloat(p.importe).toLocaleString('es-MX', {minimumFractionDigits: 2}) : ''}</td>
+                                        <td class="border border-slate-300 p-2">${p.formaPagoText || p.formaPago || ''}</td>
+                                        <td class="border border-slate-300 p-2">${p.especifique || ''}</td>
+                                    </tr>
+                                `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="4">&nbsp;</td></tr>`}
+                                <tr class="bg-slate-100">
+                                    <td class="border border-slate-300 p-2 font-semibold">Tipo de moneda</td>
+                                    <td class="border border-slate-300 p-2 font-semibold" colspan="3">Tipo de cambio</td>
+                                </tr>
+                                ${precioPagado.length > 0 ? precioPagado.map(p => `
+                                    <tr>
+                                        <td class="border border-slate-300 p-2">${p.tipoMonedaText || p.tipoMoneda || ''}</td>
+                                        <td class="border border-slate-300 p-2" colspan="3">${p.tipoCambio || ''}</td>
+                                    </tr>
+                                `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="4">&nbsp;</td></tr>`}
+                            </table>
+                        </div>
+                        
+                        <!-- Precio por pagar -->
+                        <div class="border-b-2 border-slate-300 pb-4 mb-4">
+                            <h4 class="text-xs font-bold text-slate-700 mb-2 border-b border-slate-200 pb-1">Precio por pagar</h4>
+                            <table class="w-full text-xs">
+                                <tr class="bg-slate-100">
+                                    <td class="border border-slate-300 p-2 font-semibold">Fecha de pago</td>
+                                    <td class="border border-slate-300 p-2 font-semibold">Importe</td>
+                                    <td class="border border-slate-300 p-2 font-semibold">Forma de pago</td>
+                                    <td class="border border-slate-300 p-2 font-semibold">Especifique</td>
+                                </tr>
+                                ${precioPorPagar.length > 0 ? precioPorPagar.map(p => `
+                                    <tr>
+                                        <td class="border border-slate-300 p-2">${p.fecha || ''}</td>
+                                        <td class="border border-slate-300 p-2">${p.importe ? '$' + parseFloat(p.importe).toLocaleString('es-MX', {minimumFractionDigits: 2}) : ''}</td>
+                                        <td class="border border-slate-300 p-2">${p.formaPagoText || p.formaPago || ''}</td>
+                                        <td class="border border-slate-300 p-2">${p.especifique || ''}</td>
+                                    </tr>
+                                `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="4">&nbsp;</td></tr>`}
+                                <tr class="bg-slate-100">
+                                    <td class="border border-slate-300 p-2 font-semibold">Tipo de moneda</td>
+                                    <td class="border border-slate-300 p-2 font-semibold" colspan="3">Tipo de cambio</td>
+                                </tr>
+                                ${precioPorPagar.length > 0 ? precioPorPagar.map(p => `
+                                    <tr>
+                                        <td class="border border-slate-300 p-2">${p.tipoMonedaText || p.tipoMoneda || ''}</td>
+                                        <td class="border border-slate-300 p-2" colspan="3">${p.tipoCambio || ''}</td>
+                                    </tr>
+                                `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="4">&nbsp;</td></tr>`}
+                                <tr class="bg-slate-100">
+                                    <td class="border border-slate-300 p-2 font-semibold" colspan="4">Momento(s) o situación(es) cuando se realizará el pago</td>
+                                </tr>
+                                ${precioPorPagar.length > 0 ? precioPorPagar.map(p => `
+                                    <tr><td class="border border-slate-300 p-2" colspan="4">${p.momentoSituacion || ''}</td></tr>
+                                `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="4">&nbsp;</td></tr>`}
+                            </table>
+                        </div>
+                        
+                        <!-- Compenso pago -->
+                        <div class="pb-2">
+                            <h4 class="text-xs font-bold text-slate-700 mb-2 border-b border-slate-200 pb-1">Compenso pago</h4>
+                            <table class="w-full text-xs">
+                                <tr class="bg-slate-100">
+                                    <td class="border border-slate-300 p-2 font-semibold">Fecha de pago</td>
+                                    <td class="border border-slate-300 p-2 font-semibold">Forma de pago</td>
+                                    <td class="border border-slate-300 p-2 font-semibold">Especifique</td>
+                                </tr>
+                                ${compensoPago.length > 0 ? compensoPago.map(c => `
+                                    <tr>
+                                        <td class="border border-slate-300 p-2">${c.fecha || ''}</td>
+                                        <td class="border border-slate-300 p-2">${c.formaPagoText || c.formaPago || ''}</td>
+                                        <td class="border border-slate-300 p-2">${c.especifique || ''}</td>
+                                    </tr>
+                                `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="3">&nbsp;</td></tr>`}
+                                <tr class="bg-slate-100">
+                                    <td class="border border-slate-300 p-2 font-semibold" colspan="3">Motivo por lo que se realizó</td>
+                                </tr>
+                                ${compensoPago.length > 0 ? compensoPago.map(c => `
+                                    <tr><td class="border border-slate-300 p-2" colspan="3">${c.motivo || ''}</td></tr>
+                                `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="3">&nbsp;</td></tr>`}
+                                <tr class="bg-slate-100">
+                                    <td class="border border-slate-300 p-2 font-semibold" colspan="3">Prestación de la mercancía</td>
+                                </tr>
+                                ${compensoPago.length > 0 ? compensoPago.map(c => `
+                                    <tr><td class="border border-slate-300 p-2" colspan="3">${c.prestacionMercancia || ''}</td></tr>
+                                `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="3">&nbsp;</td></tr>`}
+                            </table>
+                        </div>
+                    </div>
+                `;
+            }
             
             html += `
             <div class="bg-white border border-slate-300 shadow-lg">
                 <!-- Header gob.mx -->
-                <div class="bg-gradient-to-r from-[#6d1a36] to-[#9a2a4d] text-white p-4">
+                <div class="bg-slate-600 text-white p-4">
                     <div class="text-2xl font-bold italic">gob.mx</div>
                     <div class="text-center mt-2">
                         <div class="text-sm font-bold tracking-wide">MANIFESTACIÓN DE VALOR</div>
@@ -685,283 +982,17 @@
                         </table>
                     </div>
                     
-                    <!-- Información Acuse de Valor -->
+                    <!-- Bloques de COVEs secuenciales -->
                     <div class="border-b-2 border-slate-300 pb-4">
-                        <h3 class="text-sm font-bold text-slate-700 mb-3 border-b border-slate-200 pb-1">Información Acuse de Valor</h3>
-                        <table class="w-full text-xs">
-                            <tr class="bg-slate-100">
-                                <td class="border border-slate-300 p-2 font-semibold" colspan="2">Método de valoración aduanera</td>
-                            </tr>
-                            <tr>
-                                <td class="border border-slate-300 p-2" colspan="2">${primerCove.metodo_valoracion || ''}</td>
-                            </tr>
-                            <tr class="bg-slate-100">
-                                <td class="border border-slate-300 p-2 font-semibold" colspan="2">INCOTERM</td>
-                            </tr>
-                            <tr>
-                                <td class="border border-slate-300 p-2" colspan="2">${primerCove.incoterm || ''}</td>
-                            </tr>
-                            <tr class="bg-slate-100">
-                                <td class="border border-slate-300 p-2 font-semibold" colspan="2">¿Existe vinculación entre importador y vendedor/proveedor?</td>
-                            </tr>
-                            <tr>
-                                <td class="border border-slate-300 p-2" colspan="2">${primerCove.vinculacion === '1' || primerCove.vinculacion === 1 ? 'Sí' : (primerCove.vinculacion === '0' || primerCove.vinculacion === 0 ? 'No' : '')}</td>
-                            </tr>
-                        </table>
+                        <h3 class="text-sm font-bold text-slate-700 mb-4 border-b border-slate-200 pb-1">Información de COVEs (${coves.length})</h3>
+                        <div class="space-y-6">
+                            ${coves.length > 0 ? coves.map((cove, i) => generarBloqueCove(cove, i)).join('') : `
+                                <p class="text-sm text-slate-400 text-center py-4">No hay COVEs registrados</p>
+                            `}
+                        </div>
                     </div>
                     
-                    <!-- Pedimentos -->
-                    <div class="border-b-2 border-slate-300 pb-4">
-                        <h3 class="text-sm font-bold text-slate-700 mb-3 border-b border-slate-200 pb-1">Pedimentos</h3>
-                        <table class="w-full text-xs">
-                            <tr class="bg-slate-100">
-                                <td class="border border-slate-300 p-2 font-semibold w-1/3">Pedimento</td>
-                                <td class="border border-slate-300 p-2 font-semibold w-1/3">Patente</td>
-                                <td class="border border-slate-300 p-2 font-semibold w-1/3">Aduana</td>
-                            </tr>
-                            ${pedimentos.length > 0 ? pedimentos.map(p => `
-                                <tr>
-                                    <td class="border border-slate-300 p-2">${p.numeroDisplay || p.numero || ''}</td>
-                                    <td class="border border-slate-300 p-2">${p.patente || ''}</td>
-                                    <td class="border border-slate-300 p-2">${p.aduanaText || p.aduana || ''}</td>
-                                </tr>
-                            `).join('') : `
-                                <tr>
-                                    <td class="border border-slate-300 p-2">&nbsp;</td>
-                                    <td class="border border-slate-300 p-2">&nbsp;</td>
-                                    <td class="border border-slate-300 p-2">&nbsp;</td>
-                                </tr>
-                            `}
-                        </table>
-                    </div>
-                    
-                    <!-- Incrementables conforme al artículo 65 de la ley -->
-                    <div class="border-b-2 border-slate-300 pb-4">
-                        <h3 class="text-sm font-bold text-slate-700 mb-2 border-b border-slate-200 pb-1">Incrementables conforme al artículo 65 de la ley</h3>
-                        <p class="text-xs text-slate-600 mb-3">Las comisiones y los gastos de corretaje, salvo las comisiones de compra.</p>
-                        <table class="w-full text-xs">
-                            <tr class="bg-slate-100">
-                                <td class="border border-slate-300 p-2 font-semibold">Fecha de erogación</td>
-                                <td class="border border-slate-300 p-2 font-semibold">Importe</td>
-                                <td class="border border-slate-300 p-2 font-semibold">Tipo de moneda</td>
-                            </tr>
-                            ${incrementables.length > 0 ? incrementables.map(inc => `
-                                <tr>
-                                    <td class="border border-slate-300 p-2">${inc.fechaErogacion || ''}</td>
-                                    <td class="border border-slate-300 p-2">${inc.importe ? '$' + parseFloat(inc.importe).toLocaleString('es-MX', {minimumFractionDigits: 2}) : ''}</td>
-                                    <td class="border border-slate-300 p-2">${inc.tipoMonedaText || inc.tipoMoneda || ''}</td>
-                                </tr>
-                            `).join('') : `
-                                <tr>
-                                    <td class="border border-slate-300 p-2">&nbsp;</td>
-                                    <td class="border border-slate-300 p-2">&nbsp;</td>
-                                    <td class="border border-slate-300 p-2">&nbsp;</td>
-                                </tr>
-                            `}
-                            <tr class="bg-slate-100">
-                                <td class="border border-slate-300 p-2 font-semibold">Tipo de cambio</td>
-                                <td class="border border-slate-300 p-2 font-semibold" colspan="2">¿Está a cargo del importador?</td>
-                            </tr>
-                            ${incrementables.length > 0 ? incrementables.map(inc => `
-                                <tr>
-                                    <td class="border border-slate-300 p-2">${inc.tipoCambio || ''}</td>
-                                    <td class="border border-slate-300 p-2" colspan="2">${inc.aCargoImportador !== undefined ? (inc.aCargoImportador ? 'Sí' : 'No') : ''}</td>
-                                </tr>
-                            `).join('') : `
-                                <tr>
-                                    <td class="border border-slate-300 p-2">&nbsp;</td>
-                                    <td class="border border-slate-300 p-2" colspan="2">&nbsp;</td>
-                                </tr>
-                            `}
-                        </table>
-                    </div>
-                    
-                    <!-- Decrementables -->
-                    <div class="border-b-2 border-slate-300 pb-4">
-                        <h3 class="text-sm font-bold text-slate-700 mb-2 border-b border-slate-200 pb-1">Información que no integra el valor de transacción conforme el artículo 66 de la ley aduanera (DECREMENTABLES)</h3>
-                        <p class="text-xs text-slate-600 mb-3">(Se considera que se distinguen del precio pagado las cantidades que se mencionan, se detallan o especifican separadamente del precio pagado en el comprobante fiscal digital o en el documento equivalente)</p>
-                        <table class="w-full text-xs">
-                            <tr class="bg-slate-100">
-                                <td class="border border-slate-300 p-2 font-semibold">Fecha de erogación</td>
-                                <td class="border border-slate-300 p-2 font-semibold">Importe</td>
-                                <td class="border border-slate-300 p-2 font-semibold">Tipo de moneda</td>
-                            </tr>
-                            ${decrementables.length > 0 ? decrementables.map(dec => `
-                                <tr>
-                                    <td class="border border-slate-300 p-2">${dec.fechaErogacion || ''}</td>
-                                    <td class="border border-slate-300 p-2">${dec.importe ? '$' + parseFloat(dec.importe).toLocaleString('es-MX', {minimumFractionDigits: 2}) : ''}</td>
-                                    <td class="border border-slate-300 p-2">${dec.tipoMonedaText || dec.tipoMoneda || ''}</td>
-                                </tr>
-                            `).join('') : `
-                                <tr>
-                                    <td class="border border-slate-300 p-2">&nbsp;</td>
-                                    <td class="border border-slate-300 p-2">&nbsp;</td>
-                                    <td class="border border-slate-300 p-2">&nbsp;</td>
-                                </tr>
-                            `}
-                            <tr class="bg-slate-100">
-                                <td class="border border-slate-300 p-2 font-semibold" colspan="3">Tipo de cambio</td>
-                            </tr>
-                            ${decrementables.length > 0 ? decrementables.map(dec => `
-                                <tr>
-                                    <td class="border border-slate-300 p-2" colspan="3">${dec.tipoCambio || ''}</td>
-                                </tr>
-                            `).join('') : `
-                                <tr>
-                                    <td class="border border-slate-300 p-2" colspan="3">&nbsp;</td>
-                                </tr>
-                            `}
-                        </table>
-                    </div>
-                    
-                    <!-- Precio pagado -->
-                    <div class="border-b-2 border-slate-300 pb-4">
-                        <h3 class="text-sm font-bold text-slate-700 mb-3 border-b border-slate-200 pb-1">Precio pagado</h3>
-                        <table class="w-full text-xs">
-                            <tr class="bg-slate-100">
-                                <td class="border border-slate-300 p-2 font-semibold">Fecha de pago</td>
-                                <td class="border border-slate-300 p-2 font-semibold">Importe</td>
-                                <td class="border border-slate-300 p-2 font-semibold">Forma de pago</td>
-                                <td class="border border-slate-300 p-2 font-semibold">Especifique</td>
-                            </tr>
-                            ${precioPagado.length > 0 ? precioPagado.map(p => `
-                                <tr>
-                                    <td class="border border-slate-300 p-2">${p.fecha || ''}</td>
-                                    <td class="border border-slate-300 p-2">${p.importe ? '$' + parseFloat(p.importe).toLocaleString('es-MX', {minimumFractionDigits: 2}) : ''}</td>
-                                    <td class="border border-slate-300 p-2">${p.formaPagoText || p.formaPago || ''}</td>
-                                    <td class="border border-slate-300 p-2">${p.especifique || ''}</td>
-                                </tr>
-                            `).join('') : `
-                                <tr>
-                                    <td class="border border-slate-300 p-2">&nbsp;</td>
-                                    <td class="border border-slate-300 p-2">&nbsp;</td>
-                                    <td class="border border-slate-300 p-2">&nbsp;</td>
-                                    <td class="border border-slate-300 p-2">&nbsp;</td>
-                                </tr>
-                            `}
-                            <tr class="bg-slate-100">
-                                <td class="border border-slate-300 p-2 font-semibold">Tipo de moneda</td>
-                                <td class="border border-slate-300 p-2 font-semibold" colspan="3">Tipo de cambio</td>
-                            </tr>
-                            ${precioPagado.length > 0 ? precioPagado.map(p => `
-                                <tr>
-                                    <td class="border border-slate-300 p-2">${p.tipoMonedaText || p.tipoMoneda || ''}</td>
-                                    <td class="border border-slate-300 p-2" colspan="3">${p.tipoCambio || ''}</td>
-                                </tr>
-                            `).join('') : `
-                                <tr>
-                                    <td class="border border-slate-300 p-2">&nbsp;</td>
-                                    <td class="border border-slate-300 p-2" colspan="3">&nbsp;</td>
-                                </tr>
-                            `}
-                        </table>
-                    </div>
-                    
-                    <!-- Precio por pagar -->
-                    <div class="border-b-2 border-slate-300 pb-4">
-                        <h3 class="text-sm font-bold text-slate-700 mb-3 border-b border-slate-200 pb-1">Precio por pagar</h3>
-                        <table class="w-full text-xs">
-                            <tr class="bg-slate-100">
-                                <td class="border border-slate-300 p-2 font-semibold">Fecha de pago</td>
-                                <td class="border border-slate-300 p-2 font-semibold">Importe</td>
-                                <td class="border border-slate-300 p-2 font-semibold">Forma de pago</td>
-                                <td class="border border-slate-300 p-2 font-semibold">Especifique</td>
-                            </tr>
-                            ${precioPorPagar.length > 0 ? precioPorPagar.map(p => `
-                                <tr>
-                                    <td class="border border-slate-300 p-2">${p.fecha || ''}</td>
-                                    <td class="border border-slate-300 p-2">${p.importe ? '$' + parseFloat(p.importe).toLocaleString('es-MX', {minimumFractionDigits: 2}) : ''}</td>
-                                    <td class="border border-slate-300 p-2">${p.formaPagoText || p.formaPago || ''}</td>
-                                    <td class="border border-slate-300 p-2">${p.especifique || ''}</td>
-                                </tr>
-                            `).join('') : `
-                                <tr>
-                                    <td class="border border-slate-300 p-2">&nbsp;</td>
-                                    <td class="border border-slate-300 p-2">&nbsp;</td>
-                                    <td class="border border-slate-300 p-2">&nbsp;</td>
-                                    <td class="border border-slate-300 p-2">&nbsp;</td>
-                                </tr>
-                            `}
-                            <tr class="bg-slate-100">
-                                <td class="border border-slate-300 p-2 font-semibold">Tipo de moneda</td>
-                                <td class="border border-slate-300 p-2 font-semibold" colspan="3">Tipo de cambio</td>
-                            </tr>
-                            ${precioPorPagar.length > 0 ? precioPorPagar.map(p => `
-                                <tr>
-                                    <td class="border border-slate-300 p-2">${p.tipoMonedaText || p.tipoMoneda || ''}</td>
-                                    <td class="border border-slate-300 p-2" colspan="3">${p.tipoCambio || ''}</td>
-                                </tr>
-                            `).join('') : `
-                                <tr>
-                                    <td class="border border-slate-300 p-2">&nbsp;</td>
-                                    <td class="border border-slate-300 p-2" colspan="3">&nbsp;</td>
-                                </tr>
-                            `}
-                            <tr class="bg-slate-100">
-                                <td class="border border-slate-300 p-2 font-semibold" colspan="4">Momento(s) o situación(es) cuando se realizará el pago</td>
-                            </tr>
-                            ${precioPorPagar.length > 0 ? precioPorPagar.map(p => `
-                                <tr>
-                                    <td class="border border-slate-300 p-2" colspan="4">${p.momentoSituacion || ''}</td>
-                                </tr>
-                            `).join('') : `
-                                <tr>
-                                    <td class="border border-slate-300 p-2" colspan="4">&nbsp;</td>
-                                </tr>
-                            `}
-                        </table>
-                    </div>
-                    
-                    <!-- Compenso pago -->
-                    <div class="border-b-2 border-slate-300 pb-4">
-                        <h3 class="text-sm font-bold text-slate-700 mb-3 border-b border-slate-200 pb-1">Compenso pago</h3>
-                        <table class="w-full text-xs">
-                            <tr class="bg-slate-100">
-                                <td class="border border-slate-300 p-2 font-semibold">Fecha de pago</td>
-                                <td class="border border-slate-300 p-2 font-semibold">Forma de pago</td>
-                                <td class="border border-slate-300 p-2 font-semibold">Especifique</td>
-                            </tr>
-                            ${compensoPago.length > 0 ? compensoPago.map(c => `
-                                <tr>
-                                    <td class="border border-slate-300 p-2">${c.fecha || ''}</td>
-                                    <td class="border border-slate-300 p-2">${c.formaPagoText || c.formaPago || ''}</td>
-                                    <td class="border border-slate-300 p-2">${c.especifique || ''}</td>
-                                </tr>
-                            `).join('') : `
-                                <tr>
-                                    <td class="border border-slate-300 p-2">&nbsp;</td>
-                                    <td class="border border-slate-300 p-2">&nbsp;</td>
-                                    <td class="border border-slate-300 p-2">&nbsp;</td>
-                                </tr>
-                            `}
-                            <tr class="bg-slate-100">
-                                <td class="border border-slate-300 p-2 font-semibold" colspan="3">Motivo por lo que se realizó</td>
-                            </tr>
-                            ${compensoPago.length > 0 ? compensoPago.map(c => `
-                                <tr>
-                                    <td class="border border-slate-300 p-2" colspan="3">${c.motivo || ''}</td>
-                                </tr>
-                            `).join('') : `
-                                <tr>
-                                    <td class="border border-slate-300 p-2" colspan="3">&nbsp;</td>
-                                </tr>
-                            `}
-                            <tr class="bg-slate-100">
-                                <td class="border border-slate-300 p-2 font-semibold" colspan="3">Prestación de la mercancía</td>
-                            </tr>
-                            ${compensoPago.length > 0 ? compensoPago.map(c => `
-                                <tr>
-                                    <td class="border border-slate-300 p-2" colspan="3">${c.prestacionMercancia || ''}</td>
-                                </tr>
-                            `).join('') : `
-                                <tr>
-                                    <td class="border border-slate-300 p-2" colspan="3">&nbsp;</td>
-                                </tr>
-                            `}
-                        </table>
-                    </div>
-                    
-                    <!-- Valor en aduana -->
+                    <!-- Valor en aduana (totales across all COVEs) -->
                     <div class="border-b-2 border-slate-300 pb-4">
                         <h3 class="text-sm font-bold text-slate-700 mb-3 border-b border-slate-200 pb-1">Valor en aduana</h3>
                         <table class="w-full text-xs">
@@ -1075,6 +1106,14 @@
             document.getElementById('certificadoFileName').textContent = 'Ningún archivo seleccionado';
             document.getElementById('llaveFileName').textContent = 'Ningún archivo seleccionado';
             document.getElementById('btnEnviarVucem').disabled = true;
+            // Reset credenciales almacenadas
+            document.getElementById('useStoredCredentials').value = '0';
+            document.getElementById('storedCredsBanner').classList.add('hidden');
+            document.getElementById('manualCredsContainer').classList.remove('hidden');
+            document.querySelectorAll('#manualCredsContainer > div').forEach(el => {
+                el.classList.remove('hidden');
+            });
+            setManualFieldsRequired(true);
         }
         
         // Mostrar modal de descartar

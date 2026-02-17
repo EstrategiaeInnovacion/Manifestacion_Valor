@@ -13,12 +13,24 @@ class EdocumentRegistrado extends Model
 
     protected $fillable = [
         'folio_edocument',
+        'applicant_id',
+        'numero_operacion',
+        'tipo_documento',
+        'nombre_documento',
         'existe_en_vucem',
         'fecha_ultima_consulta',
         'response_code',
         'response_message',
         'cove_data',
     ];
+
+    /**
+     * Relación con el solicitante (applicant).
+     */
+    public function applicant()
+    {
+        return $this->belongsTo(MvClientApplicant::class, 'applicant_id');
+    }
 
     protected $casts = [
         'existe_en_vucem' => 'boolean',

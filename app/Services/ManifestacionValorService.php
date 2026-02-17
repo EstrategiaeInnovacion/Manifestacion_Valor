@@ -282,10 +282,24 @@ class ManifestacionValorService
 
     public function formatVucemNumber($value): string
     {
-        if ($value === '' || $value === null) return '0';
+        if ($value === '' || $value === null) return '0.000';
         $clean = preg_replace('/[,\s]/', '', (string)$value);
-        if (!is_numeric($clean)) return '0';
-        return (string)(float)$clean;
+        if (!is_numeric($clean)) return '0.000';
+        // Limitar a 3 decimales
+        $num = number_format((float)$clean, 3, '.', '');
+        // Limitar a 16 dígitos en total (incluyendo decimales y punto)
+        // Si excede, recortar decimales
+        if (strlen(str_replace('.', '', $num)) > 16) {
+            // Quitar decimales hasta que cumpla
+            $intPart = explode('.', $num)[0];
+            $decPart = isset(explode('.', $num)[1]) ? explode('.', $num)[1] : '';
+            $maxDec = max(0, 16 - strlen($intPart));
+            $num = $intPart;
+            if ($maxDec > 0 && $decPart !== '') {
+                $num .= '.' . substr($decPart, 0, $maxDec);
+            }
+        }
+        return $num;
     }
 
     /**

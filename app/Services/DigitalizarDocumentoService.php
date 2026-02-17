@@ -159,12 +159,17 @@ class DigitalizarDocumentoService
                 Log::info('[DIGITALIZACION] Recibido numeroOperacion, iniciando polling...', ['operacion' => $numOperacion]);
 
                 // Polling: esperar a que VUCEM procese y devuelva el eDocument
-                $eDocumentFolio = $this->pollEDocument($rfc, $claveWebService, $numOperacion);
+                // Se pasan las rutas de e.firma porque la consulta también requiere peticionBase con firma
+                $eDocumentFolio = $this->pollEDocument(
+                    $rfc, $claveWebService, $numOperacion,
+                    $certificadoPath, $keyPath, $passwordKey
+                );
 
                 if ($eDocumentFolio) {
                     return [
                         'success' => true,
                         'eDocument' => $eDocumentFolio,
+                        'numero_operacion' => $numOperacion,
                         'mensaje' => 'Documento digitalizado correctamente. eDocument: ' . $eDocumentFolio,
                     ];
                 }
@@ -172,6 +177,7 @@ class DigitalizarDocumentoService
                 return [
                     'success' => true,
                     'eDocument' => 'PENDIENTE-Op-' . $numOperacion,
+                    'numero_operacion' => $numOperacion,
                     'mensaje' => 'Solicitud aceptada (Op: ' . $numOperacion . '). VUCEM aún está procesando, consulte más tarde.',
                 ];
             }
@@ -187,13 +193,24 @@ class DigitalizarDocumentoService
     /**
      * Polling: consulta VUCEM repetidamente hasta obtener el eDocument o agotar intentos.
      */
-    private function pollEDocument(string $rfc, string $claveWebService, string $numeroOperacion, int $maxIntentos = 5, int $intervaloSegundos = 5): ?string
-    {
+    private function pollEDocument(
+        string $rfc, 
+        string $claveWebService, 
+        string $numeroOperacion,
+        string $certificadoPath,
+        string $keyPath,
+        string $passwordKey,
+        int $maxIntentos = 5, 
+        int $intervaloSegundos = 5
+    ): ?string {
         for ($i = 1; $i <= $maxIntentos; $i++) {
             sleep($intervaloSegundos);
             Log::info("[DIGITALIZACION] Polling intento {$i}/{$maxIntentos}", ['operacion' => $numeroOperacion]);
 
-            $resultado = $this->consultarPorOperacion($rfc, $claveWebService, $numeroOperacion);
+            $resultado = $this->consultarPorOperacion(
+                $rfc, $claveWebService, $numeroOperacion,
+                $certificadoPath, $keyPath, $passwordKey
+            );
 
             if ($resultado && !empty($resultado['eDocument'])) {
                 Log::info('[DIGITALIZACION] eDocument obtenido por polling', [
@@ -213,93 +230,152 @@ class DigitalizarDocumentoService
     }
 
     /**
-     * Consulta el estado de una operación de digitalización por su número de operación.
-     * Intenta con múltiples variaciones del elemento XML ya que VUCEM no documenta bien los nombres.
+     * Consulta el resultado de una operación de digitalización por su número de operación.
+     * 
+     * Basado en el WSDL real de VUCEM (DigitalizarDocumentoService?wsdl):
+     * - Operación: ConsultaEDocumentDigitalizarDocumento
+     * - Elemento: consultaDigitalizarDocumentoServiceRequest
+     * - Namespace: http://www.ventanillaunica.gob.mx/aga/digitalizar/ws/oxml/DigitalizarDocumento
+     * - SOAPAction: http://www.ventanillaunica.gob.mx/ConsultaEDocumentDigitalizarDocumento
+     * - Requiere: numeroOperacion + peticionBase(firmaElectronica)
+     * - Respuesta: eDocument, numeroDeTramite, cadenaOriginal, respuestaBase
      */
-    public function consultarPorOperacion(string $rfc, string $claveWebService, string $numeroOperacion): ?array
-    {
-        // Variaciones de namespace y elemento a probar
-        $intentos = [
-            // Intento 1: namespace raíz (como en las respuestas VUCEM)
-            [
-                'ns' => 'http://www.ventanillaunica.gob.mx/aga/digitalizar/ws/oxml/',
-                'elemento' => 'consultaEDocumentDigitalizarDocumentoServiceRequest',
-            ],
-            // Intento 2: namespace DigitalizarDocumento con elemento Peticion
-            [
-                'ns' => self::NS_DIG,
-                'elemento' => 'consultarEdocumentDigitalizarDocumentoPeticion',
-            ],
-        ];
+    public function consultarPorOperacion(
+        string $rfc, 
+        string $claveWebService, 
+        string $numeroOperacion,
+        string $certificadoPath = '',
+        string $keyPath = '',
+        string $passwordKey = ''
+    ): ?array {
+        try {
+            // Generar firma electrónica para la consulta
+            // Cadena original para consulta: |RFC|numeroOperacion|
+            $cadenaOriginal = '|' . trim($rfc) . '|' . trim($numeroOperacion) . '|';
+            
+            $firma = null;
+            if (!empty($certificadoPath) && !empty($keyPath) && !empty($passwordKey)) {
+                $efirmaService = app(EFirmaService::class);
+                $firma = $efirmaService->generarFirmaElectronicaConArchivos(
+                    $cadenaOriginal, $rfc, $certificadoPath, $keyPath, $passwordKey
+                );
+            }
 
-        foreach ($intentos as $i => $intento) {
-            try {
-                $xml = '<?xml version="1.0" encoding="UTF-8"?>
-<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:dig="'.$intento['ns'].'">
+            if (!$firma) {
+                Log::warning('[DIGITALIZACION] No se pudo generar firma para consulta de operación', [
+                    'operacion' => $numeroOperacion,
+                    'tiene_cert' => !empty($certificadoPath),
+                    'tiene_key' => !empty($keyPath),
+                ]);
+                return null;
+            }
+
+            // Timestamp WS-Security
+            $created = gmdate("Y-m-d\TH:i:s\Z");
+            $expires = gmdate("Y-m-d\TH:i:s\Z", strtotime('+5 minutes'));
+
+            $rfcXml = htmlspecialchars(trim($rfc), ENT_XML1, 'UTF-8');
+            $claveXml = htmlspecialchars($claveWebService, ENT_XML1, 'UTF-8');
+
+            // XML SOAP con la estructura correcta según WSDL/XSD de VUCEM
+            $xml = '<?xml version="1.0" encoding="UTF-8"?>
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:dig="' . self::NS_DIG . '" xmlns:res="' . self::NS_RES . '">
    <soapenv:Header>
-      <wsse:Security soapenv:mustUnderstand="1" xmlns:wsse="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd">
-         <wsse:UsernameToken>
-            <wsse:Username>'.$rfc.'</wsse:Username>
-            <wsse:Password Type="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-username-token-profile-1.0#PasswordText">'.$claveWebService.'</wsse:Password>
+      <wsse:Security soapenv:mustUnderstand="1" xmlns:wsse="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd" xmlns:wsu="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd">
+         <wsu:Timestamp wsu:Id="TS-1">
+            <wsu:Created>' . $created . '</wsu:Created>
+            <wsu:Expires>' . $expires . '</wsu:Expires>
+         </wsu:Timestamp>
+         <wsse:UsernameToken wsu:Id="UsernameToken-1">
+            <wsse:Username>' . $rfcXml . '</wsse:Username>
+            <wsse:Password Type="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-username-token-profile-1.0#PasswordText">' . $claveXml . '</wsse:Password>
          </wsse:UsernameToken>
       </wsse:Security>
    </soapenv:Header>
    <soapenv:Body>
-      <dig:'.$intento['elemento'].'>
-         <dig:numeroOperacion>'.$numeroOperacion.'</dig:numeroOperacion>
-      </dig:'.$intento['elemento'].'>
+      <dig:consultaDigitalizarDocumentoServiceRequest>
+         <dig:numeroOperacion>' . $numeroOperacion . '</dig:numeroOperacion>
+         <dig:peticionBase>
+            <res:firmaElectronica>
+               <res:certificado>' . $firma['certificado'] . '</res:certificado>
+               <res:cadenaOriginal>' . $firma['cadenaOriginal'] . '</res:cadenaOriginal>
+               <res:firma>' . $firma['firma'] . '</res:firma>
+            </res:firmaElectronica>
+         </dig:peticionBase>
+      </dig:consultaDigitalizarDocumentoServiceRequest>
    </soapenv:Body>
 </soapenv:Envelope>';
 
-                $response = Http::withOptions(['verify' => false, 'timeout' => 15])
-                    ->withHeaders([
-                        'Content-Type' => 'text/xml; charset=utf-8',
-                        'SOAPAction' => 'http://www.ventanillaunica.gob.mx/ConsultaEDocumentDigitalizarDocumento',
-                    ])
-                    ->withBody(trim($xml), 'text/xml')
-                    ->post($this->endpoint);
+            $response = Http::withOptions(['verify' => false, 'timeout' => 30])
+                ->withHeaders([
+                    'Content-Type' => 'text/xml; charset=utf-8',
+                    'SOAPAction' => 'http://www.ventanillaunica.gob.mx/ConsultaEDocumentDigitalizarDocumento',
+                ])
+                ->withBody(trim($xml), 'text/xml')
+                ->post($this->endpoint);
 
-                $body = $response->body();
+            $body = $response->body();
 
-                Log::info("[DIGITALIZACION] Consulta operación intento ".($i+1), [
+            Log::info("[DIGITALIZACION] Consulta operación", [
+                'operacion' => $numeroOperacion,
+                'status' => $response->status(),
+                'cadena_original' => $cadenaOriginal,
+                'body_preview' => substr($body, 0, 2000),
+            ]);
+
+            // SOAP Fault
+            if ($response->status() === 500 && str_contains($body, 'Fault')) {
+                $faultMsg = '';
+                if (preg_match('/<[:\w]*faultstring>(.*?)<\/[:\w]*faultstring>/s', $body, $fMatch)) {
+                    $faultMsg = $fMatch[1];
+                }
+                Log::error('[DIGITALIZACION] SOAP Fault en consulta operación', [
                     'operacion' => $numeroOperacion,
-                    'elemento' => $intento['elemento'],
-                    'status' => $response->status(),
-                    'body_preview' => substr($body, 0, 1500),
+                    'fault' => $faultMsg,
                 ]);
-
-                // Si hay SOAP Fault (dispatch method not found), probar siguiente variación
-                if ($response->status() === 500 && str_contains($body, 'Cannot find dispatch method')) {
-                    continue;
-                }
-
-                // Verificar errores de negocio
-                if (preg_match('/<[:\w]*tieneError>(.*?)<\/[:\w]*tieneError>/', $body, $matchErr)) {
-                    if (filter_var($matchErr[1], FILTER_VALIDATE_BOOLEAN)) {
-                        return null;
-                    }
-                }
-
-                // Buscar eDocument en la respuesta
-                if (preg_match('/<[:\w]*eDocument>(.*?)<\/[:\w]*eDocument>/', $body, $matchEdoc)) {
-                    return ['eDocument' => $matchEdoc[1]];
-                }
-                if (preg_match('/<[:\w]*numeroEdocument>(.*?)<\/[:\w]*numeroEdocument>/', $body, $matchEdoc)) {
-                    return ['eDocument' => $matchEdoc[1]];
-                }
-                if (preg_match('/<[:\w]*numeroEDocument>(.*?)<\/[:\w]*numeroEDocument>/', $body, $matchEdoc)) {
-                    return ['eDocument' => $matchEdoc[1]];
-                }
-
-                // Si no hubo error de dispatch, no seguir intentando
                 return null;
-
-            } catch (Exception $e) {
-                Log::error("[DIGITALIZACION] Error consultando operación (intento ".($i+1)."): " . $e->getMessage());
             }
-        }
 
-        return null;
+            // Verificar errores de negocio
+            if (preg_match('/<[:\w]*tieneError>(.*?)<\/[:\w]*tieneError>/', $body, $matchErr)) {
+                if (filter_var($matchErr[1], FILTER_VALIDATE_BOOLEAN)) {
+                    $errMsg = '';
+                    if (preg_match_all('/<[:\w]*mensaje>(.*?)<\/[:\w]*mensaje>/', $body, $allMsgs)) {
+                        $errMsg = implode(' | ', $allMsgs[1]);
+                    }
+                    Log::warning('[DIGITALIZACION] Error de negocio en consulta operación', [
+                        'operacion' => $numeroOperacion,
+                        'error' => $errMsg,
+                    ]);
+                    return null;
+                }
+            }
+
+            // Buscar eDocument en la respuesta (según XSD: <eDocument>...</eDocument>)
+            if (preg_match('/<[:\w]*eDocument>(.*?)<\/[:\w]*eDocument>/', $body, $matchEdoc)) {
+                $result = ['eDocument' => $matchEdoc[1]];
+                
+                // También extraer numeroDeTramite si existe
+                if (preg_match('/<[:\w]*numeroDeTramite>(.*?)<\/[:\w]*numeroDeTramite>/', $body, $matchTramite)) {
+                    $result['numeroDeTramite'] = $matchTramite[1];
+                }
+                
+                Log::info('[DIGITALIZACION] eDocument obtenido de consulta', $result);
+                return $result;
+            }
+
+            // Si no tiene error pero tampoco eDocument, puede estar aún procesando
+            Log::info('[DIGITALIZACION] Consulta sin eDocument (posiblemente aún procesando)', [
+                'operacion' => $numeroOperacion,
+            ]);
+            return null;
+
+        } catch (Exception $e) {
+            Log::error("[DIGITALIZACION] Error consultando operación: " . $e->getMessage(), [
+                'operacion' => $numeroOperacion,
+            ]);
+            return null;
+        }
     }
 
     private function limpiarNombreArchivo($nombre): string

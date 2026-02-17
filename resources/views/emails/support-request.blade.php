@@ -17,7 +17,7 @@
                                 🎫 Nuevo Ticket de Soporte
                             </h1>
                             <p style="margin:8px 0 0; color:rgba(255,255,255,0.7); font-size:12px; text-transform:uppercase; letter-spacing:2px;">
-                                VexumCORE — Manifestación de Valor
+                                FILE — Manifestación de Valor
                             </p>
                         </td>
                     </tr>

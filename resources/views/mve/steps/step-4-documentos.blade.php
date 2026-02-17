@@ -53,6 +53,31 @@
                     {{-- Se llena dinámicamente por JS --}}
                 </div>
 
+                {{-- Vista previa del PDF --}}
+                <div id="pdfPreviewContainer" class="hidden mb-4">
+                    <div class="rounded-xl border border-slate-200 bg-white overflow-hidden">
+                        <div class="flex items-center justify-between px-4 py-2 bg-slate-50 border-b border-slate-200">
+                            <div class="flex items-center gap-2">
+                                <i data-lucide="file-text" class="w-4 h-4 text-slate-500"></i>
+                                <span class="text-sm font-medium text-slate-700" id="pdfPreviewFilename">Vista previa</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <button type="button" id="btnTogglePreview" onclick="togglePdfPreview()" class="text-xs text-slate-500 hover:text-slate-700 flex items-center gap-1 transition-colors">
+                                    <i data-lucide="eye" class="w-3.5 h-3.5"></i>
+                                    <span id="togglePreviewText">Ocultar</span>
+                                </button>
+                                <button type="button" onclick="closePdfPreview()" class="text-xs text-red-400 hover:text-red-600 flex items-center gap-1 transition-colors ml-2">
+                                    <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                                    Cerrar
+                                </button>
+                            </div>
+                        </div>
+                        <div id="pdfPreviewFrame" class="relative" style="height: 500px;">
+                            <iframe id="pdfPreviewIframe" class="w-full h-full border-0" title="Vista previa del PDF"></iframe>
+                        </div>
+                    </div>
+                </div>
+
                 {{-- RFC Consulta - No se muestra, se asigna automáticamente --}}
                 <input type="hidden" id="rfcConsultaDigit" value="">
 
