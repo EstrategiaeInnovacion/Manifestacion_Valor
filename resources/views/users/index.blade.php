@@ -89,6 +89,7 @@
             </div>
 
             <div class="space-y-8">
+                @if(auth()->user()->role === 'SuperAdmin')
                 {{-- SECCIÓN SUPER ADMINS --}}
                 <div class="section-card">
                     <div class="section-header">
@@ -139,15 +140,13 @@
                                                 <span class="user-stat-label">Usuarios Creados</span>
                                                 <span class="user-stat-value">{{ $admin->createdUsers->count() }}/5</span>
                                             </div>
-                                            @if(auth()->user()->role === 'SuperAdmin')
-                                                <button onclick="confirmDeleteUser({{ $admin->id }})" class="btn-delete-user" title="Eliminar administrador">
-                                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
-                                                </button>
-                                                <form id="delete-user-form-{{ $admin->id }}" action="{{ route('users.destroy', $admin) }}" method="POST" class="hidden">
-                                                    @csrf
-                                                    @method('DELETE')
-                                                </form>
-                                            @endif
+                                            <button onclick="confirmDeleteUser({{ $admin->id }})" class="btn-delete-user" title="Eliminar administrador">
+                                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                            </button>
+                                            <form id="delete-user-form-{{ $admin->id }}" action="{{ route('users.destroy', $admin) }}" method="POST" class="hidden">
+                                                @csrf
+                                                @method('DELETE')
+                                            </form>
                                             <i data-lucide="chevron-down" class="w-5 h-5 text-slate-400 transition-transform" id="icon-{{ $admin->id }}"></i>
                                         </div>
                                     </div>
@@ -167,15 +166,13 @@
                                                     </div>
                                                     <div class="flex items-center gap-3">
                                                         <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{{ $user->username }}</span>
-                                                        @if(auth()->user()->role === 'SuperAdmin' || (auth()->user()->role === 'Admin' && $user->created_by === auth()->user()->id))
-                                                            <button onclick="confirmDeleteUser({{ $user->id }})" class="btn-delete-mini" title="Eliminar usuario">
-                                                                <i data-lucide="trash-2" class="w-3 h-3"></i>
-                                                            </button>
-                                                            <form id="delete-user-form-{{ $user->id }}" action="{{ route('users.destroy', $user) }}" method="POST" class="hidden">
-                                                                @csrf
-                                                                @method('DELETE')
-                                                            </form>
-                                                        @endif
+                                                        <button onclick="confirmDeleteUser({{ $user->id }})" class="btn-delete-mini" title="Eliminar usuario">
+                                                            <i data-lucide="trash-2" class="w-3 h-3"></i>
+                                                        </button>
+                                                        <form id="delete-user-form-{{ $user->id }}" action="{{ route('users.destroy', $user) }}" method="POST" class="hidden">
+                                                            @csrf
+                                                            @method('DELETE')
+                                                        </form>
                                                     </div>
                                                 </div>
                                             @endforeach
@@ -188,6 +185,46 @@
                         @endforeach
                     </div>
                 </div>
+
+                @else
+                {{-- VISTA PARA ADMIN: Solo sus usuarios creados --}}
+                <div class="section-card">
+                    <div class="section-header">
+                        <div class="flex items-center gap-3">
+                            <div class="role-icon admin"><i data-lucide="users" class="w-6 h-6"></i></div>
+                            <h3 class="section-title">Mis Usuarios Creados ({{ $usuarios->count() }}/5)</h3>
+                        </div>
+                    </div>
+                    
+                    @if($usuarios->count() > 0)
+                        <div class="compact-user-list">
+                            @foreach($usuarios as $user)
+                                <div class="compact-user-item">
+                                    <div class="flex items-center gap-3">
+                                        <div class="avatar-mini">{{ substr($user->full_name, 0, 1) }}</div>
+                                        <div>
+                                            <p class="text-sm font-bold text-[#001a4d]">{{ $user->full_name }}</p>
+                                            <p class="text-xs text-slate-500">{{ $user->email }} | <b>{{ $user->username }}</b></p>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center gap-3">
+                                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{{ $user->role }}</span>
+                                        <button onclick="confirmDeleteUser({{ $user->id }})" class="btn-delete-mini" title="Eliminar usuario">
+                                            <i data-lucide="trash-2" class="w-3 h-3"></i>
+                                        </button>
+                                        <form id="delete-user-form-{{ $user->id }}" action="{{ route('users.destroy', $user) }}" method="POST" class="hidden">
+                                            @csrf
+                                            @method('DELETE')
+                                        </form>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    @else
+                        <p class="p-6 text-center text-sm text-slate-400 italic">No has creado ningún usuario aún.</p>
+                    @endif
+                </div>
+                @endif
             </div>
         </main>
     </div>
