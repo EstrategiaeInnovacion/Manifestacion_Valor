@@ -33,7 +33,8 @@ class MveConsultaService
         string $folio,
         string $rfc,
         string $claveWebService
-    ): array {
+        ): array
+    {
         try {
             $rfc = strtoupper(trim($rfc));
             $folio = trim($folio);
@@ -108,7 +109,8 @@ class MveConsultaService
                 'xml_formatted' => $this->formatXml($xml)
             ];
 
-        } catch (Exception $e) {
+        }
+        catch (Exception $e) {
             Log::error('[MV_CONSULTA] Error generando XML', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
@@ -134,7 +136,8 @@ class MveConsultaService
         string $numeroOperacion,
         string $rfc,
         string $claveWebService
-    ): array {
+        ): array
+    {
 
         // 1. Construir XML SOAP
         $xmlResult = $this->buildConsultaSoapXml($numeroOperacion, $rfc, $claveWebService);
@@ -161,7 +164,7 @@ class MveConsultaService
                 CURLOPT_POSTFIELDS => $xml,
                 CURLOPT_TIMEOUT => config('vucem.soap_timeout', 60),
                 CURLOPT_SSL_VERIFYPEER => false,
-                CURLOPT_SSL_CIPHER_LIST => 'DEFAULT@SECLEVEL=1',
+                CURLOPT_SSL_CIPHER_LIST => 'DEFAULT@SECLEVEL=0',
                 CURLOPT_HTTPHEADER => [
                     'Content-Type: text/xml; charset=utf-8',
                     'SOAPAction: ""',
@@ -197,7 +200,8 @@ class MveConsultaService
             // 3. Parsear respuesta
             return $this->parseConsultaResponse($responseBody, $xml, $numeroOperacion);
 
-        } catch (Exception $e) {
+        }
+        catch (Exception $e) {
             Log::error('[MV_CONSULTA] Error al consultar VUCEM', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
@@ -248,7 +252,8 @@ class MveConsultaService
             if (preg_match('/<[:\w]*eDocument>(.*?)<\/[:\w]*eDocument>/', $responseBody, $matches)) {
                 $result['numero_mv'] = trim($matches[1]);
                 Log::info('[MV_CONSULTA] Número de MV encontrado (eDocument)', ['numero_mv' => $result['numero_mv']]);
-            } elseif (preg_match('/<[:\w]*numeroManifestacion>(.*?)<\/[:\w]*numeroManifestacion>/', $responseBody, $matches)) {
+            }
+            elseif (preg_match('/<[:\w]*numeroManifestacion>(.*?)<\/[:\w]*numeroManifestacion>/', $responseBody, $matches)) {
                 $result['numero_mv'] = trim($matches[1]);
                 Log::info('[MV_CONSULTA] Número de MV encontrado (numeroManifestacion)', ['numero_mv' => $result['numero_mv']]);
             }
@@ -286,7 +291,7 @@ class MveConsultaService
             }
 
             // --- LÓGICA DE ÉXITO CORREGIDA ---
-            
+
             // 1. Si hay errores explícitos, fallar.
             if (!empty($result['errores'])) {
                 $result['success'] = false;
@@ -301,7 +306,7 @@ class MveConsultaService
             if (!empty($result['numero_mv'])) {
                 $result['success'] = true;
                 $result['message'] = 'Consulta exitosa. Manifestación encontrada: ' . $result['numero_mv'];
-                
+
                 if (!empty($result['status'])) {
                     $result['message'] .= ' - Estado: ' . $result['status'];
                 }
@@ -310,14 +315,14 @@ class MveConsultaService
                     'numero_mv' => $result['numero_mv'],
                     'status' => $result['status']
                 ]);
-                
+
                 return $result;
             }
 
             // 3. Si solo tenemos status pero no folio (caso raro, "En proceso" sin folio asignado)
             if (!empty($result['status'])) {
                 // Consideramos éxito parcial para informar al usuario
-                $result['success'] = true; 
+                $result['success'] = true;
                 $result['message'] = 'Trámite encontrado con estado: ' . $result['status'] . '. (El folio MVE aún no ha sido asignado).';
                 return $result;
             }
@@ -325,12 +330,13 @@ class MveConsultaService
             // 4. Si llegamos aquí, no encontramos nada útil
             $result['success'] = false;
             $result['message'] = 'No se encontró información para el folio "' . $numeroOperacion . '". Es posible que VUCEM aún esté procesando la solicitud. Intente nuevamente en unos minutos.';
-            
+
             Log::warning('[MV_CONSULTA] Respuesta sin datos identificables', [
                 'folio' => $numeroOperacion
             ]);
 
-        } catch (Exception $e) {
+        }
+        catch (Exception $e) {
             $result['message'] = 'Error al procesar respuesta: ' . $e->getMessage();
             Log::error('[MV_CONSULTA] Error parseando respuesta', ['error' => $e->getMessage()]);
         }
@@ -381,7 +387,8 @@ class MveConsultaService
 
             return false;
 
-        } catch (Exception $e) {
+        }
+        catch (Exception $e) {
             Log::error('[MV_CONSULTA] Error actualizando acuse', [
                 'error' => $e->getMessage(),
                 'acuse_id' => $acuse->id
@@ -633,7 +640,8 @@ class MveConsultaService
                 }
             }
 
-        } catch (Exception $e) {
+        }
+        catch (Exception $e) {
             Log::error('[MV_CONSULTA] Error extrayendo datos de manifestación', [
                 'error' => $e->getMessage()
             ]);
@@ -642,7 +650,7 @@ class MveConsultaService
         return $datos;
     }
 
-    public function consultarEdocumentAcuse(string $eDocumentFolio, string $rfc, string $claveWebService): array 
+    public function consultarEdocumentAcuse(string $eDocumentFolio, string $rfc, string $claveWebService): array
     {
         try {
             // ENDPOINT del servicio (SIN ?wsdl - eso es solo para descargar el WSDL)
@@ -719,7 +727,8 @@ class MveConsultaService
 
             return $this->parseEdocumentAcuseResponse($responseBody, $eDocumentFolio);
 
-        } catch (Exception $e) {
+        }
+        catch (Exception $e) {
             return ['success' => false, 'message' => 'Error: ' . $e->getMessage(), 'acuse_pdf' => null];
         }
     }
@@ -734,7 +743,7 @@ class MveConsultaService
      * @param string $claveWebService - Clave del web service VUCEM
      * @return array
      */
-    public function consultarCoveAcuse(string $coveFolio, string $rfc, string $claveWebService): array 
+    public function consultarCoveAcuse(string $coveFolio, string $rfc, string $claveWebService): array
     {
         try {
             $endpoint = 'https://www.ventanillaunica.gob.mx/ventanilla-acuses-HA/ConsultaAcusesServiceWS';
@@ -779,7 +788,7 @@ class MveConsultaService
                 CURLOPT_POSTFIELDS => $xml,
                 CURLOPT_TIMEOUT => 60,
                 CURLOPT_SSL_VERIFYPEER => false,
-                CURLOPT_SSL_CIPHER_LIST => 'DEFAULT@SECLEVEL=1',
+                CURLOPT_SSL_CIPHER_LIST => 'DEFAULT@SECLEVEL=0',
                 CURLOPT_HTTPHEADER => [
                     'Content-Type: text/xml; charset=utf-8',
                     'SOAPAction: "' . $soapAction . '"',
@@ -804,7 +813,8 @@ class MveConsultaService
 
             return $this->parseEdocumentAcuseResponse($responseBody, $coveFolio);
 
-        } catch (Exception $e) {
+        }
+        catch (Exception $e) {
             return ['success' => false, 'message' => 'Error: ' . $e->getMessage(), 'acuse_pdf' => null];
         }
     }
@@ -885,7 +895,7 @@ class MveConsultaService
                     'error' => $result['message'],
                     'descripcion' => $result['descripcion']
                 ]);
-                
+
                 if (empty($result['message'])) {
                     $result['message'] = $result['descripcion'] ?? 'Error desconocido en consulta de acuse';
                 }
@@ -895,15 +905,15 @@ class MveConsultaService
             // Buscar acuseDocumento (PDF en Base64) - campo correcto del servicio ConsultaAcuses
             if (preg_match('/<[:\w]*acuseDocumento>(.*?)<\/[:\w]*acuseDocumento>/s', $responseBody, $matches)) {
                 $base64Pdf = trim($matches[1]);
-                
+
                 // Limpiar entidades XML (&#xd; = carriage return, &#xa; = line feed, etc.)
                 $base64Pdf = html_entity_decode($base64Pdf, ENT_XML1, 'UTF-8');
-                
+
                 // Eliminar saltos de línea y espacios que no son válidos en Base64
                 $base64Pdf = preg_replace('/[\r\n\s]+/', '', $base64Pdf);
-                
+
                 $result['acuse_pdf'] = $base64Pdf;
-                
+
                 Log::info('[ACUSE_EDOCUMENT] Acuse PDF encontrado y limpiado', [
                     'idEdocument' => $eDocumentFolio,
                     'size_base64' => strlen($result['acuse_pdf'])
@@ -914,14 +924,16 @@ class MveConsultaService
             if (!empty($result['acuse_pdf'])) {
                 $result['success'] = true;
                 $result['message'] = 'Acuse de Manifestación de Valor obtenido exitosamente';
-            } else {
+            }
+            else {
                 $result['message'] = 'No se encontró el acuse PDF para el eDocument: ' . $eDocumentFolio;
                 Log::warning('[ACUSE_EDOCUMENT] Acuse PDF no encontrado en respuesta', [
                     'idEdocument' => $eDocumentFolio
                 ]);
             }
 
-        } catch (Exception $e) {
+        }
+        catch (Exception $e) {
             $result['message'] = 'Error al procesar respuesta: ' . $e->getMessage();
             Log::error('[ACUSE_EDOCUMENT] Error parseando respuesta', [
                 'idEdocument' => $eDocumentFolio,
@@ -943,7 +955,8 @@ class MveConsultaService
             $dom->formatOutput = true;
             $dom->loadXML($xml);
             return $dom->saveXML();
-        } catch (Exception $e) {
+        }
+        catch (Exception $e) {
             return $xml;
         }
     }

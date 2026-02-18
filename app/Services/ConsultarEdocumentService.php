@@ -23,10 +23,11 @@ class ConsultarEdocumentService
     {
         $this->endpoint = config('vucem.edocument.endpoint', 'https://www.ventanillaunica.gob.mx/ventanilla/ConsultarEdocumentService');
         $this->efirmaService = $efirmaService;
-        
+
         try {
             $this->initializeSoapClient();
-        } catch (Exception $e) {
+        }
+        catch (Exception $e) {
             Log::error('[EDOCUMENT] Error constructor: ' . $e->getMessage());
         }
     }
@@ -45,7 +46,7 @@ class ConsultarEdocumentService
                 'verify_peer_name' => false,
                 'allow_self_signed' => true,
                 'crypto_method' => STREAM_CRYPTO_METHOD_TLSv1_2_CLIENT, // Indispensable
-                'ciphers' => 'DEFAULT@SECLEVEL=1',
+                'ciphers' => 'DEFAULT@SECLEVEL=0',
             ],
             'http' => [
                 'timeout' => 120,
@@ -66,14 +67,15 @@ class ConsultarEdocumentService
     }
 
     public function consultarEdocument(
-        string $eDocument, 
-        string $rfc, 
+        string $eDocument,
+        string $rfc,
         string $claveWebService,
         string $certificadoPath,
-        string $llavePrivadaPath, 
+        string $llavePrivadaPath,
         string $passwordLlave,
         ?string $numeroAdenda = null
-    ): array {
+        ): array
+    {
         try {
             // Limpieza de inputs (VUCEM falla con espacios extra)
             $this->rfc = trim($rfc);
@@ -87,24 +89,24 @@ class ConsultarEdocumentService
             // =========================================================================
             // Regla VUCEM: La cadena debe ser |RFC|eDocument| (pipes al inicio y fin)
             // Si hay adenda: |RFC|eDocument|Adenda|
-            
+
             $datosCadena = [$this->rfc, $eDocument];
-            
+
             if ($numeroAdenda) {
                 $datosCadena[] = trim($numeroAdenda);
             }
 
             // Construir la cadena con pipes
             $cadenaOriginal = '|' . implode('|', $datosCadena) . '|';
-            
+
             Log::info('[EDOCUMENT] Cadena Original Calculada: ' . $cadenaOriginal);
 
             // 1. Generar Firma con la cadena correcta
             $firma = $this->efirmaService->generarFirmaElectronicaConArchivos(
-                $cadenaOriginal, 
-                $this->rfc, 
-                $certificadoPath, 
-                $llavePrivadaPath, 
+                $cadenaOriginal,
+                $this->rfc,
+                $certificadoPath,
+                $llavePrivadaPath,
                 $passwordLlave
             );
 
@@ -117,19 +119,19 @@ class ConsultarEdocumentService
                 $xmlAdenda = '<ns1:numeroAdenda>' . trim($numeroAdenda) . '</ns1:numeroAdenda>';
             }
 
-            $requestBodyXml = 
+            $requestBodyXml =
                 '<ns1:ConsultarEdocumentRequest xmlns:ns1="http://www.ventanillaunica.gob.mx/ConsultarEdocument/" xmlns:oxml="http://www.ventanillaunica.gob.mx/cove/ws/oxml/">' .
-                    '<ns1:request>' .
-                        '<ns1:firmaElectronica>' .
-                            '<oxml:certificado>' . $firma['certificado'] . '</oxml:certificado>' .
-                            '<oxml:cadenaOriginal>' . $firma['cadenaOriginal'] . '</oxml:cadenaOriginal>' .
-                            '<oxml:firma>' . $firma['firma'] . '</oxml:firma>' .
-                        '</ns1:firmaElectronica>' .
-                        '<ns1:criterioBusqueda>' .
-                            '<ns1:eDocument>' . $eDocument . '</ns1:eDocument>' .
-                            $xmlAdenda .
-                        '</ns1:criterioBusqueda>' .
-                    '</ns1:request>' .
+                '<ns1:request>' .
+                '<ns1:firmaElectronica>' .
+                '<oxml:certificado>' . $firma['certificado'] . '</oxml:certificado>' .
+                '<oxml:cadenaOriginal>' . $firma['cadenaOriginal'] . '</oxml:cadenaOriginal>' .
+                '<oxml:firma>' . $firma['firma'] . '</oxml:firma>' .
+                '</ns1:firmaElectronica>' .
+                '<ns1:criterioBusqueda>' .
+                '<ns1:eDocument>' . $eDocument . '</ns1:eDocument>' .
+                $xmlAdenda .
+                '</ns1:criterioBusqueda>' .
+                '</ns1:request>' .
                 '</ns1:ConsultarEdocumentRequest>';
 
             // Empaquetar XML crudo
@@ -151,7 +153,7 @@ class ConsultarEdocumentService
             // =================================================================
             Log::info('🔍 --- INICIO DIAGNÓSTICO DE RESPUESTA VUCEM ---');
             Log::info('Folio eDocument: ' . $eDocument);
-            
+
             // 1. Logueamos el objeto PHP tal cual lo entendió SoapClient
             Log::info('Objeto PHP Mapeado:', ['data' => json_decode(json_encode($response), true)]);
 
@@ -161,22 +163,25 @@ class ConsultarEdocumentService
                 $rawXml = $this->soapClient->__getLastResponse();
                 // Lo guardamos en el log. Si es muy grande, VUCEM suele mandar base64, 
                 // así que veremos un string largo, pero buscaremos las etiquetas <contenido> o <Archivo>
-                Log::info('XML RAW VUCEM:', ['xml' => $rawXml]); 
-            } catch (Exception $e) {
+                Log::info('XML RAW VUCEM:', ['xml' => $rawXml]);
+            }
+            catch (Exception $e) {
                 Log::warning('No se pudo obtener el XML raw: ' . $e->getMessage());
             }
             Log::info('🔍 --- FIN DIAGNÓSTICO DE RESPUESTA VUCEM ---');
             // =================================================================
-            
+
             return $this->processResponse($response, $eDocument);
 
-        } catch (SoapFault $e) {
+        }
+        catch (SoapFault $e) {
             Log::error('[EDOCUMENT] SOAP Fault: ' . $e->getMessage(), [
                 'code' => $e->faultcode ?? 'N/A',
                 'detail' => $e->detail ?? 'N/A'
             ]);
             return ['success' => false, 'message' => "Error VUCEM: " . $e->getMessage()];
-        } catch (Exception $e) {
+        }
+        catch (Exception $e) {
             Log::error('[EDOCUMENT] Exception: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
             return ['success' => false, 'message' => $e->getMessage()];
         }
@@ -189,26 +194,26 @@ class ConsultarEdocumentService
         $expires = gmdate("Y-m-d\TH:i:s\Z", strtotime('+5 minutes'));
 
         // UsernameToken con la Clave de Servicios Web (Texto Plano)
-        $securityXML = 
+        $securityXML =
             '<wsse:Security xmlns:wsse="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd" xmlns:wsu="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd">' .
-                '<wsu:Timestamp wsu:Id="TS-1">' .
-                    '<wsu:Created>' . $created . '</wsu:Created>' .
-                    '<wsu:Expires>' . $expires . '</wsu:Expires>' .
-                '</wsu:Timestamp>' .
-                '<wsse:UsernameToken wsu:Id="UsernameToken-1">' .
-                    '<wsse:Username>' . htmlspecialchars($this->rfc) . '</wsse:Username>' .
-                    '<wsse:Password Type="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-username-token-profile-1.0#PasswordText">' . 
-                        htmlspecialchars($this->claveWebService) . 
-                    '</wsse:Password>' .
-                '</wsse:UsernameToken>' .
+            '<wsu:Timestamp wsu:Id="TS-1">' .
+            '<wsu:Created>' . $created . '</wsu:Created>' .
+            '<wsu:Expires>' . $expires . '</wsu:Expires>' .
+            '</wsu:Timestamp>' .
+            '<wsse:UsernameToken wsu:Id="UsernameToken-1">' .
+            '<wsse:Username>' . htmlspecialchars($this->rfc) . '</wsse:Username>' .
+            '<wsse:Password Type="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-username-token-profile-1.0#PasswordText">' .
+            htmlspecialchars($this->claveWebService) .
+            '</wsse:Password>' .
+            '</wsse:UsernameToken>' .
             '</wsse:Security>';
 
         $this->soapClient->__setSoapHeaders([
             new \SoapHeader(
-                'http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd', 
-                'Security', 
-                new \SoapVar($securityXML, XSD_ANYXML)
-            )
+            'http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd',
+            'Security',
+            new \SoapVar($securityXML, XSD_ANYXML)
+        )
         ]);
     }
 
@@ -242,7 +247,7 @@ class ConsultarEdocumentService
 
         // 2. Buscar archivos adjuntos (Modificado para ser más agresivo buscando)
         // VUCEM a veces cambia los nombres de las propiedades
-        $posiblesCampos = ['archivos', 'adjuntos', 'documentos', 'Archivo', 'archivo']; 
+        $posiblesCampos = ['archivos', 'adjuntos', 'documentos', 'Archivo', 'archivo'];
         $listaArchivos = [];
 
         if (isset($data->resultadoBusqueda)) {
@@ -250,16 +255,18 @@ class ConsultarEdocumentService
             foreach ($posiblesCampos as $campo) {
                 if (isset($data->resultadoBusqueda->$campo)) {
                     $items = $data->resultadoBusqueda->$campo;
-                    if (is_object($items)) $items = [$items]; // Un solo archivo
-                    if (is_array($items)) $listaArchivos = array_merge($listaArchivos, $items);
+                    if (is_object($items))
+                        $items = [$items]; // Un solo archivo
+                    if (is_array($items))
+                        $listaArchivos = array_merge($listaArchivos, $items);
                 }
             }
         }
-        
+
         // Caso B: A veces viene directo en resultadoBusqueda (sin sub-propiedad)
         // si es una digitalización pura.
         if (empty($listaArchivos) && isset($data->resultadoBusqueda->nombre) && isset($data->resultadoBusqueda->contenido)) {
-             $listaArchivos[] = $data->resultadoBusqueda;
+            $listaArchivos[] = $data->resultadoBusqueda;
         }
 
         foreach ($listaArchivos as $archivo) {
@@ -284,7 +291,7 @@ class ConsultarEdocumentService
 
         return $result;
     }
-    
+
     public function getDebugInfo(): array
     {
         return $this->debugInfo;

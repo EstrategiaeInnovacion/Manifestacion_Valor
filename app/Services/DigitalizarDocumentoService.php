@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Http;
 class DigitalizarDocumentoService
 {
     private string $endpoint = 'https://www.ventanillaunica.gob.mx/ventanilla/DigitalizarDocumentoService';
-    
+
     private const NS_DIG = 'http://www.ventanillaunica.gob.mx/aga/digitalizar/ws/oxml/DigitalizarDocumento';
     private const NS_RES = 'http://www.ventanillaunica.gob.mx/common/ws/oxml/respuesta';
 
@@ -23,8 +23,9 @@ class DigitalizarDocumentoService
         string $keyPath,
         string $passwordKey,
         string $email,
-        string $rfcConsulta = '' 
-    ): array {
+        string $rfcConsulta = ''
+        ): array
+    {
         try {
             // 1. LIMPIEZA
             $nombreArchivoLimpio = $this->limpiarNombreArchivo($nombreArchivo);
@@ -42,10 +43,12 @@ class DigitalizarDocumentoService
             // 2. HASH
             $archivoBinario = base64_decode($contenidoBase64);
             $hashArchivo = sha1($archivoBinario);
-            
+
             // 3. CADENA ORIGINAL
             $datosCadena = [$rfc, $email, $tipoDocumentoId, $nombreArchivoLimpio];
-            if (!empty($rfcConsulta)) { $datosCadena[] = $rfcConsulta; }
+            if (!empty($rfcConsulta)) {
+                $datosCadena[] = $rfcConsulta;
+            }
             $datosCadena[] = $hashArchivo;
             $cadenaOriginal = '|' . implode('|', $datosCadena) . '|';
 
@@ -72,33 +75,33 @@ class DigitalizarDocumentoService
             $expires = gmdate("Y-m-d\TH:i:s\Z", strtotime('+5 minutes'));
 
             $xml = '<?xml version="1.0" encoding="UTF-8"?>
-<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:dig="'.self::NS_DIG.'" xmlns:res="'.self::NS_RES.'">
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:dig="' . self::NS_DIG . '" xmlns:res="' . self::NS_RES . '">
    <soapenv:Header>
     <wsse:Security soapenv:mustUnderstand="1" xmlns:wsse="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd" xmlns:wsu="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd">
         <wsu:Timestamp wsu:Id="TS-1">
-            <wsu:Created>'. $created .'</wsu:Created>
-            <wsu:Expires>'. $expires .'</wsu:Expires>
+            <wsu:Created>' . $created . '</wsu:Created>
+            <wsu:Expires>' . $expires . '</wsu:Expires>
         </wsu:Timestamp>
         <wsse:UsernameToken wsu:Id="UsernameToken-1">
-            <wsse:Username>'. $rfcXml .'</wsse:Username>
-            <wsse:Password Type="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-username-token-profile-1.0#PasswordText">'. $claveXml .'</wsse:Password>
+            <wsse:Username>' . $rfcXml . '</wsse:Username>
+            <wsse:Password Type="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-username-token-profile-1.0#PasswordText">' . $claveXml . '</wsse:Password>
         </wsse:UsernameToken>
     </wsse:Security>
    </soapenv:Header>
    <soapenv:Body>
       <dig:registroDigitalizarDocumentoServiceRequest>
-         <dig:correoElectronico>'. $emailXml .'</dig:correoElectronico>
+         <dig:correoElectronico>' . $emailXml . '</dig:correoElectronico>
          <dig:documento>
-            <dig:idTipoDocumento>'. $tipoDocumentoId .'</dig:idTipoDocumento>
-            <dig:nombreDocumento>'. $nombreXml .'</dig:nombreDocumento>
-            '. $tagRfcConsulta .'
-            <dig:archivo>'. $contenidoBase64 .'</dig:archivo>
+            <dig:idTipoDocumento>' . $tipoDocumentoId . '</dig:idTipoDocumento>
+            <dig:nombreDocumento>' . $nombreXml . '</dig:nombreDocumento>
+            ' . $tagRfcConsulta . '
+            <dig:archivo>' . $contenidoBase64 . '</dig:archivo>
          </dig:documento>
          <dig:peticionBase>
             <res:firmaElectronica>
-               <res:certificado>'. $firma['certificado'] .'</res:certificado>
-               <res:cadenaOriginal>'. $firma['cadenaOriginal'] .'</res:cadenaOriginal>
-               <res:firma>'. $firma['firma'] .'</res:firma>
+               <res:certificado>' . $firma['certificado'] . '</res:certificado>
+               <res:cadenaOriginal>' . $firma['cadenaOriginal'] . '</res:cadenaOriginal>
+               <res:firma>' . $firma['firma'] . '</res:firma>
             </res:firmaElectronica>
          </dig:peticionBase>
       </dig:registroDigitalizarDocumentoServiceRequest>
@@ -111,7 +114,8 @@ class DigitalizarDocumentoService
             $archivoEnd = strpos($xml, '</dig:archivo>');
             if ($archivoStart !== false && $archivoEnd !== false) {
                 $xmlSinArchivo = substr($xml, 0, $archivoStart + 13) . '[BASE64_OMITIDO]' . substr($xml, $archivoEnd);
-            } else {
+            }
+            else {
                 $xmlSinArchivo = $xml;
             }
             Log::info('[DIGITALIZACION] XML enviado (sin archivo)', [
@@ -121,16 +125,16 @@ class DigitalizarDocumentoService
             ]);
 
             $response = Http::withOptions([
-                    'verify' => false,
-                    'timeout' => 300,
-                    'curl' => [CURLOPT_SSL_CIPHER_LIST => 'DEFAULT@SECLEVEL=1'],
-                ])
+                'verify' => false,
+                'timeout' => 300,
+                'curl' => [CURLOPT_SSL_CIPHER_LIST => 'DEFAULT@SECLEVEL=0'],
+            ])
                 ->withHeaders(['Content-Type' => 'text/xml; charset=utf-8', 'SOAPAction' => ''])
                 ->withBody(trim($xml), 'text/xml')
                 ->post($this->endpoint);
 
             $responseBody = $response->body();
-            
+
             Log::info('[DIGITALIZACION] Respuesta VUCEM', [
                 'status' => $response->status(),
                 'body_preview' => substr($responseBody, 0, 2000)
@@ -149,7 +153,7 @@ class DigitalizarDocumentoService
                 }
                 return ['success' => false, 'message' => "VUCEM Rechazo: " . $msg];
             }
-            
+
             if (preg_match('/<[:\w]*eDocument>(.*?)<\/[:\w]*eDocument>/', $responseBody, $matches)) {
                 return [
                     'success' => true,
@@ -188,7 +192,8 @@ class DigitalizarDocumentoService
 
             return ['success' => false, 'message' => "Respuesta ambigua de VUCEM (Ver Logs)."];
 
-        } catch (Exception $e) {
+        }
+        catch (Exception $e) {
             Log::error('[DIGITALIZACION] Excepción: ' . $e->getMessage());
             return ['success' => false, 'message' => $e->getMessage()];
         }
@@ -198,15 +203,16 @@ class DigitalizarDocumentoService
      * Polling: consulta VUCEM repetidamente hasta obtener el eDocument o agotar intentos.
      */
     private function pollEDocument(
-        string $rfc, 
-        string $claveWebService, 
+        string $rfc,
+        string $claveWebService,
         string $numeroOperacion,
         string $certificadoPath,
         string $keyPath,
         string $passwordKey,
-        int $maxIntentos = 5, 
+        int $maxIntentos = 5,
         int $intervaloSegundos = 5
-    ): ?string {
+        ): ?string
+    {
         for ($i = 1; $i <= $maxIntentos; $i++) {
             sleep($intervaloSegundos);
             Log::info("[DIGITALIZACION] Polling intento {$i}/{$maxIntentos}", ['operacion' => $numeroOperacion]);
@@ -245,18 +251,19 @@ class DigitalizarDocumentoService
      * - Respuesta: eDocument, numeroDeTramite, cadenaOriginal, respuestaBase
      */
     public function consultarPorOperacion(
-        string $rfc, 
-        string $claveWebService, 
+        string $rfc,
+        string $claveWebService,
         string $numeroOperacion,
         string $certificadoPath = '',
         string $keyPath = '',
         string $passwordKey = ''
-    ): ?array {
+        ): ?array
+    {
         try {
             // Generar firma electrónica para la consulta
             // Cadena original para consulta: |RFC|numeroOperacion|
             $cadenaOriginal = '|' . trim($rfc) . '|' . trim($numeroOperacion) . '|';
-            
+
             $firma = null;
             if (!empty($certificadoPath) && !empty($keyPath) && !empty($passwordKey)) {
                 $efirmaService = app(EFirmaService::class);
@@ -311,14 +318,14 @@ class DigitalizarDocumentoService
 </soapenv:Envelope>';
 
             $response = Http::withOptions([
-                    'verify' => false,
-                    'timeout' => 30,
-                    'curl' => [CURLOPT_SSL_CIPHER_LIST => 'DEFAULT@SECLEVEL=1'],
-                ])
+                'verify' => false,
+                'timeout' => 30,
+                'curl' => [CURLOPT_SSL_CIPHER_LIST => 'DEFAULT@SECLEVEL=0'],
+            ])
                 ->withHeaders([
-                    'Content-Type' => 'text/xml; charset=utf-8',
-                    'SOAPAction' => 'http://www.ventanillaunica.gob.mx/ConsultaEDocumentDigitalizarDocumento',
-                ])
+                'Content-Type' => 'text/xml; charset=utf-8',
+                'SOAPAction' => 'http://www.ventanillaunica.gob.mx/ConsultaEDocumentDigitalizarDocumento',
+            ])
                 ->withBody(trim($xml), 'text/xml')
                 ->post($this->endpoint);
 
@@ -362,12 +369,12 @@ class DigitalizarDocumentoService
             // Buscar eDocument en la respuesta (según XSD: <eDocument>...</eDocument>)
             if (preg_match('/<[:\w]*eDocument>(.*?)<\/[:\w]*eDocument>/', $body, $matchEdoc)) {
                 $result = ['eDocument' => $matchEdoc[1]];
-                
+
                 // También extraer numeroDeTramite si existe
                 if (preg_match('/<[:\w]*numeroDeTramite>(.*?)<\/[:\w]*numeroDeTramite>/', $body, $matchTramite)) {
                     $result['numeroDeTramite'] = $matchTramite[1];
                 }
-                
+
                 Log::info('[DIGITALIZACION] eDocument obtenido de consulta', $result);
                 return $result;
             }
@@ -378,7 +385,8 @@ class DigitalizarDocumentoService
             ]);
             return null;
 
-        } catch (Exception $e) {
+        }
+        catch (Exception $e) {
             Log::error("[DIGITALIZACION] Error consultando operación: " . $e->getMessage(), [
                 'operacion' => $numeroOperacion,
             ]);
@@ -402,27 +410,27 @@ class DigitalizarDocumentoService
         try {
             $edocument = trim($edocument);
             $xml = '<?xml version="1.0" encoding="UTF-8"?>
-<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:dig="'.self::NS_DIG.'">
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:dig="' . self::NS_DIG . '">
    <soapenv:Header>
       <wsse:Security soapenv:mustUnderstand="1" xmlns:wsse="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd">
          <wsse:UsernameToken>
-            <wsse:Username>'.$rfc.'</wsse:Username>
-            <wsse:Password Type="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-username-token-profile-1.0#PasswordText">'.$claveWebService.'</wsse:Password>
+            <wsse:Username>' . $rfc . '</wsse:Username>
+            <wsse:Password Type="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-username-token-profile-1.0#PasswordText">' . $claveWebService . '</wsse:Password>
          </wsse:UsernameToken>
       </wsse:Security>
    </soapenv:Header>
    <soapenv:Body>
       <dig:consultarEdocumentPeticion>
-         <dig:numeroEdocument>'.$edocument.'</dig:numeroEdocument>
+         <dig:numeroEdocument>' . $edocument . '</dig:numeroEdocument>
       </dig:consultarEdocumentPeticion>
    </soapenv:Body>
 </soapenv:Envelope>';
 
             $response = Http::withOptions([
-                    'verify' => false,
-                    'timeout' => 60,
-                    'curl' => [CURLOPT_SSL_CIPHER_LIST => 'DEFAULT@SECLEVEL=1'],
-                ])
+                'verify' => false,
+                'timeout' => 60,
+                'curl' => [CURLOPT_SSL_CIPHER_LIST => 'DEFAULT@SECLEVEL=0'],
+            ])
                 ->withHeaders(['Content-Type' => 'text/xml; charset=utf-8', 'SOAPAction' => ''])
                 ->withBody(trim($xml), 'text/xml')
                 ->post($this->endpoint);
@@ -433,17 +441,22 @@ class DigitalizarDocumentoService
             if (preg_match('/<[:\w]*tieneError>(.*?)<\/[:\w]*tieneError>/', $body, $matchErr)) {
                 if (filter_var($matchErr[1], FILTER_VALIDATE_BOOLEAN)) {
                     $msg = "No encontrado";
-                    if (preg_match('/<[:\w]*mensaje>(.*?)<\/[:\w]*mensaje>/', $body, $mMsg)) $msg = $mMsg[1];
+                    if (preg_match('/<[:\w]*mensaje>(.*?)<\/[:\w]*mensaje>/', $body, $mMsg))
+                        $msg = $mMsg[1];
                     return ['success' => false, 'message' => $msg];
                 }
             }
 
             // Datos
             $datos = [];
-            if (preg_match('/<[:\w]*nombreDocumento>(.*?)<\/[:\w]*nombreDocumento>/', $body, $m)) $datos['nombre_archivo'] = $m[1];
-            if (preg_match('/<[:\w]*rfcFirmante>(.*?)<\/[:\w]*rfcFirmante>/', $body, $m)) $datos['rfc_firmante'] = $m[1];
-            if (preg_match('/<[:\w]*fechaRegistro>(.*?)<\/[:\w]*fechaRegistro>/', $body, $m)) $datos['fecha_registro'] = $m[1];
-            if (preg_match('/<[:\w]*idTipoDocumento>(.*?)<\/[:\w]*idTipoDocumento>/', $body, $m)) $datos['tipo_documento'] = $m[1];
+            if (preg_match('/<[:\w]*nombreDocumento>(.*?)<\/[:\w]*nombreDocumento>/', $body, $m))
+                $datos['nombre_archivo'] = $m[1];
+            if (preg_match('/<[:\w]*rfcFirmante>(.*?)<\/[:\w]*rfcFirmante>/', $body, $m))
+                $datos['rfc_firmante'] = $m[1];
+            if (preg_match('/<[:\w]*fechaRegistro>(.*?)<\/[:\w]*fechaRegistro>/', $body, $m))
+                $datos['fecha_registro'] = $m[1];
+            if (preg_match('/<[:\w]*idTipoDocumento>(.*?)<\/[:\w]*idTipoDocumento>/', $body, $m))
+                $datos['tipo_documento'] = $m[1];
 
             if (empty($datos) && !str_contains($body, 'nombreDocumento')) {
                 return ['success' => false, 'message' => 'eDocument no encontrado en Digitalización.'];
@@ -451,7 +464,8 @@ class DigitalizarDocumentoService
 
             return ['success' => true, 'data' => $datos, 'tipo' => 'DIGITALIZACION'];
 
-        } catch (Exception $e) {
+        }
+        catch (Exception $e) {
             return ['success' => false, 'message' => 'Error: ' . $e->getMessage()];
         }
     }
