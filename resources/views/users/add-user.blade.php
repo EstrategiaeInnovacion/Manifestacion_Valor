@@ -189,6 +189,26 @@
                         </p>
                     </div>
 
+                    {{-- Campo Empresa - Solo visible para SuperAdmin --}}
+                    @if(auth()->user()->role === 'SuperAdmin')
+                    <div class="form-group" id="companyField">
+                        <label for="company" class="form-label">Empresa / Organización</label>
+                        <input id="company" 
+                               name="company" 
+                               type="text" 
+                               class="form-input" 
+                               value="{{ old('company') }}" 
+                               placeholder="Ej: Estrategia e Innovación">
+                        @error('company')
+                            <p class="error-message">{{ $message }}</p>
+                        @enderror
+                        <p class="text-xs text-slate-500 mt-2 pl-1">
+                            <i data-lucide="building" class="w-3 h-3 inline mr-1"></i>
+                            La empresa se heredará a los usuarios que cree este administrador.
+                        </p>
+                    </div>
+                    @endif
+
                     <div class="password-info-box">
                         <div class="flex items-start gap-3">
                             <i data-lucide="shield-check" class="w-5 h-5 text-[#003399] mt-0.5"></i>

@@ -55,12 +55,19 @@ class UserManagementController extends Controller
             $availableRoles = ['SuperAdmin', 'Admin', 'Usuario'];
         }
 
-        $request->validate([
+        $validationRules = [
             'full_name' => ['required', 'string', 'max:255'],
             'username' => ['required', 'string', 'max:255', 'unique:users'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
             'role' => ['required', 'string', 'in:' . implode(',', $availableRoles)],
-        ]);
+        ];
+
+        // Solo SuperAdmin puede asignar empresa (para Admins)
+        if ($authUser->role === 'SuperAdmin') {
+            $validationRules['company'] = ['nullable', 'string', 'max:255'];
+        }
+
+        $request->validate($validationRules);
 
         // Validar límite de usuarios para administradores
         if ($authUser->role === 'Admin') {
@@ -76,14 +83,25 @@ class UserManagementController extends Controller
         // Generar contraseña aleatoria
         $randomPassword = Str::random(12);
 
-        $user = User::create([
+        $userData = [
             'full_name' => $request->full_name,
             'username' => $request->username,
             'email' => $request->email,
             'role' => $request->role,
             'password' => Hash::make($randomPassword),
             'created_by' => $authUser->id,
-        ]);
+        ];
+
+        // Asignar empresa
+        if ($authUser->role === 'SuperAdmin') {
+            // SuperAdmin puede asignar empresa manualmente a Admins
+            $userData['company'] = $request->company;
+        } else {
+            // Admin hereda su empresa a los usuarios que crea
+            $userData['company'] = $authUser->company;
+        }
+
+        $user = User::create($userData);
 
         // Enviar correo de bienvenida con credenciales
         try {
@@ -110,6 +128,12 @@ class UserManagementController extends Controller
     {
         $authUser = auth()->user();
 
+        // No permitir eliminar al SuperAdmin protegido
+        if (!$user->canBeDeleted()) {
+            return redirect()->route('users.index')
+                ->withErrors(['error' => 'Este Super Administrador está protegido y no puede ser eliminado.']);
+        }
+
         // Validar permisos de eliminación
         if ($authUser->role === 'Admin') {
             // Admin solo puede eliminar usuarios tipo 'Usuario' que él creó
@@ -119,11 +143,8 @@ class UserManagementController extends Controller
             }
         }
         elseif ($authUser->role === 'SuperAdmin') {
-            // SuperAdmin puede eliminar Admin y Usuario, pero no otros SuperAdmin
-            if ($user->role === 'SuperAdmin') {
-                return redirect()->route('users.index')
-                    ->withErrors(['error' => 'No puedes eliminar otros Super Administradores.']);
-            }
+            // SuperAdmin puede eliminar Admin, Usuario y otros SuperAdmin (excepto el protegido)
+            // No hay restricción adicional aquí porque ya verificamos canBeDeleted()
         }
         else {
             // Usuario regular no puede eliminar a nadie
@@ -187,7 +208,7 @@ class UserManagementController extends Controller
             $availableRoles = ['SuperAdmin', 'Admin', 'Usuario'];
         }
 
-        $request->validate([
+        $validationRules = [
             'full_name' => ['required', 'string', 'max:255'],
             'username' => ['required', 'string', 'max:255', 'unique:users,username,' . $user->id],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email,' . $user->id],
@@ -195,7 +216,14 @@ class UserManagementController extends Controller
             // Si es SuperAdmin, sí puede cambiar el rol
             'role' => $authUser->role === 'SuperAdmin' ? ['required', 'string', 'in:' . implode(',', $availableRoles)] : [],
             'password' => ['nullable', 'string', 'min:8', 'confirmed'],
-        ]);
+        ];
+
+        // Solo SuperAdmin puede editar empresa
+        if ($authUser->role === 'SuperAdmin') {
+            $validationRules['company'] = ['nullable', 'string', 'max:255'];
+        }
+
+        $request->validate($validationRules);
 
         $userData = [
             'full_name' => $request->full_name,
@@ -203,9 +231,10 @@ class UserManagementController extends Controller
             'email' => $request->email,
         ];
 
-        // Solo SuperAdmin puede cambiar roles
+        // Solo SuperAdmin puede cambiar roles y empresa
         if ($authUser->role === 'SuperAdmin') {
             $userData['role'] = $request->role;
+            $userData['company'] = $request->company;
         }
 
         if ($request->filled('password')) {

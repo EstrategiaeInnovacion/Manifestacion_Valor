@@ -64,9 +64,11 @@
                         <h2 class="text-4xl font-black text-[#001a4d] tracking-tight">Solicitantes <span class="text-[#003399]">MV</span></h2>
                         <p class="text-slate-500 mt-2">Gestión de datos fiscales para Manifestación de Valor en VUCEM</p>
                     </div>
+                    @if(auth()->user()->role === 'Admin')
                     <a href="{{ route('applicants.create') }}" class="btn-primary">
                         <i data-lucide="plus-circle" class="w-5 h-5 mr-2"></i> Registrar Solicitante
                     </a>
+                    @endif
                 </div>
             </div>
 
@@ -85,6 +87,9 @@
                                 <th>Correo Electrónico</th>
                                 <th>RFC</th>
                                 <th>Razón Social</th>
+                                @if(auth()->user()->role === 'Admin')
+                                <th>Usuario Asignado</th>
+                                @endif
                                 <th class="text-center">Sellos VUCEM</th>
                                 <th class="text-center">Acciones</th>
                             </tr>
@@ -95,11 +100,22 @@
                                     <td>
                                         <div class="flex items-center gap-3">
                                             <div class="avatar-small">{{ substr($applicant->business_name, 0, 1) }}</div>
-                                            <span class="font-medium">{{ $applicant->user_email }}</span>
+                                            <span class="font-medium">{{ $applicant->applicant_email }}</span>
                                         </div>
                                     </td>
                                     <td><span class="badge-rfc">{{ $applicant->applicant_rfc }}</span></td>
                                     <td class="font-semibold text-[#001a4d]">{{ $applicant->business_name }}</td>
+                                    @if(auth()->user()->role === 'Admin')
+                                    <td>
+                                        @if($applicant->assignedUser)
+                                            <span class="inline-flex items-center gap-1 text-blue-700 bg-blue-50 px-2 py-1 rounded-lg text-xs font-semibold">
+                                                <i data-lucide="user" class="w-3.5 h-3.5"></i> {{ $applicant->assignedUser->full_name }}
+                                            </span>
+                                        @else
+                                            <span class="text-slate-400 text-xs">Sin asignar</span>
+                                        @endif
+                                    </td>
+                                    @endif
                                     <td class="text-center">
                                         @if($applicant->hasVucemCredentials())
                                             <span class="inline-flex items-center gap-1 text-green-700 bg-green-50 px-2 py-1 rounded-lg text-xs font-semibold">
@@ -116,6 +132,7 @@
                                             <a href="{{ route('applicants.show', $applicant) }}" class="btn-action btn-view" title="Ver detalles">
                                                 <i data-lucide="eye" class="w-4 h-4"></i>
                                             </a>
+                                            @if(auth()->user()->role === 'Admin')
                                             <a href="{{ route('applicants.edit', $applicant) }}" class="btn-action btn-edit" title="Editar">
                                                 <i data-lucide="edit" class="w-4 h-4"></i>
                                             </a>
@@ -126,16 +143,21 @@
                                                 @csrf
                                                 @method('DELETE')
                                             </form>
+                                            @endif
                                         </div>
                                     </td>
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="5" class="text-center py-12">
+                                    <td colspan="{{ auth()->user()->role === 'Admin' ? '6' : '5' }}" class="text-center py-12">
                                         <div class="empty-state">
                                             <i data-lucide="inbox" class="w-16 h-16 mx-auto text-slate-300 mb-4"></i>
                                             <p class="text-lg font-semibold text-slate-400">No hay solicitantes registrados</p>
+                                            @if(auth()->user()->role === 'Admin')
                                             <p class="text-sm text-slate-400 mt-2">Comienza registrando un nuevo solicitante</p>
+                                            @else
+                                            <p class="text-sm text-slate-400 mt-2">Contacta a tu administrador para que te asigne un solicitante</p>
+                                            @endif
                                         </div>
                                     </td>
                                 </tr>

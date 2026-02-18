@@ -14,6 +14,8 @@ class MvClientApplicant extends Model
 
     protected $fillable = [
         'user_email',
+        'assigned_user_id',
+        'created_by_user_id',
         'applicant_rfc',
         'business_name',
         'applicant_email',
@@ -77,5 +79,21 @@ class MvClientApplicant extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_email', 'email');
+    }
+
+    /**
+     * Relación: Usuario al que está asignado este solicitante.
+     */
+    public function assignedUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'assigned_user_id');
+    }
+
+    /**
+     * Relación: Usuario (Admin) que creó este solicitante.
+     */
+    public function createdByUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by_user_id');
     }
 }

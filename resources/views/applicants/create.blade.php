@@ -112,6 +112,27 @@
                                        class="form-input" placeholder="Nombre o Razón Social" required>
                             </div>
                         </div>
+
+                        {{-- Asignación de Usuario --}}
+                        @if(isset($usersForAssignment) && $usersForAssignment->count() > 0)
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="assigned_user_id" class="form-label">
+                                    <i data-lucide="user-plus" class="w-4 h-4 inline-block mr-1"></i>
+                                    Asignar a Usuario
+                                </label>
+                                <select id="assigned_user_id" name="assigned_user_id" class="form-input">
+                                    <option value="">-- Sin asignar --</option>
+                                    @foreach($usersForAssignment as $userOption)
+                                        <option value="{{ $userOption->id }}" {{ old('assigned_user_id') == $userOption->id ? 'selected' : '' }}>
+                                            {{ $userOption->full_name }} ({{ $userOption->email }})
+                                        </option>
+                                    @endforeach
+                                </select>
+                                <p class="text-xs text-slate-500 mt-1">El usuario asignado podrá ver y operar con este solicitante</p>
+                            </div>
+                        </div>
+                        @endif
                     </div>
 
                     {{-- ═══════════════════════════════════════════════════════ --}}

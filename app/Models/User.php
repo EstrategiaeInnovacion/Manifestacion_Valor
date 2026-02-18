@@ -13,6 +13,11 @@ class User extends Authenticatable
     use HasFactory, Notifiable;
 
     /**
+     * Email del SuperAdmin protegido (no se puede eliminar)
+     */
+    public const PROTECTED_SUPERADMIN_EMAIL = 'guillermo.aguilera@estrategiaeinnovacion.com.mx';
+
+    /**
      * Los atributos que se pueden asignar masivamente.
      */
     protected $fillable = [
@@ -21,6 +26,7 @@ class User extends Authenticatable
         'username',
         'password',
         'role',
+        'company',
         'max_users',
         'max_applicants',
         'created_by',
@@ -50,6 +56,22 @@ class User extends Authenticatable
     public function clientApplicants(): HasMany
     {
         return $this->hasMany(MvClientApplicant::class, 'user_email', 'email');
+    }
+
+    /**
+     * Relación: Solicitantes asignados a este usuario.
+     */
+    public function assignedApplicants(): HasMany
+    {
+        return $this->hasMany(MvClientApplicant::class, 'assigned_user_id');
+    }
+
+    /**
+     * Relación: Solicitantes creados por este usuario (Admin).
+     */
+    public function createdApplicants(): HasMany
+    {
+        return $this->hasMany(MvClientApplicant::class, 'created_by_user_id');
     }
     
     /**
@@ -172,5 +194,22 @@ class User extends Authenticatable
         // Usuario: usar el email de su Admin
         $admin = $this->getAdminOwner();
         return $admin ? $admin->email : $this->email;
+    }
+
+    /**
+     * Verificar si este usuario puede ser eliminado.
+     * El SuperAdmin del seeder está protegido.
+     */
+    public function canBeDeleted(): bool
+    {
+        return $this->email !== self::PROTECTED_SUPERADMIN_EMAIL;
+    }
+
+    /**
+     * Verificar si este usuario es el SuperAdmin protegido.
+     */
+    public function isProtectedSuperAdmin(): bool
+    {
+        return $this->email === self::PROTECTED_SUPERADMIN_EMAIL;
     }
 }
