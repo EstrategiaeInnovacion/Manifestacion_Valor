@@ -144,15 +144,33 @@ class MvVucemSoapService
                     $errors[] = "COVE {$coveIdx}: número de cove vacío";
                 }
 
+                // Leer sub-datos del COVE actual (formato multi-COVE: anidados en cada objeto)
+                // Con compatibilidad hacia atrás: si no hay dato per-COVE, usar el top-level
+                $covePedimentos    = $cove['pedimentos']      ?? $pedimentosData;
+                $covePrecioPagado  = $cove['precio_pagado']   ?? $precioPagadoData;
+                $covePrecioPorPagar = $cove['precio_por_pagar'] ?? $precioPorPagarData;
+                $coveCompensoPago  = $cove['compenso_pago']   ?? $compensoPagoData;
+                $coveIncrementables = $cove['incrementables'] ?? $incrementablesData;
+                $coveDecrementables = $cove['decrementables'] ?? $decrementablesData;
+
+                Log::info('[MV_SOAP] Sub-datos COVE ' . ($numeroCove ?: $coveIdx), [
+                    'pedimentos'      => count($covePedimentos),
+                    'precio_pagado'   => count($covePrecioPagado),
+                    'precio_por_pagar' => count($covePrecioPorPagar),
+                    'compenso_pago'   => count($coveCompensoPago),
+                    'incrementables'  => count($coveIncrementables),
+                    'decrementables'  => count($coveDecrementables),
+                ]);
+
                 // Construir pedimentos XML
                 $pedimentosXml = '';
-                foreach ($pedimentosData as $pedIdx => $ped) {
+                foreach ($covePedimentos as $pedIdx => $ped) {
                     $numPedimento = $ped['pedimento'] ?? $ped['numero'] ?? '';
                     $patente = $ped['patente'] ?? '';
                     $aduana = $ped['aduana'] ?? '';
 
                     $mapping["pedimento_{$coveIdx}_{$pedIdx}"] = [
-                        'campo_bd' => "mv_informacion_cove.pedimentos[{$pedIdx}]",
+                        'campo_bd' => "mv_informacion_cove.informacion_cove[{$coveIdx}].pedimentos[{$pedIdx}]",
                         'valor_bd' => ['pedimento' => $numPedimento, 'patente' => $patente, 'aduana' => $aduana],
                         'campo_xsd' => 'informacionCove/pedimento',
                         'tipo_xsd' => 'Pedimento (pedimento, patente, aduana: string)'
@@ -167,13 +185,13 @@ class MvVucemSoapService
                 }
 
                 // Construir precio pagado XML
-                $precioPagadoXml = $this->buildPrecioPagadoXml($precioPagadoData, $mapping, $coveIdx, $errors);
+                $precioPagadoXml = $this->buildPrecioPagadoXml($covePrecioPagado, $mapping, $coveIdx, $errors);
 
                 // Construir precio por pagar XML
-                $precioPorPagarXml = $this->buildPrecioPorPagarXml($precioPorPagarData, $mapping, $coveIdx, $errors);
+                $precioPorPagarXml = $this->buildPrecioPorPagarXml($covePrecioPorPagar, $mapping, $coveIdx, $errors);
 
                 // Construir compenso pago XML
-                $compensoPagoXml = $this->buildCompensoPagoXml($compensoPagoData, $mapping, $coveIdx, $errors);
+                $compensoPagoXml = $this->buildCompensoPagoXml($coveCompensoPago, $mapping, $coveIdx, $errors);
 
                 // =====================================================
                 // REGLA VUCEM 011: "Debe agregarse mínimo un pago"
@@ -181,27 +199,28 @@ class MvVucemSoapService
                 // generar un nodo precioPagado "virtual" con importe 0
                 // para cumplir con la regla de integridad de VUCEM
                 // =====================================================
-                if (empty($precioPagadoData) && !empty($precioPorPagarData)) {
-                    $primerPorPagar = $precioPorPagarData[0] ?? [];
+                if (empty($covePrecioPagado) && !empty($covePrecioPorPagar)) {
+                    $primerPorPagar = $covePrecioPorPagar[0] ?? [];
                     $fechaVirtual = $this->formatDateTime($primerPorPagar['fecha'] ?? $primerPorPagar['fechaPago'] ?? date('Y-m-d\TH:i:s'));
                     $tipoMonedaVirtual = $primerPorPagar['tipoMoneda'] ?? 'USD';
                     $tipoPagoVirtual = $primerPorPagar['formaPago'] ?? $primerPorPagar['tipoPago'] ?? 'OTRO';
                     $tipoCambioVirtual = $this->formatDecimal($primerPorPagar['tipoCambio'] ?? '1.00');
-                    
+
                     Log::info('[MV_SOAP] Generando precioPagado virtual (Regla VUCEM 011)', [
+                        'cove' => $numeroCove,
                         'cove_idx' => $coveIdx,
-                        'precio_por_pagar_count' => count($precioPorPagarData),
+                        'precio_por_pagar_count' => count($covePrecioPorPagar),
                         'moneda' => $tipoMonedaVirtual,
                         'tipo_pago' => $tipoPagoVirtual
                     ]);
-                    
+
                     $mapping["precioPagado_virtual_{$coveIdx}"] = [
                         'campo_bd' => 'GENERADO AUTOMÁTICAMENTE (Regla VUCEM 011)',
                         'valor_bd' => ['importe' => '0.00', 'motivo' => 'Pago pendiente - ver precioPorPagar'],
                         'campo_xsd' => 'informacionCove/precioPagado',
                         'tipo_xsd' => 'PrecioPagado VIRTUAL para cumplir regla de integridad'
                     ];
-                    
+
                     $precioPagadoXml = "
                <mv:precioPagado>
                   <mv:fechaPago>{$fechaVirtual}</mv:fechaPago>
@@ -211,21 +230,22 @@ class MvVucemSoapService
                   <mv:tipoCambio>{$tipoCambioVirtual}</mv:tipoCambio>
                </mv:precioPagado>";
                 }
-                // Caso 2: No hay ningún tipo de pago registrado
-                elseif (empty($precioPagadoData) && empty($precioPorPagarData) && empty($compensoPagoData)) {
-                    Log::warning('[MV_SOAP] No hay ningún pago registrado, generando precioPagado mínimo (Regla VUCEM 011)', [
+                // Caso 2: No hay ningún tipo de pago registrado para este COVE
+                elseif (empty($covePrecioPagado) && empty($covePrecioPorPagar) && empty($coveCompensoPago)) {
+                    Log::warning('[MV_SOAP] No hay ningún pago registrado para COVE, generando precioPagado mínimo (Regla VUCEM 011)', [
+                        'cove' => $numeroCove,
                         'cove_idx' => $coveIdx
                     ]);
-                    
+
                     $fechaHoy = $this->formatDateTime(date('Y-m-d\TH:i:s'));
-                    
+
                     $mapping["precioPagado_minimo_{$coveIdx}"] = [
                         'campo_bd' => 'GENERADO AUTOMÁTICAMENTE (Sin pagos registrados)',
                         'valor_bd' => ['importe' => '0.00', 'motivo' => 'Pago mínimo requerido por VUCEM'],
                         'campo_xsd' => 'informacionCove/precioPagado',
                         'tipo_xsd' => 'PrecioPagado MÍNIMO para cumplir regla de integridad'
                     ];
-                    
+
                     $precioPagadoXml = "
                <mv:precioPagado>
                   <mv:fechaPago>{$fechaHoy}</mv:fechaPago>
@@ -238,10 +258,10 @@ class MvVucemSoapService
                 // =====================================================
 
                 // Construir incrementables XML
-                $incrementablesXml = $this->buildIncrementablesXml($incrementablesData, $mapping, $coveIdx, $errors);
+                $incrementablesXml = $this->buildIncrementablesXml($coveIncrementables, $mapping, $coveIdx, $errors);
 
                 // Construir decrementables XML
-                $decrementablesXml = $this->buildDecrementablesXml($decrementablesData, $mapping, $coveIdx, $errors);
+                $decrementablesXml = $this->buildDecrementablesXml($coveDecrementables, $mapping, $coveIdx, $errors);
 
                 $informacionCoveXml .= "
             <mv:informacionCove>
