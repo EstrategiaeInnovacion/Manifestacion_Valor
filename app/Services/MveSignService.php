@@ -209,7 +209,8 @@ class MveSignService
                     $xml .= '<precioPorPagar>';
                     $xml .= '<fechaPago>' . $this->mveService->formatXmlDate($ppp['fecha'] ?? $ppp['fechaPago'] ?? '') . '</fechaPago>';
                     $xml .= '<total>' . $this->mveService->formatVucemNumber($ppp['importe'] ?? $ppp['total'] ?? 0) . '</total>';
-                    if (!empty($ppp['situacionNofechaPago'] ?? $ppp['situacion_no_fecha_pago'] ?? '')) $xml .= '<situacionNofechaPago>' . htmlspecialchars($ppp['situacionNofechaPago'] ?? $ppp['situacion_no_fecha_pago'], ENT_XML1) . '</situacionNofechaPago>';
+                    $situacionVal = $ppp['situacionNofechaPago'] ?? $ppp['situacion_no_fecha_pago'] ?? $ppp['momentoSituacion'] ?? '';
+                    if (!empty($situacionVal)) $xml .= '<situacionNofechaPago>' . htmlspecialchars($situacionVal, ENT_XML1) . '</situacionNofechaPago>';
                     $xml .= '<tipoPago>' . ($ppp['tipoPago'] ?? $ppp['formaPago'] ?? $ppp['tipo_pago'] ?? '') . '</tipoPago>';
                     if (!empty($ppp['especifique'])) $xml .= '<especifique>' . htmlspecialchars($ppp['especifique'], ENT_XML1) . '</especifique>';
                     $xml .= '<tipoMoneda>' . ($ppp['tipoMoneda'] ?? $ppp['tipo_moneda'] ?? 'USD') . '</tipoMoneda>';
