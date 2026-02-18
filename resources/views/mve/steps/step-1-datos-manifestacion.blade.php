@@ -117,7 +117,7 @@
 
                 {{-- Navegación Stepper --}}
                 <div class="flex justify-end mt-6">
-                    <button type="button" onclick="nextStep()" class="btn-primary-large">
+                    <button type="button" id="btnSiguienteStep1" onclick="nextStep()" class="btn-primary-large opacity-50 cursor-not-allowed" disabled>
                         Siguiente
                         <i data-lucide="arrow-right" class="w-5 h-5 ml-2"></i>
                     </button>

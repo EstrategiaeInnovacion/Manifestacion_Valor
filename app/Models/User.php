@@ -212,4 +212,33 @@ class User extends Authenticatable
     {
         return $this->email === self::PROTECTED_SUPERADMIN_EMAIL;
     }
+
+    /**
+     * Verificar si este usuario tiene acceso a un solicitante dado.
+     * - SuperAdmin: puede ver solicitantes de toda su empresa
+     * - Admin: puede ver solicitantes creados por él o legacy por user_email
+     * - Usuario: puede ver solicitantes asignados o por user_email
+     */
+    public function canAccessApplicant(MvClientApplicant $applicant): bool
+    {
+        if ($this->role === 'SuperAdmin') {
+            // SuperAdmin puede ver solicitantes de toda su empresa
+            $companyUserIds = User::where('company', $this->company)->pluck('id')->toArray();
+            $companyUserEmails = User::where('company', $this->company)->pluck('email')->toArray();
+            
+            return $applicant->created_by_user_id === $this->id
+                || in_array($applicant->created_by_user_id, $companyUserIds)
+                || (is_null($applicant->created_by_user_id) && in_array($applicant->user_email, $companyUserEmails));
+        }
+        
+        if ($this->role === 'Admin') {
+            // Admin puede ver solicitantes creados por él o legacy por user_email
+            return $applicant->created_by_user_id === $this->id
+                || (is_null($applicant->created_by_user_id) && $applicant->user_email === $this->email);
+        }
+        
+        // Usuario: puede ver solicitantes asignados o por user_email
+        return $applicant->assigned_user_id === $this->id
+            || $applicant->user_email === $this->email;
+    }
 }

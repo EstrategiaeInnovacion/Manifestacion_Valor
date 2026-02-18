@@ -860,7 +860,7 @@
         <i data-lucide="arrow-left" class="w-5 h-5 mr-2"></i>
         Anterior
     </button>
-    <button type="button" onclick="nextStep()" class="btn-primary-large">
+    <button type="button" id="btnSiguienteStep2" onclick="nextStep()" class="btn-primary-large opacity-50 cursor-not-allowed" disabled>
         Siguiente
         <i data-lucide="arrow-right" class="w-5 h-5 ml-2"></i>
     </button>

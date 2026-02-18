@@ -25,6 +25,7 @@ class DatabaseSeeder extends Seeder
             'email' => 'guillermo.aguilera@estrategiaeinnovacion.com.mx',
             'password' => Hash::make('Estrategia1'),
             'role' => 'SuperAdmin',
+            'company' => 'Estrategia e Innovación',
         ]
         );
     }

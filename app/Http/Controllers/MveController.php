@@ -20,14 +20,54 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
+use App\Models\User;
+
 class MveController extends Controller
 {
+    /**
+     * Obtiene los solicitantes accesibles según el rol del usuario.
+     */
+    private function getAccessibleApplicants()
+    {
+        $user = auth()->user();
+        
+        if ($user->role === 'SuperAdmin') {
+            $companyUserIds = User::where('company', $user->company)->pluck('id')->toArray();
+            $companyUserEmails = User::where('company', $user->company)->pluck('email')->toArray();
+            
+            return MvClientApplicant::where(function($q) use ($user, $companyUserIds, $companyUserEmails) {
+                $q->where('created_by_user_id', $user->id)
+                    ->orWhereIn('created_by_user_id', $companyUserIds)
+                    ->orWhere(function($sub) use ($companyUserEmails) {
+                        $sub->whereNull('created_by_user_id')
+                            ->whereIn('user_email', $companyUserEmails);
+                    });
+            });
+        }
+        
+        if ($user->role === 'Admin') {
+            return MvClientApplicant::where(function($q) use ($user) {
+                $q->where('created_by_user_id', $user->id)
+                    ->orWhere(function($sub) use ($user) {
+                        $sub->whereNull('created_by_user_id')
+                            ->where('user_email', $user->email);
+                    });
+            });
+        }
+        
+        // Usuario: solicitantes asignados o por user_email
+        return MvClientApplicant::where(function($q) use ($user) {
+            $q->where('assigned_user_id', $user->id)
+                ->orWhere('user_email', $user->email);
+        });
+    }
+
     public function selectApplicant(Request $request)
     {
         $mode = $request->query('mode', 'manual'); // manual o archivo_m
         
-        // Obtener solicitantes del usuario actual
-        $applicants = MvClientApplicant::where('user_email', auth()->user()->getApplicantOwnerEmail())
+        // Obtener solicitantes del usuario actual según su rol
+        $applicants = $this->getAccessibleApplicants()
             ->orderBy('business_name')
             ->get();
         
@@ -39,7 +79,7 @@ class MveController extends Controller
         $applicant = MvClientApplicant::findOrFail($applicantId);
         
         // Verificar que el solicitante pertenece al usuario actual
-        if ($applicant->user_email !== auth()->user()->getApplicantOwnerEmail()) {
+        if (!auth()->user()->canAccessApplicant($applicant)) {
             abort(403, 'No tienes permiso para acceder a este solicitante.');
         }
         
@@ -115,7 +155,7 @@ class MveController extends Controller
         $applicant = MvClientApplicant::findOrFail($applicantId);
         
         // Verificar que el solicitante pertenece al usuario actual
-        if ($applicant->user_email !== auth()->user()->getApplicantOwnerEmail()) {
+        if (!auth()->user()->canAccessApplicant($applicant)) {
             abort(403, 'No tienes permiso para acceder a este solicitante.');
         }
         
@@ -359,19 +399,18 @@ class MveController extends Controller
 
     
     /**
-     * Ver MVE Pendientes (borradores por secciÃ³n)
+     * Ver MVE Pendientes (borradores por sección)
      */
     public function pendientes()
     {
-        // Obtener todos los solicitantes del usuario
-        $applicantIds = MvClientApplicant::where('user_email', auth()->user()->getApplicantOwnerEmail())
-            ->pluck('id');
+        // Obtener todos los solicitantes del usuario según su rol
+        $applicantIds = $this->getAccessibleApplicants()->pluck('id');
 
-        // Estados que requieren acciÃ³n del usuario (borrador, guardado, rechazado)
+        // Estados que requieren acción del usuario (borrador, guardado, rechazado)
         $estadosPendientes = ['borrador', 'guardado', 'rechazado'];
 
-        // IMPORTANTE: Excluir applicants que ya tienen una manifestaciÃ³n enviada
-        // Esto previene mostrar secciones huÃ©rfanas de manifestaciones completadas
+        // IMPORTANTE: Excluir applicants que ya tienen una manifestación enviada
+        // Esto previene mostrar secciones huérfanas de manifestaciones completadas
         $applicantsConMveEnviada = MvDatosManifestacion::whereIn('applicant_id', $applicantIds)
             ->where('status', 'enviado')
             ->pluck('applicant_id')
@@ -404,9 +443,8 @@ class MveController extends Controller
      */
     public function completadas()
     {
-        // Obtener todos los solicitantes del usuario
-        $applicantIds = MvClientApplicant::where('user_email', auth()->user()->getApplicantOwnerEmail())
-            ->pluck('id');
+        // Obtener todos los solicitantes del usuario según su rol
+        $applicantIds = $this->getAccessibleApplicants()->pluck('id');
         
         // Obtener manifestaciones enviadas (con acuse)
         $mveCompletadas = MvAcuse::with(['applicant', 'datosManifestacion'])
@@ -426,7 +464,7 @@ class MveController extends Controller
         $applicant = MvClientApplicant::findOrFail($applicantId);
         
         // Verificar que el solicitante pertenece al usuario actual
-        if ($applicant->user_email !== auth()->user()->getApplicantOwnerEmail()) {
+        if (!auth()->user()->canAccessApplicant($applicant)) {
             return response()->json([
                 'success' => false,
                 'message' => 'No tienes permiso para acceder a este solicitante.'
@@ -469,7 +507,7 @@ class MveController extends Controller
         $applicant = MvClientApplicant::findOrFail($applicantId);
         
         // Verificar que el solicitante pertenece al usuario actual
-        if ($applicant->user_email !== auth()->user()->getApplicantOwnerEmail()) {
+        if (!auth()->user()->canAccessApplicant($applicant)) {
             return response()->json([
                 'success' => false,
                 'message' => 'No tienes permiso para acceder a este solicitante.'
@@ -554,7 +592,7 @@ class MveController extends Controller
         $applicant = MvClientApplicant::findOrFail($applicantId);
         
         // Verificar que el solicitante pertenece al usuario actual
-        if ($applicant->user_email !== auth()->user()->getApplicantOwnerEmail()) {
+        if (!auth()->user()->canAccessApplicant($applicant)) {
             return response()->json([
                 'success' => false,
                 'message' => 'No tienes permiso para acceder a este solicitante.'
@@ -676,7 +714,7 @@ class MveController extends Controller
     {
         $applicant = MvClientApplicant::findOrFail($applicantId);
 
-        if ($applicant->user_email !== auth()->user()->getApplicantOwnerEmail()) {
+        if (!auth()->user()->canAccessApplicant($applicant)) {
             return response()->json(['success' => false, 'message' => 'Sin permiso.'], 403);
         }
 
@@ -868,7 +906,7 @@ class MveController extends Controller
             
             // Verificar que el applicant pertenece al usuario actual
             $applicant = MvClientApplicant::findOrFail($applicantId);
-            if ($applicant->user_email !== auth()->user()->getApplicantOwnerEmail()) {
+            if (!auth()->user()->canAccessApplicant($applicant)) {
                 return response()->json([
                     'success' => false,
                     'message' => 'No tienes permiso para eliminar este borrador.'
@@ -910,7 +948,7 @@ class MveController extends Controller
         try {
             // Verificar que el applicant pertenece al usuario actual
             $applicant = MvClientApplicant::findOrFail($applicantId);
-            if ($applicant->user_email !== auth()->user()->getApplicantOwnerEmail()) {
+            if (!auth()->user()->canAccessApplicant($applicant)) {
                 return response()->json([
                     'success' => false,
                     'message' => 'No autorizado'
@@ -958,7 +996,7 @@ class MveController extends Controller
         try {
             // Verificar que el applicant pertenece al usuario actual
             $applicant = MvClientApplicant::findOrFail($applicantId);
-            if ($applicant->user_email !== auth()->user()->getApplicantOwnerEmail()) {
+            if (!auth()->user()->canAccessApplicant($applicant)) {
                 return response()->json([
                     'success' => false,
                     'message' => 'No autorizado'
@@ -1015,7 +1053,7 @@ class MveController extends Controller
         try {
             // Verificar que el applicant pertenece al usuario actual
             $applicant = MvClientApplicant::findOrFail($applicantId);
-            if ($applicant->user_email !== auth()->user()->getApplicantOwnerEmail()) {
+            if (!auth()->user()->canAccessApplicant($applicant)) {
                 return response()->json([
                     'success' => false,
                     'message' => 'No autorizado'
@@ -1133,7 +1171,7 @@ class MveController extends Controller
             $documento = MvDocumentos::findOrFail($documentId);
             
             // Verificar que el documento pertenece al usuario actual
-            if ($documento->applicant->user_email !== auth()->user()->getApplicantOwnerEmail()) {
+            if (!auth()->user()->canAccessApplicant($documento->applicant)) {
                 return response()->json(['message' => 'No autorizado'], 403);
             }
 
@@ -1160,7 +1198,7 @@ class MveController extends Controller
             $documento = MvDocumentos::findOrFail($documentId);
             
             // Verificar que el documento pertenece al usuario actual
-            if ($documento->applicant->user_email !== auth()->user()->getApplicantOwnerEmail()) {
+            if (!auth()->user()->canAccessApplicant($documento->applicant)) {
                 return response()->json(['message' => 'No autorizado'], 403);
             }
 
@@ -1189,7 +1227,7 @@ class MveController extends Controller
         try {
             // Verificar que el applicant pertenece al usuario actual
             $applicant = MvClientApplicant::findOrFail($applicantId);
-            if ($applicant->user_email !== auth()->user()->getApplicantOwnerEmail()) {
+            if (!auth()->user()->canAccessApplicant($applicant)) {
                 return response()->json([
                     'success' => false,
                     'message' => 'No autorizado'
@@ -1462,7 +1500,7 @@ class MveController extends Controller
         try {
             // Verificar que el applicant pertenece al usuario actual
             $applicant = MvClientApplicant::findOrFail($applicantId);
-            if ($applicant->user_email !== auth()->user()->getApplicantOwnerEmail()) {
+            if (!auth()->user()->canAccessApplicant($applicant)) {
                 return response()->json([
                     'success' => false,
                     'message' => 'No autorizado'
@@ -1518,7 +1556,7 @@ class MveController extends Controller
             ->findOrFail($manifestacionId);
         
         // Verificar que el solicitante pertenece al usuario actual
-        if ($manifestacion->applicant->user_email !== auth()->user()->getApplicantOwnerEmail()) {
+        if (!auth()->user()->canAccessApplicant($manifestacion->applicant)) {
             abort(403, 'No tienes permiso para acceder a esta manifestaciÃ³n.');
         }
         
@@ -1542,7 +1580,7 @@ class MveController extends Controller
             ->findOrFail($manifestacionId);
         
         // Verificar que el solicitante pertenece al usuario actual
-        if ($manifestacion->applicant->user_email !== auth()->user()->getApplicantOwnerEmail()) {
+        if (!auth()->user()->canAccessApplicant($manifestacion->applicant)) {
             abort(403, 'No tienes permiso para acceder a esta manifestaciÃ³n.');
         }
         
@@ -1593,7 +1631,7 @@ class MveController extends Controller
             ->findOrFail($manifestacionId);
         
         // Verificar que el solicitante pertenece al usuario actual
-        if ($manifestacion->applicant->user_email !== auth()->user()->getApplicantOwnerEmail()) {
+        if (!auth()->user()->canAccessApplicant($manifestacion->applicant)) {
             abort(403, 'No tienes permiso para acceder a esta manifestaciÃ³n.');
         }
         
@@ -1621,7 +1659,7 @@ class MveController extends Controller
             }
             
             // 2. Verificar permisos de seguridad
-            if ($acuse->applicant->user_email !== auth()->user()->getApplicantOwnerEmail()) {
+            if (!auth()->user()->canAccessApplicant($acuse->applicant)) {
                 abort(403, 'No tienes permiso para acceder a este acuse.');
             }
             
@@ -1674,7 +1712,7 @@ class MveController extends Controller
 
         // Verificar permisos
         $manifestacion = MvDatosManifestacion::with('applicant')->findOrFail($manifestacionId);
-        if ($manifestacion->applicant->user_email !== auth()->user()->getApplicantOwnerEmail()) {
+        if (!auth()->user()->canAccessApplicant($manifestacion->applicant)) {
             abort(403, 'No tienes permiso para acceder a este acuse.');
         }
 
@@ -1748,7 +1786,7 @@ class MveController extends Controller
             // 1. Obtener el acuse y verificar permisos
             $acuse = MvAcuse::with(['applicant', 'datosManifestacion'])->findOrFail($acuseId);
 
-            if ($acuse->applicant->user_email !== auth()->user()->getApplicantOwnerEmail()) {
+            if (!auth()->user()->canAccessApplicant($acuse->applicant)) {
                 return response()->json([
                     'success' => false,
                     'message' => 'No tienes permiso para consultar este acuse.'
@@ -1872,7 +1910,7 @@ class MveController extends Controller
         $acuse = MvAcuse::with('applicant')->findOrFail($acuseId);
 
         // Verificar permisos
-        if ($acuse->applicant->user_email !== auth()->user()->getApplicantOwnerEmail()) {
+        if (!auth()->user()->canAccessApplicant($acuse->applicant)) {
             abort(403, 'No tienes permiso para acceder a este acuse.');
         }
 

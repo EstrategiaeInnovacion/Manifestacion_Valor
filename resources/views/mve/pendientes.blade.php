@@ -747,15 +747,15 @@
                                 <tr class="bg-slate-100">
                                     <td class="border border-slate-300 p-2 font-semibold" colspan="2">Método de valoración aduanera</td>
                                 </tr>
-                                <tr><td class="border border-slate-300 p-2" colspan="2">${cove.metodo_valoracion || ''}</td></tr>
+                                <tr><td class="border border-slate-300 p-2" colspan="2">${cove.metodo_valoracion || 'N/A'}</td></tr>
                                 <tr class="bg-slate-100">
                                     <td class="border border-slate-300 p-2 font-semibold" colspan="2">INCOTERM</td>
                                 </tr>
-                                <tr><td class="border border-slate-300 p-2" colspan="2">${cove.incoterm || ''}</td></tr>
+                                <tr><td class="border border-slate-300 p-2" colspan="2">${cove.incoterm || 'N/A'}</td></tr>
                                 <tr class="bg-slate-100">
                                     <td class="border border-slate-300 p-2 font-semibold" colspan="2">¿Existe vinculación entre importador y vendedor/proveedor?</td>
                                 </tr>
-                                <tr><td class="border border-slate-300 p-2" colspan="2">${cove.vinculacion === '1' || cove.vinculacion === 1 ? 'Sí' : (cove.vinculacion === '0' || cove.vinculacion === 0 ? 'No' : '')}</td></tr>
+                                <tr><td class="border border-slate-300 p-2" colspan="2">${cove.vinculacion === '1' || cove.vinculacion === 1 ? 'Sí' : (cove.vinculacion === '0' || cove.vinculacion === 0 ? 'No' : 'N/A')}</td></tr>
                             </table>
                         </div>
                         
@@ -774,7 +774,7 @@
                                         <td class="border border-slate-300 p-2">${p.patente || ''}</td>
                                         <td class="border border-slate-300 p-2">${p.aduanaText || p.aduana || ''}</td>
                                     </tr>
-                                `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="3">&nbsp;</td></tr>`}
+                                `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="3">N/A</td></tr>`}
                             </table>
                         </div>
                         
@@ -793,7 +793,7 @@
                                         <td class="border border-slate-300 p-2">${inc.importe ? '$' + parseFloat(inc.importe).toLocaleString('es-MX', {minimumFractionDigits: 2}) : ''}</td>
                                         <td class="border border-slate-300 p-2">${inc.tipoMonedaText || inc.tipoMoneda || ''}</td>
                                     </tr>
-                                `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="3">&nbsp;</td></tr>`}
+                                `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="3">N/A</td></tr>`}
                                 <tr class="bg-slate-100">
                                     <td class="border border-slate-300 p-2 font-semibold">Tipo de cambio</td>
                                     <td class="border border-slate-300 p-2 font-semibold" colspan="2">¿Está a cargo del importador?</td>
@@ -803,7 +803,7 @@
                                         <td class="border border-slate-300 p-2">${inc.tipoCambio || ''}</td>
                                         <td class="border border-slate-300 p-2" colspan="2">${inc.aCargoImportador !== undefined ? (inc.aCargoImportador ? 'Sí' : 'No') : ''}</td>
                                     </tr>
-                                `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="3">&nbsp;</td></tr>`}
+                                `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="3">N/A</td></tr>`}
                             </table>
                         </div>
                         
@@ -822,13 +822,13 @@
                                         <td class="border border-slate-300 p-2">${dec.importe ? '$' + parseFloat(dec.importe).toLocaleString('es-MX', {minimumFractionDigits: 2}) : ''}</td>
                                         <td class="border border-slate-300 p-2">${dec.tipoMonedaText || dec.tipoMoneda || ''}</td>
                                     </tr>
-                                `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="3">&nbsp;</td></tr>`}
+                                `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="3">N/A</td></tr>`}
                                 <tr class="bg-slate-100">
                                     <td class="border border-slate-300 p-2 font-semibold" colspan="3">Tipo de cambio</td>
                                 </tr>
                                 ${decrementables.length > 0 ? decrementables.map(dec => `
                                     <tr><td class="border border-slate-300 p-2" colspan="3">${dec.tipoCambio || ''}</td></tr>
-                                `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="3">&nbsp;</td></tr>`}
+                                `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="3">N/A</td></tr>`}
                             </table>
                         </div>
                         
@@ -849,7 +849,7 @@
                                         <td class="border border-slate-300 p-2">${p.formaPagoText || p.formaPago || ''}</td>
                                         <td class="border border-slate-300 p-2">${p.especifique || ''}</td>
                                     </tr>
-                                `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="4">&nbsp;</td></tr>`}
+                                `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="4">N/A</td></tr>`}
                                 <tr class="bg-slate-100">
                                     <td class="border border-slate-300 p-2 font-semibold">Tipo de moneda</td>
                                     <td class="border border-slate-300 p-2 font-semibold" colspan="3">Tipo de cambio</td>
@@ -859,7 +859,7 @@
                                         <td class="border border-slate-300 p-2">${p.tipoMonedaText || p.tipoMoneda || ''}</td>
                                         <td class="border border-slate-300 p-2" colspan="3">${p.tipoCambio || ''}</td>
                                     </tr>
-                                `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="4">&nbsp;</td></tr>`}
+                                `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="4">N/A</td></tr>`}
                             </table>
                         </div>
                         
@@ -880,7 +880,7 @@
                                         <td class="border border-slate-300 p-2">${p.formaPagoText || p.formaPago || ''}</td>
                                         <td class="border border-slate-300 p-2">${p.especifique || ''}</td>
                                     </tr>
-                                `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="4">&nbsp;</td></tr>`}
+                                `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="4">N/A</td></tr>`}
                                 <tr class="bg-slate-100">
                                     <td class="border border-slate-300 p-2 font-semibold">Tipo de moneda</td>
                                     <td class="border border-slate-300 p-2 font-semibold" colspan="3">Tipo de cambio</td>
@@ -890,13 +890,13 @@
                                         <td class="border border-slate-300 p-2">${p.tipoMonedaText || p.tipoMoneda || ''}</td>
                                         <td class="border border-slate-300 p-2" colspan="3">${p.tipoCambio || ''}</td>
                                     </tr>
-                                `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="4">&nbsp;</td></tr>`}
+                                `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="4">N/A</td></tr>`}
                                 <tr class="bg-slate-100">
                                     <td class="border border-slate-300 p-2 font-semibold" colspan="4">Momento(s) o situación(es) cuando se realizará el pago</td>
                                 </tr>
                                 ${precioPorPagar.length > 0 ? precioPorPagar.map(p => `
                                     <tr><td class="border border-slate-300 p-2" colspan="4">${p.momentoSituacion || ''}</td></tr>
-                                `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="4">&nbsp;</td></tr>`}
+                                `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="4">N/A</td></tr>`}
                             </table>
                         </div>
                         
@@ -915,19 +915,19 @@
                                         <td class="border border-slate-300 p-2">${c.formaPagoText || c.formaPago || ''}</td>
                                         <td class="border border-slate-300 p-2">${c.especifique || ''}</td>
                                     </tr>
-                                `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="3">&nbsp;</td></tr>`}
+                                `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="3">N/A</td></tr>`}
                                 <tr class="bg-slate-100">
                                     <td class="border border-slate-300 p-2 font-semibold" colspan="3">Motivo por lo que se realizó</td>
                                 </tr>
                                 ${compensoPago.length > 0 ? compensoPago.map(c => `
                                     <tr><td class="border border-slate-300 p-2" colspan="3">${c.motivo || ''}</td></tr>
-                                `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="3">&nbsp;</td></tr>`}
+                                `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="3">N/A</td></tr>`}
                                 <tr class="bg-slate-100">
                                     <td class="border border-slate-300 p-2 font-semibold" colspan="3">Prestación de la mercancía</td>
                                 </tr>
                                 ${compensoPago.length > 0 ? compensoPago.map(c => `
                                     <tr><td class="border border-slate-300 p-2" colspan="3">${c.prestacionMercancia || ''}</td></tr>
-                                `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="3">&nbsp;</td></tr>`}
+                                `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="3">N/A</td></tr>`}
                             </table>
                         </div>
                     </div>
@@ -958,8 +958,8 @@
                                 <td class="border border-slate-300 p-2 w-2/3">Nombre o Razón social</td>
                             </tr>
                             <tr>
-                                <td class="border border-slate-300 p-2 font-medium">${data.datos_manifestacion?.rfc_importador || data.applicant?.rfc || ''}</td>
-                                <td class="border border-slate-300 p-2">${data.applicant?.razon_social || ''}</td>
+                                <td class="border border-slate-300 p-2 font-medium">${data.datos_manifestacion?.rfc_importador || data.applicant?.rfc || 'N/A'}</td>
+                                <td class="border border-slate-300 p-2">${data.applicant?.razon_social || 'N/A'}</td>
                             </tr>
                         </table>
                     </div>
@@ -974,13 +974,13 @@
                             </tr>
                             ${personasConsulta.length > 0 ? personasConsulta.map(p => `
                                 <tr>
-                                    <td class="border border-slate-300 p-2 font-medium">${p.rfc || ''}</td>
-                                    <td class="border border-slate-300 p-2">${p.razon_social || ''}</td>
+                                    <td class="border border-slate-300 p-2 font-medium">${p.rfc || 'N/A'}</td>
+                                    <td class="border border-slate-300 p-2">${p.razon_social || 'N/A'}</td>
                                 </tr>
                             `).join('') : `
                                 <tr>
-                                    <td class="border border-slate-300 p-2">&nbsp;</td>
-                                    <td class="border border-slate-300 p-2">&nbsp;</td>
+                                    <td class="border border-slate-300 p-2">N/A</td>
+                                    <td class="border border-slate-300 p-2">N/A</td>
                                 </tr>
                             `}
                             <tr class="bg-slate-100">
@@ -988,11 +988,11 @@
                             </tr>
                             ${personasConsulta.length > 0 ? personasConsulta.map(p => `
                                 <tr>
-                                    <td class="border border-slate-300 p-2" colspan="2">${p.tipo_figura || ''}</td>
+                                    <td class="border border-slate-300 p-2" colspan="2">${p.tipo_figura || 'N/A'}</td>
                                 </tr>
                             `).join('') : `
                                 <tr>
-                                    <td class="border border-slate-300 p-2" colspan="2">&nbsp;</td>
+                                    <td class="border border-slate-300 p-2" colspan="2">N/A</td>
                                 </tr>
                             `}
                         </table>
@@ -1046,11 +1046,11 @@
                             </tr>
                             ${documentos.length > 0 ? documentos.map(doc => `
                                 <tr>
-                                    <td class="border border-slate-300 p-2">${doc.folio_edocument || ''}</td>
+                                    <td class="border border-slate-300 p-2">${doc.folio_edocument || 'N/A'}</td>
                                 </tr>
                             `).join('') : `
                                 <tr>
-                                    <td class="border border-slate-300 p-2">&nbsp;</td>
+                                    <td class="border border-slate-300 p-2">N/A</td>
                                 </tr>
                             `}
                         </table>
