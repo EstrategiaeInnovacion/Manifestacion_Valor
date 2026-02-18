@@ -3033,8 +3033,8 @@ window.addPrecioPagadoToTable = function() {
         return;
     }
 
-    if (!importe || parseFloat(importe) <= 0) {
-        showNotification('Por favor ingrese un importe válido', 'error', 'Campo Requerido');
+    if (importe === '' || isNaN(parseFloat(importe)) || parseFloat(importe) < 0) {
+        showNotification('Por favor ingrese un importe válido (puede ser 0 si no hubo pago)', 'error', 'Campo Requerido');
         return;
     }
 
