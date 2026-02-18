@@ -8,7 +8,7 @@
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="flex justify-between h-20">
                     <div class="flex items-center gap-4">
-                        <img src="{{ asset('logo-ei.png') }}" alt="Logo E&I" class="h-10 w-auto">
+                        <img src="{{ asset('Gemini_Generated_Image_bmz5e9bmz5e9bmz5-removebg-preview.png') }}" alt="Logo E&I" class="h-10 w-auto">
                         <div class="hidden md:block h-8 w-px bg-slate-200"></div>
                         <span class="hidden md:block text-sm font-bold text-[#001a4d] uppercase tracking-wider">Panel de Control</span>
                     </div>
@@ -90,8 +90,6 @@
                             <div class="h-px w-8 bg-slate-300"></div>
                             <span class="text-xs font-medium text-slate-400 uppercase tracking-widest">Global Asset Management</span>
                         </div>
-                        
-                        <img src="{{ asset('Gemini_Generated_Image_bmz5e9bmz5e9bmz5-removebg-preview.png') }}" alt="Logo" class="h-20 object-contain">
                     </div>
 
                     <div class="mt-8 md:mt-0 text-left md:text-right border-t md:border-t-0 md:border-l border-slate-100 pt-6 md:pt-0 md:pl-12">

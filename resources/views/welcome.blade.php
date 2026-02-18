@@ -19,7 +19,7 @@
             <div class="max-w-7xl mx-auto flex justify-between items-center">
                 <div class="flex items-center">
                     <a href="/">
-                        <img src="{{ asset('logo-ei.png') }}" alt="Logo E&I" class="h-12 w-auto object-contain">
+                        <img src="{{ asset('Gemini_Generated_Image_bmz5e9bmz5e9bmz5-removebg-preview.png') }}" alt="Logo E&I" class="h-12 w-auto object-contain">
                     </a>
                 </div>
 

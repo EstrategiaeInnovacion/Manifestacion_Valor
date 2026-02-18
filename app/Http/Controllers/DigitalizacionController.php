@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Constants\VucemCatalogs;
 use App\Services\DigitalizarDocumentoService;
 use App\Services\DocumentUploadService;
 use App\Models\EdocumentRegistrado;
@@ -27,16 +28,8 @@ class DigitalizacionController extends Controller
             ->select('id', 'applicant_rfc', 'business_name')
             ->get();
 
-        // Tipos de documento
-        // Agregamos el 4 (Identificación) porque sabemos que VUCEM lo acepta técnicamente.
-        $tiposDocumento = [
-            '4'   => 'Identificación Oficial (Recomendado para Pruebas)',
-            '368' => 'Otros (Documento Universal)',
-            '479' => 'Lista de Empaque',
-            '466' => 'Factura comercial',
-            '112' => 'Acta Constituiva',
-            '441' => 'Oficios omitidos por autoridad'
-        ];
+        // Tipos de documento desde catálogo centralizado
+        $tiposDocumento = VucemCatalogs::$tiposDocumento;
         
         return view('digitalizacion.create', compact('tiposDocumento', 'solicitantes'));
     }

@@ -72,8 +72,8 @@ class MveController extends Controller
             ->limit(50)
             ->pluck('folio_edocument');
 
-        // Tipos de documento VUCEM para digitalizaciÃ³n
-        $tiposDocumento = VucemCatalogs::$tiposDocumento;
+        // Tipos de documento específicos para MVE (Artículo 81 del Reglamento)
+        $tiposDocumento = VucemCatalogs::$tiposDocumentoMve;
 
         // Determinar el paso inicial segÃºn las secciones ya guardadas
         $initialStep = 1;
@@ -184,8 +184,8 @@ class MveController extends Controller
                 ->limit(50)
                 ->pluck('folio_edocument');
             
-            // Tipos de documento VUCEM para digitalizaciÃ³n
-            $tiposDocumento = VucemCatalogs::$tiposDocumento;
+            // Tipos de documento específicos para MVE (Artículo 81 del Reglamento)
+            $tiposDocumento = VucemCatalogs::$tiposDocumentoMve;
 
             // Determinar el paso inicial segÃºn las secciones ya guardadas
             $initialStep = 1;

@@ -175,6 +175,68 @@ class MvVucemSoapService
                 // Construir compenso pago XML
                 $compensoPagoXml = $this->buildCompensoPagoXml($compensoPagoData, $mapping, $coveIdx, $errors);
 
+                // =====================================================
+                // REGLA VUCEM 011: "Debe agregarse mínimo un pago"
+                // Si NO hay precioPagado pero SÍ hay precioPorPagar,
+                // generar un nodo precioPagado "virtual" con importe 0
+                // para cumplir con la regla de integridad de VUCEM
+                // =====================================================
+                if (empty($precioPagadoData) && !empty($precioPorPagarData)) {
+                    $primerPorPagar = $precioPorPagarData[0] ?? [];
+                    $fechaVirtual = $this->formatDateTime($primerPorPagar['fecha'] ?? $primerPorPagar['fechaPago'] ?? date('Y-m-d\TH:i:s'));
+                    $tipoMonedaVirtual = $primerPorPagar['tipoMoneda'] ?? 'USD';
+                    $tipoPagoVirtual = $primerPorPagar['formaPago'] ?? $primerPorPagar['tipoPago'] ?? 'OTRO';
+                    $tipoCambioVirtual = $this->formatDecimal($primerPorPagar['tipoCambio'] ?? '1.00');
+                    
+                    Log::info('[MV_SOAP] Generando precioPagado virtual (Regla VUCEM 011)', [
+                        'cove_idx' => $coveIdx,
+                        'precio_por_pagar_count' => count($precioPorPagarData),
+                        'moneda' => $tipoMonedaVirtual,
+                        'tipo_pago' => $tipoPagoVirtual
+                    ]);
+                    
+                    $mapping["precioPagado_virtual_{$coveIdx}"] = [
+                        'campo_bd' => 'GENERADO AUTOMÁTICAMENTE (Regla VUCEM 011)',
+                        'valor_bd' => ['importe' => '0.00', 'motivo' => 'Pago pendiente - ver precioPorPagar'],
+                        'campo_xsd' => 'informacionCove/precioPagado',
+                        'tipo_xsd' => 'PrecioPagado VIRTUAL para cumplir regla de integridad'
+                    ];
+                    
+                    $precioPagadoXml = "
+               <mv:precioPagado>
+                  <mv:fechaPago>{$fechaVirtual}</mv:fechaPago>
+                  <mv:total>0.00</mv:total>
+                  <mv:tipoPago>{$tipoPagoVirtual}</mv:tipoPago>
+                  <mv:tipoMoneda>{$tipoMonedaVirtual}</mv:tipoMoneda>
+                  <mv:tipoCambio>{$tipoCambioVirtual}</mv:tipoCambio>
+               </mv:precioPagado>";
+                }
+                // Caso 2: No hay ningún tipo de pago registrado
+                elseif (empty($precioPagadoData) && empty($precioPorPagarData) && empty($compensoPagoData)) {
+                    Log::warning('[MV_SOAP] No hay ningún pago registrado, generando precioPagado mínimo (Regla VUCEM 011)', [
+                        'cove_idx' => $coveIdx
+                    ]);
+                    
+                    $fechaHoy = $this->formatDateTime(date('Y-m-d\TH:i:s'));
+                    
+                    $mapping["precioPagado_minimo_{$coveIdx}"] = [
+                        'campo_bd' => 'GENERADO AUTOMÁTICAMENTE (Sin pagos registrados)',
+                        'valor_bd' => ['importe' => '0.00', 'motivo' => 'Pago mínimo requerido por VUCEM'],
+                        'campo_xsd' => 'informacionCove/precioPagado',
+                        'tipo_xsd' => 'PrecioPagado MÍNIMO para cumplir regla de integridad'
+                    ];
+                    
+                    $precioPagadoXml = "
+               <mv:precioPagado>
+                  <mv:fechaPago>{$fechaHoy}</mv:fechaPago>
+                  <mv:total>0.00</mv:total>
+                  <mv:tipoPago>OTRO</mv:tipoPago>
+                  <mv:tipoMoneda>USD</mv:tipoMoneda>
+                  <mv:tipoCambio>1.00</mv:tipoCambio>
+               </mv:precioPagado>";
+                }
+                // =====================================================
+
                 // Construir incrementables XML
                 $incrementablesXml = $this->buildIncrementablesXml($incrementablesData, $mapping, $coveIdx, $errors);
 
