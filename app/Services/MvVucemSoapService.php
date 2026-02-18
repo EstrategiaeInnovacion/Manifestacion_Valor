@@ -8,7 +8,6 @@ use App\Models\MvDatosManifestacion;
 use App\Models\MvInformacionCove;
 use App\Models\MvDocumentos;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Http;
 use Exception;
 
 /**
@@ -607,22 +606,42 @@ class MvVucemSoapService
         }
 
         try {
-            $response = Http::withOptions([
-                'verify' => false,
-                'timeout' => config('vucem.soap_timeout', 60),
-                'curl' => [CURLOPT_SSL_CIPHER_LIST => 'DEFAULT@SECLEVEL=0'],
-            ])
-            ->withHeaders([
-                'Content-Type' => 'text/xml; charset=utf-8',
-                'SOAPAction' => ''
-            ])
-            ->withBody(trim($xml), 'text/xml')
-            ->post($endpoint);
+            // Usar cURL directo para mejor control de SSL
+            $ch = curl_init($endpoint);
+            curl_setopt_array($ch, [
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_POST => true,
+                CURLOPT_POSTFIELDS => trim($xml),
+                CURLOPT_TIMEOUT => config('vucem.soap_timeout', 120),
+                CURLOPT_CONNECTTIMEOUT => 60,
+                CURLOPT_SSL_VERIFYPEER => false,
+                CURLOPT_SSL_VERIFYHOST => 0,
+                CURLOPT_SSL_CIPHER_LIST => 'DEFAULT@SECLEVEL=0',
+                CURLOPT_HTTPHEADER => [
+                    'Content-Type: text/xml; charset=utf-8',
+                    'SOAPAction: ""',
+                    'Content-Length: ' . strlen(trim($xml))
+                ]
+            ]);
 
-            $responseBody = $response->body();
+            $responseBody = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $curlError = curl_error($ch);
+            curl_close($ch);
+
+            if ($curlError) {
+                Log::error('[MV_SOAP] Error cURL', ['error' => $curlError]);
+                return [
+                    'success' => false,
+                    'mode' => 'production',
+                    'message' => 'Error de conexión: ' . $curlError,
+                    'xml_sent' => $xml,
+                    'response' => null
+                ];
+            }
 
             Log::info('[MV_SOAP] Respuesta recibida de VUCEM', [
-                'status' => $response->status(),
+                'status' => $httpCode,
                 'body_length' => strlen($responseBody)
             ]);
 
