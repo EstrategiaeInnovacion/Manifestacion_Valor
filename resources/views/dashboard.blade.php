@@ -320,6 +320,15 @@
             </div>
         </div>
 
+        {{-- Footer con Copyright --}}
+        <footer class="mt-16 py-6 border-t border-slate-200">
+            <div class="text-center">
+                <p class="text-sm text-slate-400">
+                    © {{ date('Y') }} <span class="font-semibold text-slate-500">Estrategia e Innovación</span>. Todos los derechos reservados.
+                </p>
+            </div>
+        </footer>
+
         {{-- Modal de Soporte --}}
         <div id="supportModal" class="mve-modal">
             <div class="mve-modal-overlay" onclick="closeSupportModal()"></div>
