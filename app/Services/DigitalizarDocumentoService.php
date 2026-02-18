@@ -123,7 +123,7 @@ class DigitalizarDocumentoService
             $response = Http::withOptions([
                     'verify' => false,
                     'timeout' => 300,
-                    'curl' => [CURLOPT_SSL_CIPHER_LIST => 'DEFAULT@SECLEVEL=1'],
+                    'curl' => [CURLOPT_SSL_CIPHER_LIST => 'DEFAULT@SECLEVEL=0'],
                 ])
                 ->withHeaders(['Content-Type' => 'text/xml; charset=utf-8', 'SOAPAction' => ''])
                 ->withBody(trim($xml), 'text/xml')
@@ -313,7 +313,7 @@ class DigitalizarDocumentoService
             $response = Http::withOptions([
                     'verify' => false,
                     'timeout' => 30,
-                    'curl' => [CURLOPT_SSL_CIPHER_LIST => 'DEFAULT@SECLEVEL=1'],
+                    'curl' => [CURLOPT_SSL_CIPHER_LIST => 'DEFAULT@SECLEVEL=0'],
                 ])
                 ->withHeaders([
                     'Content-Type' => 'text/xml; charset=utf-8',
@@ -421,7 +421,7 @@ class DigitalizarDocumentoService
             $response = Http::withOptions([
                     'verify' => false,
                     'timeout' => 60,
-                    'curl' => [CURLOPT_SSL_CIPHER_LIST => 'DEFAULT@SECLEVEL=1'],
+                    'curl' => [CURLOPT_SSL_CIPHER_LIST => 'DEFAULT@SECLEVEL=0'],
                 ])
                 ->withHeaders(['Content-Type' => 'text/xml; charset=utf-8', 'SOAPAction' => ''])
                 ->withBody(trim($xml), 'text/xml')

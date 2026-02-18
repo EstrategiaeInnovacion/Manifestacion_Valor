@@ -161,7 +161,7 @@ class MveConsultaService
                 CURLOPT_POSTFIELDS => $xml,
                 CURLOPT_TIMEOUT => config('vucem.soap_timeout', 60),
                 CURLOPT_SSL_VERIFYPEER => false,
-                CURLOPT_SSL_CIPHER_LIST => 'DEFAULT@SECLEVEL=1',
+                CURLOPT_SSL_CIPHER_LIST => 'DEFAULT@SECLEVEL=0',
                 CURLOPT_HTTPHEADER => [
                     'Content-Type: text/xml; charset=utf-8',
                     'SOAPAction: ""',
@@ -694,7 +694,7 @@ class MveConsultaService
                 CURLOPT_POSTFIELDS => $xml,
                 CURLOPT_TIMEOUT => 60,
                 CURLOPT_SSL_VERIFYPEER => false,
-                CURLOPT_SSL_CIPHER_LIST => 'DEFAULT@SECLEVEL=1',
+                CURLOPT_SSL_CIPHER_LIST => 'DEFAULT@SECLEVEL=0',
                 CURLOPT_HTTPHEADER => [
                     'Content-Type: text/xml; charset=utf-8',
                     'SOAPAction: "' . $soapAction . '"',
@@ -779,7 +779,7 @@ class MveConsultaService
                 CURLOPT_POSTFIELDS => $xml,
                 CURLOPT_TIMEOUT => 60,
                 CURLOPT_SSL_VERIFYPEER => false,
-                CURLOPT_SSL_CIPHER_LIST => 'DEFAULT@SECLEVEL=1',
+                CURLOPT_SSL_CIPHER_LIST => 'DEFAULT@SECLEVEL=0',
                 CURLOPT_HTTPHEADER => [
                     'Content-Type: text/xml; charset=utf-8',
                     'SOAPAction: "' . $soapAction . '"',
