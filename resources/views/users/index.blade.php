@@ -140,6 +140,9 @@
                                                 <span class="user-stat-label">Usuarios Creados</span>
                                                 <span class="user-stat-value">{{ $admin->createdUsers->count() }}/{{ $admin->max_users ?? 5 }}</span>
                                             </div>
+                                            <a href="{{ route('users.edit', $admin->id) }}" onclick="event.stopPropagation();" class="text-blue-600 hover:text-blue-800 mr-2" title="Editar administrador">
+                                                <i data-lucide="edit" class="w-4 h-4"></i>
+                                            </a>
                                             <button type="button" onclick="event.stopPropagation(); confirmDeleteUser({{ $admin->id }})" class="btn-delete-user" title="Eliminar administrador">
                                                 <i data-lucide="trash-2" class="w-4 h-4"></i>
                                             </button>
@@ -166,6 +169,9 @@
                                                     </div>
                                                     <div class="flex items-center gap-3">
                                                         <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{{ $user->username }}</span>
+                                                        <a href="{{ route('users.edit', $user->id) }}" class="text-blue-600 hover:text-blue-800 mr-2" title="Editar usuario">
+                                                            <i data-lucide="edit" class="w-3 h-3"></i>
+                                                        </a>
                                                         <button type="button" onclick="confirmDeleteUser({{ $user->id }})" class="btn-delete-mini" title="Eliminar usuario">
                                                             <i data-lucide="trash-2" class="w-3 h-3"></i>
                                                         </button>
@@ -209,6 +215,9 @@
                                     </div>
                                     <div class="flex items-center gap-3">
                                         <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{{ $user->role }}</span>
+                                        <a href="{{ route('users.edit', $user->id) }}" class="text-blue-600 hover:text-blue-800 mr-2" title="Editar usuario">
+                                            <i data-lucide="edit" class="w-3 h-3"></i>
+                                        </a>
                                         <button type="button" onclick="confirmDeleteUser({{ $user->id }})" class="btn-delete-mini" title="Eliminar usuario">
                                             <i data-lucide="trash-2" class="w-3 h-3"></i>
                                         </button>

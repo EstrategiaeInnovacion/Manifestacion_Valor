@@ -40,7 +40,7 @@ Route::get('/dashboard', function () {
 
 Route::middleware(['auth', 'license'])->group(function () {
     // Soporte técnico
-    Route::post('/support/send', [SupportController::class, 'send'])->name('support.send');
+    Route::post('/support/send', [SupportController::class , 'send'])->name('support.send');
 
     Route::get('/profile', [ProfileController::class , 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class , 'update'])->name('profile.update');
@@ -51,18 +51,21 @@ Route::middleware(['auth', 'license'])->group(function () {
             Route::get('/users', [UserManagementController::class , 'index'])->name('users.index');
             Route::get('/users/add', [UserManagementController::class , 'create'])->name('users.create');
             Route::post('/users', [UserManagementController::class , 'store'])->name('users.store');
+            Route::get('/users/{user}/edit', [UserManagementController::class , 'edit'])->name('users.edit');
+            Route::put('/users/{user}', [UserManagementController::class , 'update'])->name('users.update');
             Route::delete('/users/{user}', [UserManagementController::class , 'destroy'])->name('users.destroy');
         }
         );
 
         // Rutas de gestión de licencias (solo SuperAdmin)
         Route::middleware('role:SuperAdmin')->prefix('admin/licenses')->name('admin.licenses.')->group(function () {
-            Route::get('/', [LicenseController::class, 'index'])->name('index');
-            Route::post('/', [LicenseController::class, 'store'])->name('store');
-            Route::post('/{license}/renew', [LicenseController::class, 'renew'])->name('renew');
-            Route::patch('/{license}/revoke', [LicenseController::class, 'revoke'])->name('revoke');
-            Route::patch('/limits/{user}', [LicenseController::class, 'updateLimits'])->name('limits');
-        });
+            Route::get('/', [LicenseController::class , 'index'])->name('index');
+            Route::post('/', [LicenseController::class , 'store'])->name('store');
+            Route::post('/{license}/renew', [LicenseController::class , 'renew'])->name('renew');
+            Route::patch('/{license}/revoke', [LicenseController::class , 'revoke'])->name('revoke');
+            Route::patch('/limits/{user}', [LicenseController::class , 'updateLimits'])->name('limits');
+        }
+        );
 
         // Rutas de gestión de solicitantes
         Route::resource('applicants', ApplicantController::class);
@@ -150,6 +153,7 @@ Route::middleware(['auth', 'license'])->group(function () {
 
         // 2. Procesar el archivo, firmarlo y enviarlo a VUCEM
         Route::post('/digitalizacion', [DigitalizacionController::class , 'store'])
-            ->name('digitalizacion.store');    });
+            ->name('digitalizacion.store');
+    });
 
 require __DIR__ . '/auth.php';

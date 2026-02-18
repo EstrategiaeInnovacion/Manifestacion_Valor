@@ -17,12 +17,15 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         // Creamos el usuario SuperAdmin con el nombre completo corregido
-        User::create([
+        // Creamos el usuario SuperAdmin con el nombre completo corregido
+        User::firstOrCreate(
+        ['username' => 'E&I'],
+        [
             'full_name' => 'Amos Guillermo Aguilera Gonzalez',
-            'email'     => 'guillermo.aguilera@estrategiaeinnovacion.com.mx',
-            'username'  => 'E&I',
-            'password'  => Hash::make('Estrategia1'),
-            'role'      => 'SuperAdmin',
-        ]);
+            'email' => 'guillermo.aguilera@estrategiaeinnovacion.com.mx',
+            'password' => Hash::make('Estrategia1'),
+            'role' => 'SuperAdmin',
+        ]
+        );
     }
 }

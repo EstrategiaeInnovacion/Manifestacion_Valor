@@ -17,9 +17,10 @@ class ApplicantController extends Controller
     {
         $user = auth()->user();
 
-        // SuperAdmin no tiene acceso a solicitantes (información confidencial)
+        // Si es SuperAdmin, mostrar todos los solicitantes
         if ($user->role === 'SuperAdmin') {
-            return view('applicants.index', ['applicants' => collect()]);
+            $applicants = MvClientApplicant::with('user')->latest()->get();
+            return view('applicants.index', compact('applicants'));
         }
 
         $ownerEmail = $user->getApplicantOwnerEmail();
@@ -44,11 +45,8 @@ class ApplicantController extends Controller
      */
     public function store(Request $request)
     {
-        // SuperAdmin no puede crear solicitantes
+        // SuperAdmin puede crear solicitantes
         $user = auth()->user();
-        if ($user->role === 'SuperAdmin') {
-            abort(403);
-        }
 
         $ownerEmail = $user->getApplicantOwnerEmail();
 
@@ -111,7 +109,8 @@ class ApplicantController extends Controller
         // Enviar correo de notificación al usuario
         try {
             (new ApplicantAdded($user, $applicant))->send();
-        } catch (\Throwable $e) {
+        }
+        catch (\Throwable $e) {
             Log::warning('No se pudo enviar correo de nuevo solicitante: ' . $e->getMessage());
         }
 
@@ -174,13 +173,15 @@ class ApplicantController extends Controller
         // Si se envía contraseña vacía y se pide eliminar, limpiar
         if ($request->has('clear_vucem_password') && $request->input('clear_vucem_password')) {
             $data['vucem_password'] = null;
-        } elseif (!empty($validated['vucem_password'])) {
+        }
+        elseif (!empty($validated['vucem_password'])) {
             $data['vucem_password'] = $validated['vucem_password'];
         }
 
         if ($request->has('clear_vucem_webservice') && $request->input('clear_vucem_webservice')) {
             $data['vucem_webservice_key'] = null;
-        } elseif (!empty($validated['vucem_webservice_key'])) {
+        }
+        elseif (!empty($validated['vucem_webservice_key'])) {
             $data['vucem_webservice_key'] = $validated['vucem_webservice_key'];
         }
 

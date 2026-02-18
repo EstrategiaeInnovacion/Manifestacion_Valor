@@ -18,21 +18,22 @@ class UserManagementController extends Controller
     public function index()
     {
         $authUser = auth()->user();
-        
+
         if ($authUser->role === 'SuperAdmin') {
             // Para SuperAdmin: mostrar todos los usuarios separados por rol
             $superAdmins = User::where('role', 'SuperAdmin')->with('createdUsers')->get();
             $admins = User::where('role', 'Admin')->with('createdUsers')->get();
             $usuarios = User::where('role', 'Usuario')->get();
-            
+
             return view('users.index', compact('superAdmins', 'admins', 'usuarios'));
-        } else {
+        }
+        else {
             // Para Admin: mostrar solo sus usuarios creados
             $usuarios = User::where('created_by', $authUser->id)->get();
             return view('users.index', compact('usuarios'));
         }
     }
-    
+
     /**
      * Mostrar el formulario para crear un nuevo usuario.
      */
@@ -47,20 +48,20 @@ class UserManagementController extends Controller
     public function store(Request $request)
     {
         $authUser = auth()->user();
-        
+
         // Validar que Admin solo pueda crear usuarios tipo Usuario
         $availableRoles = ['Usuario'];
         if ($authUser->role === 'SuperAdmin') {
             $availableRoles = ['SuperAdmin', 'Admin', 'Usuario'];
         }
-        
+
         $request->validate([
             'full_name' => ['required', 'string', 'max:255'],
             'username' => ['required', 'string', 'max:255', 'unique:users'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
             'role' => ['required', 'string', 'in:' . implode(',', $availableRoles)],
         ]);
-        
+
         // Validar límite de usuarios para administradores
         if ($authUser->role === 'Admin') {
             $userCount = User::where('created_by', $authUser->id)->count();
@@ -88,7 +89,8 @@ class UserManagementController extends Controller
         try {
             $welcomeMail = new WelcomeNewUser($user, $authUser, $randomPassword);
             $welcomeMail->send();
-        } catch (\Exception $e) {
+        }
+        catch (\Exception $e) {
             Log::error('Error al enviar correo de bienvenida', [
                 'user_id' => $user->id,
                 'error' => $e->getMessage(),
@@ -115,13 +117,15 @@ class UserManagementController extends Controller
                 return redirect()->route('users.index')
                     ->withErrors(['error' => 'No tienes permiso para eliminar este usuario.']);
             }
-        } elseif ($authUser->role === 'SuperAdmin') {
+        }
+        elseif ($authUser->role === 'SuperAdmin') {
             // SuperAdmin puede eliminar Admin y Usuario, pero no otros SuperAdmin
             if ($user->role === 'SuperAdmin') {
                 return redirect()->route('users.index')
                     ->withErrors(['error' => 'No puedes eliminar otros Super Administradores.']);
             }
-        } else {
+        }
+        else {
             // Usuario regular no puede eliminar a nadie
             return redirect()->route('users.index')
                 ->withErrors(['error' => 'No tienes permisos para eliminar usuarios.']);
@@ -137,5 +141,80 @@ class UserManagementController extends Controller
 
         return redirect()->route('users.index')
             ->with('success', 'Usuario eliminado exitosamente.');
+    }
+    /**
+     * Show the form for editing the specified user.
+     */
+    public function edit(User $user)
+    {
+        $authUser = auth()->user();
+
+        // Validar permisos de edición
+        if ($authUser->role !== 'SuperAdmin') {
+            // Admin solo puede editar usuarios tipo 'Usuario' que él creó
+            if ($user->role !== 'Usuario' || $user->created_by !== $authUser->id) {
+                return redirect()->route('users.index')
+                    ->withErrors(['error' => 'No tienes permiso para editar este usuario.']);
+            }
+        }
+
+        // No permitir que Admin edite otros Admins (aunque no debería llegar aquí por la lógica anterior, es doble check)
+        if ($authUser->role === 'Admin' && $user->role === 'Admin') {
+            return redirect()->route('users.index')
+                ->withErrors(['error' => 'No tienes permiso para editar otros Administradores.']);
+        }
+
+        return view('users.edit-user', compact('user'));
+    }
+
+    /**
+     * Update the specified user in storage.
+     */
+    public function update(Request $request, User $user)
+    {
+        $authUser = auth()->user();
+
+        // Validar permisos de edición
+        if ($authUser->role !== 'SuperAdmin') {
+            if ($user->role !== 'Usuario' || $user->created_by !== $authUser->id) {
+                return redirect()->route('users.index')
+                    ->withErrors(['error' => 'No tienes permiso para editar este usuario.']);
+            }
+        }
+
+        $availableRoles = ['Usuario'];
+        if ($authUser->role === 'SuperAdmin') {
+            $availableRoles = ['SuperAdmin', 'Admin', 'Usuario'];
+        }
+
+        $request->validate([
+            'full_name' => ['required', 'string', 'max:255'],
+            'username' => ['required', 'string', 'max:255', 'unique:users,username,' . $user->id],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email,' . $user->id],
+            // Si el usuario autenticado es Admin, no permitimos cambiar el rol del usuario (siempre será Usuario)
+            // Si es SuperAdmin, sí puede cambiar el rol
+            'role' => $authUser->role === 'SuperAdmin' ? ['required', 'string', 'in:' . implode(',', $availableRoles)] : [],
+            'password' => ['nullable', 'string', 'min:8', 'confirmed'],
+        ]);
+
+        $userData = [
+            'full_name' => $request->full_name,
+            'username' => $request->username,
+            'email' => $request->email,
+        ];
+
+        // Solo SuperAdmin puede cambiar roles
+        if ($authUser->role === 'SuperAdmin') {
+            $userData['role'] = $request->role;
+        }
+
+        if ($request->filled('password')) {
+            $userData['password'] = Hash::make($request->password);
+        }
+
+        $user->update($userData);
+
+        return redirect()->route('users.index')
+            ->with('success', 'Usuario actualizado exitosamente.');
     }
 }
