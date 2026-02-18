@@ -524,6 +524,12 @@
         let vistaPreviaApplicantId = null;
         let vistaPreviaEmpresaNombre = null;
         
+        // URLs de Laravel (resueltas en servidor para evitar problemas con subdirectorios)
+        const urlCheckCredentials = '{{ url("/cove/credenciales") }}';
+        const urlPreviewData = '{{ url("/mve/preview-data") }}';
+        const urlFirmarEnviar = '{{ url("/mve/firmar-enviar") }}';
+        const urlDescartar = '{{ url("/mve/descartar") }}';
+        
         // Mostrar nombres de archivos seleccionados
         document.getElementById('certificado')?.addEventListener('change', function(e) {
             const fileName = e.target.files[0]?.name || 'Ningún archivo seleccionado';
@@ -590,15 +596,19 @@
             // Verificar si tiene credenciales almacenadas
             try {
                 const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-                const response = await fetch(`/cove/credenciales/${applicantId}`, {
+                const response = await fetch(`${urlCheckCredentials}/${applicantId}`, {
                     headers: {
                         'Accept': 'application/json',
                         'X-CSRF-TOKEN': csrfToken
                     }
                 });
                 
+                console.log('[MVE] Verificando credenciales para solicitante:', applicantId, 'Status:', response.status);
+                
                 if (response.ok) {
                     const data = await response.json();
+                    console.log('[MVE] Respuesta credenciales:', data);
+                    
                     if (data.has_credentials && data.has_webservice_key) {
                         // Tiene todas las credenciales almacenadas
                         document.getElementById('useStoredCredentials').value = '1';
@@ -606,6 +616,7 @@
                         document.getElementById('manualCredsContainer').classList.add('hidden');
                         setManualFieldsRequired(false);
                         lucide.createIcons();
+                        console.log('[MVE] Credenciales almacenadas detectadas - usando automáticamente');
                     } else if (data.has_credentials) {
                         // Tiene cert/key pero no clave WS: ocultar solo cert/key
                         document.getElementById('useStoredCredentials').value = '1';
@@ -618,10 +629,15 @@
                         setManualFieldsRequired(false);
                         document.getElementById('clave_webservice').required = true;
                         lucide.createIcons();
+                        console.log('[MVE] Credenciales parciales - falta clave WS');
+                    } else {
+                        console.log('[MVE] Sin credenciales almacenadas - modo manual');
                     }
+                } else {
+                    console.warn('[MVE] Error verificando credenciales:', response.status, response.statusText);
                 }
             } catch (err) {
-                console.log('No se pudo verificar credenciales almacenadas, usando modo manual', err);
+                console.error('[MVE] Error de conexión verificando credenciales:', err);
             }
         }
         
@@ -662,7 +678,7 @@
             
             // Cargar la vista previa
             try {
-                const response = await fetch(`/mve/preview-data/${applicantId}`, {
+                const response = await fetch(`${urlPreviewData}/${applicantId}`, {
                     headers: {
                         'Accept': 'application/json',
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
@@ -1142,7 +1158,7 @@
                 btn.innerHTML = '<i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i><span>Eliminando...</span>';
                 lucide.createIcons();
                 
-                const response = await fetch(`/mve/descartar/${applicantId}`, {
+                const response = await fetch(`${urlDescartar}/${applicantId}`, {
                     method: 'DELETE',
                     headers: {
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
@@ -1184,7 +1200,7 @@
                 const formData = new FormData(this);
                 formData.append('confirmacion', 'on');
                 
-                const response = await fetch(`/mve/firmar-enviar/${applicantId}`, {
+                const response = await fetch(`${urlFirmarEnviar}/${applicantId}`, {
                     method: 'POST',
                     headers: {
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),

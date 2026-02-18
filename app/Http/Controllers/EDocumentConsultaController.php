@@ -37,16 +37,39 @@ class EDocumentConsultaController extends Controller
     public function checkCredentials(int $applicant)
     {
         $user = Auth::user();
+        
+        Log::info('[CREDENCIALES] Verificando credenciales', [
+            'applicant_id' => $applicant,
+            'user_email' => $user->email,
+        ]);
+        
         $solicitante = $user->clientApplicants()->find($applicant);
 
         if (!$solicitante) {
+            Log::warning('[CREDENCIALES] Solicitante no encontrado o no pertenece al usuario', [
+                'applicant_id' => $applicant,
+                'user_email' => $user->email,
+            ]);
             return response()->json(['found' => false], 404);
         }
 
+        $hasCredentials = $solicitante->hasVucemCredentials();
+        $hasWebserviceKey = $solicitante->hasWebserviceKey();
+        
+        Log::info('[CREDENCIALES] Estado de credenciales', [
+            'applicant_id' => $applicant,
+            'business_name' => $solicitante->business_name,
+            'has_credentials' => $hasCredentials,
+            'has_webservice_key' => $hasWebserviceKey,
+            'has_cert_file' => !empty($solicitante->vucem_cert_file),
+            'has_key_file' => !empty($solicitante->vucem_key_file),
+            'has_password' => !empty($solicitante->vucem_password),
+        ]);
+
         return response()->json([
             'found' => true,
-            'has_credentials' => $solicitante->hasVucemCredentials(),
-            'has_webservice_key' => $solicitante->hasWebserviceKey(),
+            'has_credentials' => $hasCredentials,
+            'has_webservice_key' => $hasWebserviceKey,
         ]);
     }
 
