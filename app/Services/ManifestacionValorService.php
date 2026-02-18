@@ -128,7 +128,7 @@ class ManifestacionValorService
                 }
 
                 // C. Precio Por Pagar - SOLO incluir si tiene datos reales
-                $preciosPorPagar = $cove['precios_por_pagar'] ?? [];
+                $preciosPorPagar = $cove['precios_por_pagar'] ?? $cove['precio_por_pagar'] ?? [];
                 if (!empty($preciosPorPagar)) {
                     foreach ($preciosPorPagar as $precio) {
                         $addField($this->formatVucemDate($precio['fecha'] ?? $precio['fechaPago'] ?? ''));
@@ -144,7 +144,7 @@ class ManifestacionValorService
 
                 // D. Compensación - SOLO incluir si tiene datos reales
                 // ORDEN CORRECTO según VUCEM: fecha, motivo, prestacionMercancia, tipoPago
-                $compensosPago = $cove['compensos_pago'] ?? [];
+                $compensosPago = $cove['compensos_pago'] ?? $cove['compenso_pago'] ?? [];
                 if (!empty($compensosPago)) {
                     foreach ($compensosPago as $compenso) {
                         $addField($this->formatVucemDate($compenso['fecha'] ?? ''));
