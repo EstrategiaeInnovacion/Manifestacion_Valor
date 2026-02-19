@@ -218,14 +218,21 @@
                                             </span>
                                             
                                             <div class="flex gap-2">
-                                                <button type="button" 
+                                                <button type="button"
                                                     onclick="mostrarVistaPreviaYFirmar({{ $applicantId }}, '{{ $mveData['applicant']->business_name }}')"
                                                     class="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-bold rounded-lg shadow-md hover:shadow-lg transition-all duration-200 transform hover:scale-105">
                                                     <i data-lucide="send" class="w-4 h-4"></i>
                                                     <span>Firmar y Enviar a VUCEM</span>
                                                 </button>
-                                                
-                                                <button type="button" 
+
+                                                <a href="{{ route('mve.create-manual', $applicantId) }}"
+                                                   onclick="return confirm('¿Desea editar esta MVE? El estado volverá a Borrador y deberá confirmarla nuevamente antes de enviar.')"
+                                                   class="inline-flex items-center gap-2 px-4 py-3 bg-amber-50 hover:bg-amber-100 border border-amber-300 text-amber-700 font-bold rounded-lg transition-all duration-200">
+                                                    <i data-lucide="edit-3" class="w-4 h-4"></i>
+                                                    <span>Editar</span>
+                                                </a>
+
+                                                <button type="button"
                                                     onclick="mostrarModalDescartar({{ $applicantId }}, '{{ $mveData['applicant']->business_name }}')"
                                                     class="inline-flex items-center gap-2 px-4 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-lg transition-all">
                                                     <i data-lucide="trash-2" class="w-4 h-4"></i>
