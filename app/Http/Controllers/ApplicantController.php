@@ -162,7 +162,7 @@ class ApplicantController extends Controller
             'vucem_cert_file' => ['nullable', 'file', 'max:10240'],
             'vucem_password' => ['nullable', 'string', 'max:255'],
             'vucem_webservice_key' => ['nullable', 'string', 'max:500'],
-            'privacy_consent' => ['nullable', 'accepted'],
+            'privacy_consent' => ['sometimes', 'accepted'],
         ];
 
         // Solo validar assigned_user_id si hay usuarios válidos
@@ -354,7 +354,7 @@ class ApplicantController extends Controller
             'vucem_cert_file' => ['nullable', 'file', 'max:10240'],
             'vucem_password' => ['nullable', 'string', 'max:255'],
             'vucem_webservice_key' => ['nullable', 'string', 'max:500'],
-            'privacy_consent' => ['nullable', 'accepted'],
+            'privacy_consent' => ['sometimes', 'accepted'],
         ]);
 
         $data = [

@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\MvAcuse;
+use App\Traits\VucemConnectivityHandler;
 use Illuminate\Support\Facades\Log;
 use Exception;
 
@@ -14,6 +15,8 @@ use Exception;
  */
 class MveConsultaService
 {
+    use VucemConnectivityHandler;
+
     // Namespace del servicio VUCEM para Consulta de Manifestación
     private const NS_CONSULTA = 'http://ws.consultamanifestacion.manifestacion.www.ventanillaunica.gob.mx';
     private const NS_SOAP = 'http://schemas.xmlsoap.org/soap/envelope/';
@@ -175,13 +178,10 @@ class MveConsultaService
             curl_close($ch);
 
             if ($error) {
-                Log::error('[MV_CONSULTA] Error cURL', ['error' => $error]);
-                return [
-                    'success' => false,
-                    'message' => 'Error de conexión cURL: ' . $error,
-                    'xml_sent' => $xml,
-                    'response' => null
-                ];
+                return array_merge(
+                    $this->handleCurlError($error, 'MV_CONSULTA'),
+                    ['xml_sent' => $xml, 'response' => null]
+                );
             }
 
             Log::info('[MV_CONSULTA] Respuesta recibida de VUCEM', [
@@ -198,17 +198,10 @@ class MveConsultaService
             return $this->parseConsultaResponse($responseBody, $xml, $numeroOperacion);
 
         } catch (Exception $e) {
-            Log::error('[MV_CONSULTA] Error al consultar VUCEM', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-
-            return [
-                'success' => false,
-                'message' => 'Error de conexión con VUCEM: ' . $e->getMessage(),
-                'xml_sent' => $xml,
-                'response' => null
-            ];
+            return array_merge(
+                $this->handleConnectionException($e, 'MV_CONSULTA'),
+                ['xml_sent' => $xml, 'response' => null]
+            );
         }
     }
 
@@ -708,8 +701,7 @@ class MveConsultaService
             curl_close($ch);
 
             if ($error) {
-                Log::error('[ACUSE_EDOCUMENT] Error cURL', ['error' => $error]);
-                return ['success' => false, 'message' => 'Error de conexión: ' . $error, 'acuse_pdf' => null];
+                return $this->handleCurlError($error, 'ACUSE_EDOCUMENT', ['acuse_pdf' => null]);
             }
 
             Log::info('[ACUSE_EDOCUMENT] Respuesta recibida', [
@@ -793,8 +785,7 @@ class MveConsultaService
             curl_close($ch);
 
             if ($error) {
-                Log::error('[ACUSE_COVE] Error cURL', ['error' => $error]);
-                return ['success' => false, 'message' => 'Error de conexión: ' . $error, 'acuse_pdf' => null];
+                return $this->handleCurlError($error, 'ACUSE_COVE', ['acuse_pdf' => null]);
             }
 
             Log::info('[ACUSE_COVE] Respuesta recibida', [

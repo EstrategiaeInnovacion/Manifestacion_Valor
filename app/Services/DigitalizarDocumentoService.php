@@ -2,11 +2,14 @@
 
 namespace App\Services;
 
+use App\Traits\VucemConnectivityHandler;
 use Exception;
 use Illuminate\Support\Facades\Log;
 
 class DigitalizarDocumentoService
 {
+    use VucemConnectivityHandler;
+
     private string $endpoint = 'https://www.ventanillaunica.gob.mx/ventanilla/DigitalizarDocumentoService';
     
     private const NS_DIG = 'http://www.ventanillaunica.gob.mx/aga/digitalizar/ws/oxml/DigitalizarDocumento';
@@ -143,8 +146,7 @@ class DigitalizarDocumentoService
             curl_close($ch);
 
             if ($curlError) {
-                Log::error('[DIGITALIZACION] Error cURL', ['error' => $curlError]);
-                return ['success' => false, 'message' => 'Error de conexión: ' . $curlError];
+                return $this->handleCurlError($curlError, 'DIGITALIZACION');
             }
             
             Log::info('[DIGITALIZACION] Respuesta VUCEM', [
@@ -350,7 +352,7 @@ class DigitalizarDocumentoService
             curl_close($ch);
 
             if ($curlError) {
-                Log::error('[DIGITALIZACION] Error cURL consulta', ['error' => $curlError]);
+                $this->handleCurlError($curlError, 'DIGITALIZACION_CONSULTA');
                 return null;
             }
 
@@ -471,7 +473,7 @@ class DigitalizarDocumentoService
             curl_close($ch);
 
             if ($curlError) {
-                return ['success' => false, 'message' => 'Error de conexión: ' . $curlError];
+                return $this->handleCurlError($curlError, 'DIGITALIZACION_EDOCUMENT');
             }
 
             // Errores

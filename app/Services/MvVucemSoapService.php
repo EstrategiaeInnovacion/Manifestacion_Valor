@@ -7,6 +7,7 @@ use App\Models\MvClientApplicant;
 use App\Models\MvDatosManifestacion;
 use App\Models\MvInformacionCove;
 use App\Models\MvDocumentos;
+use App\Traits\VucemConnectivityHandler;
 use Illuminate\Support\Facades\Log;
 use Exception;
 
@@ -18,6 +19,8 @@ use Exception;
  */
 class MvVucemSoapService
 {
+    use VucemConnectivityHandler;
+
     // Namespace del servicio VUCEM para Ingreso de Manifestación
     private const NS_MV = 'http://ws.ingresomanifestacion.manifestacion.www.ventanillaunica.gob.mx';
     private const NS_SOAP = 'http://schemas.xmlsoap.org/soap/envelope/';
@@ -712,14 +715,10 @@ class MvVucemSoapService
             curl_close($ch);
 
             if ($curlError) {
-                Log::error('[MV_SOAP] Error cURL', ['error' => $curlError]);
-                return [
-                    'success' => false,
-                    'mode' => 'production',
-                    'message' => 'Error de conexión: ' . $curlError,
-                    'xml_sent' => $xml,
-                    'response' => null
-                ];
+                return array_merge(
+                    $this->handleCurlError($curlError, 'MV_SOAP'),
+                    ['mode' => 'production', 'xml_sent' => $xml, 'response' => null]
+                );
             }
 
             Log::info('[MV_SOAP] Respuesta recibida de VUCEM', [
@@ -731,18 +730,10 @@ class MvVucemSoapService
             return $this->parseVucemResponse($responseBody, $xml);
 
         } catch (Exception $e) {
-            Log::error('[MV_SOAP] Error al enviar a VUCEM', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-
-            return [
-                'success' => false,
-                'mode' => 'production',
-                'message' => 'Error de conexión con VUCEM: ' . $e->getMessage(),
-                'xml_sent' => $xml,
-                'response' => null
-            ];
+            return array_merge(
+                $this->handleConnectionException($e, 'MV_SOAP'),
+                ['mode' => 'production', 'xml_sent' => $xml, 'response' => null]
+            );
         }
     }
 
