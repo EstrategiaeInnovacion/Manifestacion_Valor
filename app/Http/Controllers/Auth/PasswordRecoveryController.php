@@ -8,7 +8,6 @@ use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\View\View;
 
 class PasswordRecoveryController extends Controller
@@ -55,7 +54,7 @@ class PasswordRecoveryController extends Controller
             $request->session()->put('recovery_verified',    false);
             $request->session()->put('recovery_identifier',  $identifier);
 
-            Mail::to($user->email)->send(new PasswordVerificationCode($user->full_name, $code));
+            (new PasswordVerificationCode($user->email, $user->full_name, $code))->send();
         }
 
         return redirect()->route('password.verify')
@@ -131,7 +130,7 @@ class PasswordRecoveryController extends Controller
         $request->session()->put('recovery_expires_at', now()->addSeconds(self::CODE_TTL)->timestamp);
         $request->session()->put('recovery_verified',   false);
 
-        Mail::to($email)->send(new PasswordVerificationCode($name, $code));
+        (new PasswordVerificationCode($email, $name, $code))->send();
 
         return redirect()->route('password.verify')
             ->with('recovery_sent', true);

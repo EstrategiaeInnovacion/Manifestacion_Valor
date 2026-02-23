@@ -2,41 +2,44 @@
 
 namespace App\Mail;
 
-use Illuminate\Bus\Queueable;
-use Illuminate\Mail\Mailable;
-use Illuminate\Mail\Mailables\Content;
-use Illuminate\Mail\Mailables\Envelope;
-use Illuminate\Queue\SerializesModels;
+use App\Services\MicrosoftGraphMailService;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\View;
 
-class PasswordVerificationCode extends Mailable
+class PasswordVerificationCode
 {
-    use Queueable, SerializesModels;
+    protected string $userName;
+    protected string $code;
+    protected string $to;
 
-    public string $userName;
-    public string $code;
-
-    public function __construct(string $userName, string $code)
+    public function __construct(string $to, string $userName, string $code)
     {
+        $this->to       = $to;
         $this->userName = $userName;
         $this->code     = $code;
     }
 
-    public function envelope(): Envelope
+    public function send(): bool
     {
-        return new Envelope(
-            subject: 'Código de verificación — Recuperación de contraseña',
-        );
-    }
+        try {
+            $html = View::make('emails.password-verification-code', [
+                'userName' => $this->userName,
+                'code'     => $this->code,
+            ])->render();
 
-    public function content(): Content
-    {
-        return new Content(
-            view: 'emails.password-verification-code',
-        );
-    }
+            $mailService = app(MicrosoftGraphMailService::class);
 
-    public function attachments(): array
-    {
-        return [];
+            return $mailService->sendMail(
+                $this->to,
+                'Código de verificación — Recuperación de contraseña',
+                $html
+            );
+        } catch (\Exception $e) {
+            Log::error('PasswordVerificationCode: Error al enviar código', [
+                'to'    => $this->to,
+                'error' => $e->getMessage(),
+            ]);
+            return false;
+        }
     }
 }
