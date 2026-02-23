@@ -4,9 +4,8 @@ use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\ConfirmablePasswordController;
 use App\Http\Controllers\Auth\EmailVerificationNotificationController;
 use App\Http\Controllers\Auth\EmailVerificationPromptController;
-use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordController;
-use App\Http\Controllers\Auth\PasswordResetLinkController;
+use App\Http\Controllers\Auth\PasswordRecoveryController;
 use App\Http\Controllers\Auth\VerifyEmailController;
 use Illuminate\Support\Facades\Route;
 
@@ -19,16 +18,30 @@ Route::middleware('guest')->group(function () {
 
     Route::post('login', [AuthenticatedSessionController::class, 'store']);
 
-    Route::get('forgot-password', [PasswordResetLinkController::class, 'create'])
+    // ── Recuperación de contraseña por código de verificación ──────────────
+
+    // Paso 1: ingresar usuario o correo
+    Route::get('forgot-password', [PasswordRecoveryController::class, 'requestForm'])
         ->name('password.request');
 
-    Route::post('forgot-password', [PasswordResetLinkController::class, 'store'])
+    Route::post('forgot-password', [PasswordRecoveryController::class, 'sendCode'])
         ->name('password.email');
 
-    Route::get('reset-password/{token}', [NewPasswordController::class, 'create'])
+    // Paso 2: verificar código
+    Route::get('verify-code', [PasswordRecoveryController::class, 'verifyForm'])
+        ->name('password.verify');
+
+    Route::post('verify-code', [PasswordRecoveryController::class, 'verifyCode'])
+        ->name('password.verify.store');
+
+    Route::post('resend-code', [PasswordRecoveryController::class, 'resendCode'])
+        ->name('password.resend');
+
+    // Paso 3: nueva contraseña
+    Route::get('set-password', [PasswordRecoveryController::class, 'resetForm'])
         ->name('password.reset');
 
-    Route::post('reset-password', [NewPasswordController::class, 'store'])
+    Route::post('set-password', [PasswordRecoveryController::class, 'savePassword'])
         ->name('password.store');
 });
 
