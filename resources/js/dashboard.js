@@ -82,11 +82,33 @@ window.openSupportModal = function() {
         document.getElementById('supportSuccess').classList.add('hidden');
         document.getElementById('supportForm').reset();
         document.getElementById('charCount').textContent = '0';
-        
+        document.getElementById('screenshotPreview').innerHTML = '';
+
         modal.classList.add('active');
         document.body.style.overflow = 'hidden';
         setTimeout(() => lucide.createIcons(), 50);
     }
+};
+
+// Preview de capturas de pantalla seleccionadas
+window.previewScreenshots = function(input) {
+    const preview = document.getElementById('screenshotPreview');
+    preview.innerHTML = '';
+    const files = Array.from(input.files).slice(0, 5);
+    files.forEach((file, i) => {
+        const reader = new FileReader();
+        reader.onload = e => {
+            const wrap = document.createElement('div');
+            wrap.className = 'relative group';
+            wrap.innerHTML = `
+                <img src="${e.target.result}" title="${file.name}"
+                    class="h-16 w-16 object-cover rounded-xl border border-slate-200 shadow-sm">
+                <span class="absolute -top-1.5 -right-1.5 w-5 h-5 bg-amber-500 rounded-full text-white text-[9px] flex items-center justify-center font-black">${i + 1}</span>
+            `;
+            preview.appendChild(wrap);
+        };
+        reader.readAsDataURL(file);
+    });
 };
 
 window.closeSupportModal = function() {
