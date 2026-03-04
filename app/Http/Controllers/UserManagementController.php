@@ -172,8 +172,11 @@ class UserManagementController extends Controller
 
         // Validar permisos de edición
         if ($authUser->role !== 'SuperAdmin') {
-            // Admin solo puede editar usuarios tipo 'Usuario' que él creó
-            if ($user->role !== 'Usuario' || $user->created_by !== $authUser->id) {
+            // Admin solo puede editar usuarios tipo 'Usuario' de su misma empresa
+            if (
+                $user->role !== 'Usuario' ||
+                $user->company !== $authUser->company
+            ) {
                 return redirect()->route('users.index')
                     ->withErrors(['error' => 'No tienes permiso para editar este usuario.']);
             }
@@ -197,7 +200,11 @@ class UserManagementController extends Controller
 
         // Validar permisos de edición
         if ($authUser->role !== 'SuperAdmin') {
-            if ($user->role !== 'Usuario' || $user->created_by !== $authUser->id) {
+            // Admin solo puede editar usuarios tipo 'Usuario' de su misma empresa
+            if (
+                $user->role !== 'Usuario' ||
+                $user->company !== $authUser->company
+            ) {
                 return redirect()->route('users.index')
                     ->withErrors(['error' => 'No tienes permiso para editar este usuario.']);
             }

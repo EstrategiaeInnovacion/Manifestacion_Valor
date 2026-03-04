@@ -211,7 +211,7 @@
                                     NÚMERO DE PEDIMENTO
                                     <span class="text-red-500">*</span>
                                 </label>
-                                <input type="text" id="numeroPedimento" class="form-input" placeholder="Ej: 25 480 4582 1569842" maxlength="23" oninput="formatPedimentoInput(this)">
+                                <input type="text" id="numeroPedimento" class="form-input" placeholder="Ej: 1569842" maxlength="7" oninput="formatPedimentoInput(this)">
                             </div>
 
                             <div class="form-group flex-1">
@@ -514,21 +514,11 @@
 
                 {{-- Sección de Precio Pagado --}}
                 <div class="bg-slate-50 p-6 rounded-lg border border-slate-200 mt-6">
-                    <div class="flex items-start justify-between gap-4">
-                        <div class="flex-1">
-                            <div class="flex items-center gap-2 mb-1">
-                                <h4 class="text-lg font-semibold text-slate-900">PRECIO PAGADO</h4>
-                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-red-50 text-red-600 border border-red-200">
-                                    <i data-lucide="alert-circle" class="w-3 h-3"></i>
-                                    Campo obligatorio
-                                </span>
-                            </div>
-                            <p class="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 flex items-start gap-2">
-                                <i data-lucide="info" class="w-4 h-4 flex-shrink-0 mt-0.5"></i>
-                                <span>VUCEM exige que se declare el precio pagado en toda manifestación de valor, independientemente de si la mercancía fue pagada o no. Es obligatorio registrar al menos un concepto de precio pagado para poder enviar la manifestación.</span>
-                            </p>
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h4 class="text-lg font-semibold text-slate-900">PRECIO PAGADO</h4>
                         </div>
-                        <button type="button" onclick="toggleSection('precioPagado')" id="togglePrecioPagadoBtn" class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors flex-shrink-0">
+                        <button type="button" onclick="toggleSection('precioPagado')" id="togglePrecioPagadoBtn" class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors">
                             <i data-lucide="plus" class="w-4 h-4" id="togglePrecioPagadoIcon"></i>
                             <span id="togglePrecioPagadoText">Agregar Precio Pagado</span>
                         </button>

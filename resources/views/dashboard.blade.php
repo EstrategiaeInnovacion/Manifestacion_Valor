@@ -60,19 +60,33 @@
                 </div>
 
                 <div class="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center">
-                    <div>
+                    <div class="flex flex-col md:flex-row gap-8 w-full justify-between items-center">
                         <div class="flex items-center gap-3 mb-4">
-                            <span class="bg-[#001a4d] text-white text-[10px] font-bold px-2 py-1 tracking-[0.2em]">V.2.0</span>
+                            <span class="bg-[#001a4d] text-white text-[10px] font-bold px-2 py-1 tracking-[0.2em]">V2.0</span>
                             <div class="h-px w-8 bg-slate-300"></div>
-                            <span class="text-xs font-medium text-slate-400 uppercase tracking-widest">Global Asset Management</span>
+                            <span class="text-xs font-medium text-slate-400 uppercase tracking-widest">
+                                {{ auth()->user()->company ?? 'Sin empresa' }}
+                            </span>
                         </div>
-                    </div>
-
-                    <div class="mt-8 md:mt-0 text-left md:text-right border-t md:border-t-0 md:border-l border-slate-100 pt-6 md:pt-0 md:pl-12">
-                        <p class="text-sm font-bold text-[#001a4d] uppercase tracking-widest mb-2">Message of the Day</p>
-                        <p class="text-2xl text-slate-500 font-light leading-snug max-w-md">
-                            "La excelencia no es un acto, es un <span class="text-[#001a4d] font-semibold">estándar operativo.</span>"
-                        </p>
+                        <div class="flex flex-col md:items-end items-start">
+                            <span class="text-xs text-slate-500">Hora actual: <span id="hora-actual">
+                                {{ now()->setTimezone('America/Mexico_City')->format('H:i:s') }}
+                            </span></span>
+                                                    @push('scripts')
+                                                    <script>
+                                                    function actualizarHoraMexico() {
+                                                        const options = { timeZone: 'America/Mexico_City', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
+                                                        const ahora = new Date().toLocaleTimeString('es-MX', options);
+                                                        document.getElementById('hora-actual').textContent = ahora;
+                                                    }
+                                                    setInterval(actualizarHoraMexico, 1000);
+                                                    window.addEventListener('DOMContentLoaded', actualizarHoraMexico);
+                                                    </script>
+                                                    @endpush
+                            <span class="text-xs text-slate-500">Usuario: <span class="font-semibold text-[#001a4d]">
+                                {{ auth()->user()->full_name ?? auth()->user()->name ?? 'Invitado' }}
+                            </span> <span class="text-xs text-slate-400">({{ __(auth()->user()->role ?? 'Sin rol') }})</span></span>
+                        </div>
                     </div>
                 </div>
             </div>

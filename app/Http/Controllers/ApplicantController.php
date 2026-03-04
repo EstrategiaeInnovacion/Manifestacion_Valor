@@ -17,59 +17,23 @@ class ApplicantController extends Controller
     {
         $user = auth()->user();
 
-        if ($user->role === 'SuperAdmin') {
-            // Obtener todos los usuarios (Admin y Usuario) de la misma empresa
-            $usersInCompany = User::where('company', $user->company)
-                ->whereIn('role', ['Admin', 'Usuario'])
-                ->pluck('id');
-            
-            // Obtener emails de usuarios de la empresa para solicitantes antiguos
-            $emailsInCompany = User::where('company', $user->company)
-                ->pluck('email');
-            
+        if (in_array($user->role, ['SuperAdmin', 'Admin'])) {
+            // Cada administrador solo ve los solicitantes que él mismo creó.
+            // No existe visibilidad cruzada entre roles ni entre usuarios de la misma empresa,
+            // ya que los solicitantes contienen información sensible (credenciales VUCEM, RFC, etc.).
             $applicants = MvClientApplicant::with(['user', 'assignedUser', 'createdByUser'])
-                ->where(function($query) use ($user, $usersInCompany, $emailsInCompany) {
-                    // Sus propios solicitantes
+                ->where(function ($query) use ($user) {
+                    // Solicitantes creados por este usuario
                     $query->where('created_by_user_id', $user->id)
-                        // O solicitantes creados por usuarios de su empresa
-                        ->orWhereIn('created_by_user_id', $usersInCompany)
-                        // O solicitantes antiguos (sin created_by_user_id) de emails de su empresa
-                        ->orWhere(function($q) use ($emailsInCompany) {
+                        // O solicitantes legacy (sin created_by) cuyo user_email coincide
+                        ->orWhere(function ($q) use ($user) {
                             $q->whereNull('created_by_user_id')
-                              ->whereIn('user_email', $emailsInCompany);
+                              ->where('user_email', $user->email);
                         });
                 })
                 ->latest()
                 ->get();
-            
-            return view('applicants.index', compact('applicants'));
-        }
 
-        if ($user->role === 'Admin') {
-            // Obtener todos los usuarios de la misma empresa
-            $usersInCompany = User::where('company', $user->company)
-                ->whereIn('role', ['Admin', 'Usuario', 'SuperAdmin'])
-                ->pluck('id');
-            
-            // Obtener emails de usuarios de la empresa para solicitantes antiguos
-            $emailsInCompany = User::where('company', $user->company)
-                ->pluck('email');
-            
-            $applicants = MvClientApplicant::with(['user', 'assignedUser', 'createdByUser'])
-                ->where(function($query) use ($user, $usersInCompany, $emailsInCompany) {
-                    // Sus propios solicitantes
-                    $query->where('created_by_user_id', $user->id)
-                        // O solicitantes creados por usuarios de su empresa
-                        ->orWhereIn('created_by_user_id', $usersInCompany)
-                        // O solicitantes antiguos (sin created_by_user_id) de emails de su empresa
-                        ->orWhere(function($q) use ($emailsInCompany) {
-                            $q->whereNull('created_by_user_id')
-                              ->whereIn('user_email', $emailsInCompany);
-                        });
-                })
-                ->latest()
-                ->get();
-            
             return view('applicants.index', compact('applicants'));
         }
 
@@ -227,6 +191,12 @@ class ApplicantController extends Controller
      */
     public function show(MvClientApplicant $applicant)
     {
+        $user = auth()->user();
+
+        if (!$this->userOwnsApplicant($user, $applicant)) {
+            abort(403);
+        }
+
         $applicant->load('user');
         return view('applicants.show', compact('applicant'));
     }
@@ -239,52 +209,20 @@ class ApplicantController extends Controller
     {
         $user = auth()->user();
 
-        // Verificar permisos según rol
-        if ($user->role === 'SuperAdmin') {
-            // SuperAdmin puede editar solicitantes de su empresa
-            $companyUserIds = User::where('company', $user->company)
-                ->pluck('id')
-                ->toArray();
-            $companyUserEmails = User::where('company', $user->company)
-                ->pluck('email')
-                ->toArray();
-
-            $canEdit = $applicant->created_by_user_id === $user->id
-                || in_array($applicant->created_by_user_id, $companyUserIds)
-                || (is_null($applicant->created_by_user_id) && in_array($applicant->user_email, $companyUserEmails));
-
-            if (!$canEdit) {
-                return redirect()->route('applicants.index')
-                    ->withErrors(['error' => 'No tienes permiso para editar este solicitante.']);
-            }
-
-            // Usuarios disponibles para asignación (todos los Usuario de la empresa)
-            $usersForAssignment = User::where('company', $user->company)
-                ->where('role', 'Usuario')
-                ->select('id', 'full_name', 'email')
-                ->get();
-        }
-        elseif ($user->role === 'Admin') {
-            // Admin solo edita solicitantes que creó
-            if ($applicant->created_by_user_id !== $user->id) {
-                // Verificar si es solicitante legacy de su email
-                if (!is_null($applicant->created_by_user_id) || $applicant->user_email !== $user->email) {
-                    return redirect()->route('applicants.index')
-                        ->withErrors(['error' => 'No tienes permiso para editar este solicitante.']);
-                }
-            }
-
-            // Usuarios creados por este Admin
-            $usersForAssignment = User::where('created_by', $user->id)
-                ->where('role', 'Usuario')
-                ->select('id', 'full_name', 'email')
-                ->get();
-        }
-        else {
-            // Usuario no puede editar
+        if (!in_array($user->role, ['SuperAdmin', 'Admin'])) {
             return redirect()->route('applicants.index')
                 ->withErrors(['error' => 'No tienes permiso para editar solicitantes.']);
         }
+
+        if (!$this->userOwnsApplicant($user, $applicant)) {
+            return redirect()->route('applicants.index')
+                ->withErrors(['error' => 'No tienes permiso para editar este solicitante.']);
+        }
+
+        // Usuarios disponibles para asignación (solo los creados por este usuario)
+        $usersForAssignment = $user->role === 'SuperAdmin'
+            ? User::where('company', $user->company)->where('role', 'Usuario')->select('id', 'full_name', 'email')->get()
+            : User::where('created_by', $user->id)->where('role', 'Usuario')->select('id', 'full_name', 'email')->get();
 
         return view('applicants.edit', compact('applicant', 'usersForAssignment'));
     }
@@ -297,52 +235,19 @@ class ApplicantController extends Controller
     {
         $user = auth()->user();
 
-        // Verificar permisos según rol
-        if ($user->role === 'SuperAdmin') {
-            // SuperAdmin puede actualizar solicitantes de su empresa
-            $companyUserIds = User::where('company', $user->company)
-                ->pluck('id')
-                ->toArray();
-            $companyUserEmails = User::where('company', $user->company)
-                ->pluck('email')
-                ->toArray();
-
-            $canUpdate = $applicant->created_by_user_id === $user->id
-                || in_array($applicant->created_by_user_id, $companyUserIds)
-                || (is_null($applicant->created_by_user_id) && in_array($applicant->user_email, $companyUserEmails));
-
-            if (!$canUpdate) {
-                return redirect()->route('applicants.index')
-                    ->withErrors(['error' => 'No tienes permiso para actualizar este solicitante.']);
-            }
-
-            // Usuarios disponibles para asignación (todos los Usuario de la empresa)
-            $validUserIds = User::where('company', $user->company)
-                ->where('role', 'Usuario')
-                ->pluck('id')
-                ->toArray();
-        }
-        elseif ($user->role === 'Admin') {
-            // Admin solo actualiza solicitantes que creó
-            if ($applicant->created_by_user_id !== $user->id) {
-                // Verificar si es solicitante legacy de su email
-                if (!is_null($applicant->created_by_user_id) || $applicant->user_email !== $user->email) {
-                    return redirect()->route('applicants.index')
-                        ->withErrors(['error' => 'No tienes permiso para actualizar este solicitante.']);
-                }
-            }
-
-            // Usuarios creados por este Admin
-            $validUserIds = User::where('created_by', $user->id)
-                ->where('role', 'Usuario')
-                ->pluck('id')
-                ->toArray();
-        }
-        else {
-            // Usuario no puede actualizar
+        if (!in_array($user->role, ['SuperAdmin', 'Admin'])) {
             return redirect()->route('applicants.index')
                 ->withErrors(['error' => 'No tienes permiso para actualizar solicitantes.']);
         }
+
+        if (!$this->userOwnsApplicant($user, $applicant)) {
+            return redirect()->route('applicants.index')
+                ->withErrors(['error' => 'No tienes permiso para actualizar este solicitante.']);
+        }
+
+        $validUserIds = $user->role === 'SuperAdmin'
+            ? User::where('company', $user->company)->where('role', 'Usuario')->pluck('id')->toArray()
+            : User::where('created_by', $user->id)->where('role', 'Usuario')->pluck('id')->toArray();
 
 
         $validated = $request->validate([
@@ -420,44 +325,39 @@ class ApplicantController extends Controller
     {
         $user = auth()->user();
 
-        // Verificar permisos según rol
-        if ($user->role === 'SuperAdmin') {
-            // SuperAdmin puede eliminar solicitantes de su empresa
-            $companyUserIds = User::where('company', $user->company)
-                ->pluck('id')
-                ->toArray();
-            $companyUserEmails = User::where('company', $user->company)
-                ->pluck('email')
-                ->toArray();
-
-            $canDelete = $applicant->created_by_user_id === $user->id
-                || in_array($applicant->created_by_user_id, $companyUserIds)
-                || (is_null($applicant->created_by_user_id) && in_array($applicant->user_email, $companyUserEmails));
-
-            if (!$canDelete) {
-                return redirect()->route('applicants.index')
-                    ->withErrors(['error' => 'No tienes permiso para eliminar este solicitante.']);
-            }
-        }
-        elseif ($user->role === 'Admin') {
-            // Admin solo elimina solicitantes que creó
-            if ($applicant->created_by_user_id !== $user->id) {
-                // Verificar si es solicitante legacy de su email
-                if (!is_null($applicant->created_by_user_id) || $applicant->user_email !== $user->email) {
-                    return redirect()->route('applicants.index')
-                        ->withErrors(['error' => 'No tienes permiso para eliminar este solicitante.']);
-                }
-            }
-        }
-        else {
-            // Usuario no puede eliminar
+        if (!in_array($user->role, ['SuperAdmin', 'Admin'])) {
             return redirect()->route('applicants.index')
                 ->withErrors(['error' => 'No tienes permiso para eliminar solicitantes.']);
+        }
+
+        if (!$this->userOwnsApplicant($user, $applicant)) {
+            return redirect()->route('applicants.index')
+                ->withErrors(['error' => 'No tienes permiso para eliminar este solicitante.']);
         }
 
         $applicant->delete();
 
         return redirect()->route('applicants.index')
             ->with('success', 'Solicitante eliminado exitosamente.');
+    }
+
+    /**
+     * Verifica que el usuario autenticado sea el creador del solicitante.
+     * Principio: aislamiento estricto por propietario — nadie puede ver ni modificar
+     * solicitantes ajenos, independientemente del rol o la empresa.
+     */
+    private function userOwnsApplicant(\App\Models\User $user, MvClientApplicant $applicant): bool
+    {
+        // Solicitante creado explícitamente por este usuario
+        if ($applicant->created_by_user_id === $user->id) {
+            return true;
+        }
+
+        // Solicitante legacy (sin created_by_user_id) cuyo user_email coincide con el usuario
+        if (is_null($applicant->created_by_user_id) && $applicant->user_email === $user->email) {
+            return true;
+        }
+
+        return false;
     }
 }

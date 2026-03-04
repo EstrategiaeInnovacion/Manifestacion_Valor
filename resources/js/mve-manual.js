@@ -2263,26 +2263,15 @@ window.guardarModificacionesCove = function() {
 // FUNCIONES DE VALIDACIÓN Y FORMATEO
 // ============================================
 
-// Formatear pedimento: mostrar con espacios, guardar sin espacios
+// Formatear pedimento: solo 7 dígitos numéricos
 function formatPedimentoDisplay(value) {
-    // Remover espacios y caracteres no numéricos
-    const numbers = value.replace(/\D/g, '');
-    
-    // Formatear como: XX XXX XXXX XXXXXXX (máximo 20 caracteres según validación)
-    if (numbers.length <= 2) return numbers;
-    if (numbers.length <= 5) return numbers.slice(0, 2) + ' ' + numbers.slice(2);
-    if (numbers.length <= 9) return numbers.slice(0, 2) + ' ' + numbers.slice(2, 5) + ' ' + numbers.slice(5);
-    if (numbers.length <= 16) return numbers.slice(0, 2) + ' ' + numbers.slice(2, 5) + ' ' + numbers.slice(5, 9) + ' ' + numbers.slice(9);
-    
-    // Truncar si excede 20 caracteres
-    return numbers.slice(0, 2) + ' ' + numbers.slice(2, 5) + ' ' + numbers.slice(5, 9) + ' ' + numbers.slice(9, 16);
+    // Solo conservar dígitos y limitar a 7
+    return value.replace(/\D/g, '').slice(0, 7);
 }
 
-// Obtener pedimento sin espacios para guardar
+// Obtener pedimento para guardar (7 dígitos exactos)
 function getPedimentoForStorage(value) {
-    const numbers = value.replace(/\D/g, '');
-    // Validar máximo 20 caracteres según StoreManifestacionValorRequest
-    return numbers.slice(0, 20);
+    return value.replace(/\D/g, '').slice(0, 7);
 }
 
 // Procesar clave de aduana: remover guión (48-0 -> 480)
@@ -2374,40 +2363,26 @@ function validateCove(value) {
     return { valid: true };
 }
 
-// Formatear pedimento en tiempo real
+// Formatear pedimento en tiempo real: solo permite 7 dígitos
 window.formatPedimentoInput = function(input) {
-    const cursorPosition = input.selectionStart;
-    const oldValue = input.value;
-    const newValue = formatPedimentoDisplay(oldValue);
-    
-    if (oldValue !== newValue) {
-        input.value = newValue;
-        
-        // Ajustar posición del cursor
-        let newCursorPosition = cursorPosition;
-        if (newValue.length > oldValue.length) {
-            newCursorPosition++;
-        }
-        input.setSelectionRange(newCursorPosition, newCursorPosition);
+    const formatted = formatPedimentoDisplay(input.value);
+    if (input.value !== formatted) {
+        input.value = formatted;
     }
 };
 
-// Validar formato de pedimento
+// Validar formato de pedimento: exactamente 7 dígitos
 function validatePedimento(value) {
     const numbers = value.replace(/\D/g, '');
-    
+
     if (numbers.length === 0) {
         return { valid: false, message: 'El número de pedimento es obligatorio' };
     }
-    
-    if (numbers.length > 20) {
-        return { valid: false, message: 'El número de pedimento no debe exceder los 20 caracteres' };
+
+    if (numbers.length !== 7) {
+        return { valid: false, message: 'El número de pedimento debe tener exactamente 7 dígitos' };
     }
-    
-    if (numbers.length < 10) {
-        return { valid: false, message: 'El número de pedimento debe tener al menos 10 dígitos' };
-    }
-    
+
     return { valid: true };
 }
 
