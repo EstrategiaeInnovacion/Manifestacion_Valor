@@ -5,9 +5,17 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <title>Manifestación de Valor | E&I</title>
 
+        <!-- SEO -->
+        <meta name="description" content="Plataforma inteligente para la gestión de Manifestación de Valor, documentos de valor aduanal y control de operaciones internacionales.">
+        <!-- Open Graph -->
+        <meta property="og:type" content="website">
+        <meta property="og:title" content="Manifestación de Valor | E&I">
+        <meta property="og:description" content="Plataforma inteligente para la gestión de Manifestación de Valor, documentos de valor aduanal y control de operaciones internacionales.">
+        <meta property="og:locale" content="es_MX">
+
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600,700" rel="stylesheet" />
-        <script src="https://unpkg.com/lucide@latest"></script>
+
 
         @vite(['resources/css/app.css', 'resources/css/welcome.css', 'resources/js/app.js', 'resources/js/welcome.js'])
     </head>
@@ -19,7 +27,7 @@
             <div class="max-w-7xl mx-auto flex justify-between items-center">
                 <div class="flex items-center">
                     <a href="/">
-                        <img src="{{ asset('Gemini_Generated_Image_bmz5e9bmz5e9bmz5-removebg-preview.png') }}" alt="Logo E&I" class="h-12 w-auto object-contain">
+                        <img src="{{ asset('images/logo-ei.png') }}" alt="Logo E&I" width="48" height="48" class="h-12 w-auto object-contain">
                     </a>
                 </div>
 
@@ -36,9 +44,9 @@
                     <div class="w-12 h-1.5 bg-[#003399] mb-8 rounded-full"></div>
 
                     {{-- ELIMINADO: dark:text-white --}}
-                    <h2 class="text-6xl font-black text-[#001a4d] mb-6 leading-[1.1] tracking-tight">
+                    <h1 class="text-6xl font-black text-[#001a4d] mb-6 leading-[1.1] tracking-tight">
                         Manifestación <br><span class="text-[#003399]">de Valor.</span>
-                    </h2>
+                    </h1>
                     
                     {{-- ELIMINADO: dark:text-slate-400 --}}
                     <p class="text-slate-500 mb-12 text-xl leading-relaxed max-w-md">
@@ -48,7 +56,7 @@
                     <div class="flex items-center">
                         <a href="{{ route('login') }}" class="bg-[#001a4d] hover:bg-[#003399] text-white font-bold py-5 px-12 rounded-2xl transition shadow-2xl flex items-center gap-3 group text-lg">
                             Ingresar al Portal
-                            <i data-lucide="arrow-right" class="w-6 h-6 group-hover:translate-x-1 transition-transform"></i>
+                            <i data-lucide="arrow-right" aria-hidden="true" class="w-6 h-6 group-hover:translate-x-1 transition-transform"></i>
                         </a>
                     </div>
                 </div>
@@ -60,8 +68,10 @@
                         <div class="glass-card p-4 rounded-[3rem] shadow-2xl">
                             <div class="aspect-[4/5] rounded-[2.5rem] overflow-hidden image-container border border-white/20">
                                 <img src="https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&q=80&w=600" 
-                                     alt="Comercio Exterior E&I" 
-                                     class="w-full h-full object-cover">
+                                     alt="Comercio Exterior E&I"
+             width="600"
+             height="750"
+             class="w-full h-full object-cover">
                             </div>
                         </div>
                     </div>
@@ -72,7 +82,7 @@
         <footer class="py-10 text-center">
             <div class="flex items-center justify-center gap-4 mb-4 opacity-30">
                 <div class="h-px w-12 bg-slate-400"></div>
-                <i data-lucide="ship" class="w-4 h-4 text-slate-500"></i>
+                <i data-lucide="ship" aria-hidden="true" class="w-4 h-4 text-slate-500"></i>
                 <div class="h-px w-12 bg-slate-400"></div>
             </div>
             <p class="text-slate-400 text-[10px] font-bold uppercase tracking-[0.4em]">
