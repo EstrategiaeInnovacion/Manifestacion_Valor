@@ -200,9 +200,7 @@ class MveConsultaService
             // 3. Parsear respuesta
             return $this->parseConsultaResponse($responseBody, $xml, $numeroOperacion);
 
-<<<<<<< HEAD
-        }
-        catch (Exception $e) {
+        } catch (Exception $e) {
             Log::error('[MV_CONSULTA] Error al consultar VUCEM', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
@@ -214,13 +212,6 @@ class MveConsultaService
                 'xml_sent' => $xml,
                 'response' => null
             ];
-=======
-        } catch (Exception $e) {
-            return array_merge(
-                $this->handleConnectionException($e, 'MV_CONSULTA'),
-                ['xml_sent' => $xml, 'response' => null]
-            );
->>>>>>> 46f4f974d663a2669dd6353d7295499da6461001
         }
     }
 

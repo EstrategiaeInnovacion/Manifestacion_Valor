@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(php -l app/Services/MveConsultaService.php)",
+      "Bash(rm fix_conflict.php)"
+    ]
+  }
+}
