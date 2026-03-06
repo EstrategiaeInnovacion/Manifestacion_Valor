@@ -1508,7 +1508,7 @@ class MveController extends Controller
     /**
      * Descartar/eliminar una manifestaciÃ³n de valor
      */
-    public function descartarManifestacion($applicantId)
+    public function descartarManifestacion(Request $request, $applicantId)
     {
         try {
             // Verificar que el applicant pertenece al usuario actual
