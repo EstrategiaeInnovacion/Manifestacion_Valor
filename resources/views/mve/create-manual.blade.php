@@ -37,7 +37,8 @@
          data-rfc-agente-archivo-m="{{ isset($datosExtraidos) ? ($datosExtraidos['datos_manifestacion']['rfc_agente_aduanal'] ?? '') : '' }}"
          data-tipo-cambio-archivo-m="{{ isset($datosExtraidos) ? ($datosExtraidos['datos_manifestacion']['tipo_cambio'] ?? '') : '' }}"
          data-desde-archivo-m="{{ isset($datosExtraidos) ? 'true' : 'false' }}"
-         data-initial-step="{{ $initialStep }}">
+         data-initial-step="{{ $initialStep }}"
+         data-mve-id="{{ $datosManifestacion?->id ?? '' }}">
     </div>
 
     <div class="min-h-screen bg-[#F8FAFC]">
@@ -337,7 +338,8 @@
                         'X-Requested-With': 'XMLHttpRequest'
                     },
                     body: JSON.stringify({
-                        applicant_id: {{ $applicant->id }}
+                        applicant_id: {{ $applicant->id }},
+                        mve_id: currentMveId
                     })
                 });
 

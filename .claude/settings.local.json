@@ -2,7 +2,10 @@
   "permissions": {
     "allow": [
       "Bash(php -l app/Services/MveConsultaService.php)",
-      "Bash(rm fix_conflict.php)"
+      "Bash(rm fix_conflict.php)",
+      "Bash(php artisan migrate --force)",
+      "Bash(php artisan view:clear)",
+      "Bash(php artisan cache:clear)"
     ]
   }
 }

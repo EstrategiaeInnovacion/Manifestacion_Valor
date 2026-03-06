@@ -22,6 +22,7 @@ let editingCoveNumber = null; // COVE actualmente en edición
 // ============================================
 let step1Saved = false; // true cuando se guarda Datos de Manifestación
 let step2Saved = false; // true cuando se guarda Información COVE (con al menos 1 COVE)
+let currentMveId = null; // ID de la MvDatosManifestacion activa (null = nueva MVE)
 
 /**
  * Actualiza el estado habilitado/deshabilitado de los botones Siguiente
@@ -822,6 +823,12 @@ window.closeNotificationModal = function() {
 // INICIALIZACIÓN
 // ============================================
 document.addEventListener('DOMContentLoaded', function() {
+    // Inicializar mve_id si venimos editando una MVE existente
+    const mveIdEl = document.querySelector('[data-mve-id]');
+    if (mveIdEl && mveIdEl.getAttribute('data-mve-id')) {
+        currentMveId = parseInt(mveIdEl.getAttribute('data-mve-id')) || null;
+    }
+
     lucide.createIcons();
     
     const avatarButton = document.getElementById('avatarButton');
@@ -3639,6 +3646,11 @@ async function saveSection(sectionName, data, sectionLabel) {
         const applicantId = document.querySelector('[data-applicant-id]').getAttribute('data-applicant-id');
         const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
+        // Incluir mve_id para vincular las secciones a la misma MVE
+        if (currentMveId) {
+            data.mve_id = currentMveId;
+        }
+
         const response = await fetch(`/mve/save-${sectionName}/${applicantId}`, {
             method: 'POST',
             headers: {
@@ -3651,6 +3663,10 @@ async function saveSection(sectionName, data, sectionLabel) {
         const result = await response.json();
 
         if (result.success) {
+            // Guardar el ID de la MVE retornado por el servidor
+            if (result.section_id && sectionName === 'datos-manifestacion') {
+                currentMveId = result.section_id;
+            }
             showNotification(`${sectionLabel} guardado exitosamente`, 'success');
             return true;
         } else {
@@ -3802,7 +3818,8 @@ async function checkAllSectionsCompletion() {
         const applicantId = document.querySelector('[data-applicant-id]').getAttribute('data-applicant-id');
         const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
         
-        const response = await fetch(`/mve/check-completion/${applicantId}`, {
+        const mveQuery = currentMveId ? `?mve_id=${currentMveId}` : '';
+        const response = await fetch(`/mve/check-completion/${applicantId}${mveQuery}`, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
@@ -3862,7 +3879,8 @@ async function mostrarVistaPrevia() {
         const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
         
         // Obtener datos de vista previa
-        const response = await fetch(`/mve/preview-data/${applicantId}`, {
+        const mveQueryPrev = currentMveId ? `?mve_id=${currentMveId}` : '';
+        const response = await fetch(`/mve/preview-data/${applicantId}${mveQueryPrev}`, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
@@ -4349,7 +4367,8 @@ window.confirmarGuardadoFinal = async function() {
             headers: {
                 'Content-Type': 'application/json',
                 'X-CSRF-TOKEN': csrfToken
-            }
+            },
+            body: JSON.stringify(currentMveId ? { mve_id: currentMveId } : {})
         });
 
         const result = await response.json();

@@ -13,6 +13,7 @@ class MvDocumentos extends Model
     
     protected $fillable = [
         'applicant_id',
+        'datos_manifestacion_id',
         'status',
         'documentos',
         'document_name',

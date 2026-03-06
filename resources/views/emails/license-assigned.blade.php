@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Licencia Asignada — FILE</title>
+    <title>Licencia Asignada â€” FILE</title>
 </head>
 <body style="margin: 0; padding: 0; background-color: #f0f4f8; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #f0f4f8; padding: 30px 0;">
@@ -33,7 +33,7 @@
 
                             <p style="color: #334155; font-size: 16px; line-height: 1.6; margin: 0 0 24px 0;">
                                 Se te ha asignado una nueva licencia en el sistema <strong style="color: #1e3a5f;">FILE</strong>.
-                                A continuación encontrarás los detalles:
+                                A continuaciÃ³n encontrarÃ¡s los detalles:
                             </p>
 
                             {{-- TARJETA DE LICENCIA --}}
@@ -41,14 +41,14 @@
                                 <tr>
                                     <td style="padding: 24px;">
                                         <p style="color: #065f46; font-size: 12px; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 600; margin: 0 0 16px 0;">
-                                            🔑 Detalles de la Licencia
+                                            ðŸ”‘ Detalles de la Licencia
                                         </p>
 
                                         {{-- Clave --}}
                                         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 12px;">
                                             <tr>
                                                 <td width="140" style="color: #047857; font-size: 13px; font-weight: 600; padding: 8px 0; vertical-align: top;">
-                                                    N° de Licencia:
+                                                    NÂ° de Licencia:
                                                 </td>
                                                 <td style="padding: 8px 12px; background-color: #ffffff; border-radius: 8px; border: 1px solid #a7f3d0;">
                                                     <code style="color: #059669; font-size: 15px; font-weight: 700; font-family: 'Courier New', monospace; letter-spacing: 1px;">{{ $license->license_key }}</code>
@@ -56,11 +56,11 @@
                                             </tr>
                                         </table>
 
-                                        {{-- Duración --}}
+                                        {{-- DuraciÃ³n --}}
                                         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 12px;">
                                             <tr>
                                                 <td width="140" style="color: #047857; font-size: 13px; font-weight: 600; padding: 8px 0; vertical-align: top;">
-                                                    Duración:
+                                                    DuraciÃ³n:
                                                 </td>
                                                 <td style="padding: 8px 12px; background-color: #ffffff; border-radius: 8px; border: 1px solid #a7f3d0;">
                                                     <span style="color: #0f172a; font-size: 14px; font-weight: 600;">{{ $durationLabel }}</span>
@@ -100,13 +100,13 @@
                                 <tr>
                                     <td style="padding: 16px 20px;">
                                         <p style="color: #1e40af; font-size: 14px; line-height: 1.6; margin: 0;">
-                                            ℹ️ Con esta licencia activa, tú y los usuarios que hayas creado podrán acceder a todas las funciones del sistema FILE.
+                                            â„¹ï¸ Con esta licencia activa, tÃº y los usuarios que hayas creado podrÃ¡n acceder a todas las funciones del sistema FILE.
                                         </p>
                                     </td>
                                 </tr>
                             </table>
 
-                            {{-- BOTÓN --}}
+                            {{-- BOTÃ“N --}}
                             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 24px;">
                                 <tr>
                                     <td align="center">
@@ -123,11 +123,11 @@
                     <tr>
                         <td style="background-color: #f8fafc; padding: 24px 36px; border-top: 1px solid #e2e8f0;">
                             <p style="color: #94a3b8; font-size: 12px; line-height: 1.6; margin: 0; text-align: center;">
-                                Este correo fue generado automáticamente por el sistema <strong>FILE</strong>.<br>
-                                Si tienes dudas, contacta al administrador de tu organización.
+                                Este correo fue generado automÃ¡ticamente por el sistema <strong>FILE</strong>.<br>
+                                Si tienes dudas, contacta al administrador de tu organizaciÃ³n.
                             </p>
                             <p style="color: #cbd5e1; font-size: 11px; margin: 12px 0 0 0; text-align: center;">
-                                &copy; {{ date('Y') }} FILE — Estrategia e Innovación
+                                &copy; {{ date('Y') }} FILE â€” Estrategia e InnovaciÃ³n
                             </p>
                         </td>
                     </tr>

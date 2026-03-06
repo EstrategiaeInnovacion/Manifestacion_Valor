@@ -33,13 +33,13 @@ class MvDatosManifestacion extends Model
     // Relación con la información COVE
     public function informacionCove(): HasOne
     {
-        return $this->hasOne(MvInformacionCove::class, 'applicant_id', 'applicant_id');
+        return $this->hasOne(MvInformacionCove::class, 'datos_manifestacion_id');
     }
 
     // Relación con los documentos
     public function documentos(): HasOne
     {
-        return $this->hasOne(MvDocumentos::class, 'applicant_id', 'applicant_id');
+        return $this->hasOne(MvDocumentos::class, 'datos_manifestacion_id');
     }
 
     // Encriptación automática para RFC Importador

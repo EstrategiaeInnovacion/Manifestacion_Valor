@@ -13,6 +13,7 @@ class MvInformacionCove extends Model
     
     protected $fillable = [
         'applicant_id',
+        'datos_manifestacion_id',
         'status',
         'informacion_cove',
         'pedimentos',

@@ -3,7 +3,7 @@
     @vite(['resources/css/users-list.css', 'resources/js/mve-pendientes.js'])
 
     <div class="min-h-screen bg-[#F8FAFC]">
-        {{-- Navegación --}}
+        {{-- NavegaciÃ³n --}}
         <nav class="bg-white border-b border-slate-200 sticky top-0 z-50">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="flex justify-between h-20">
@@ -42,7 +42,7 @@
                                     @csrf
                                     <button type="submit" class="dropdown-item logout w-full">
                                         <i data-lucide="log-out" class="w-5 h-5"></i>
-                                        <span class="font-semibold text-sm">Cerrar Sesión</span>
+                                        <span class="font-semibold text-sm">Cerrar SesiÃ³n</span>
                                     </button>
                                 </form>
                             </div>
@@ -80,58 +80,16 @@
             @endif
 
             @php
-                // Agrupar todas las secciones por applicant_id usando array en lugar de colección
                 $allPendientes = [];
-                
-                foreach($datosMvPendientes as $item) {
-                    if (!isset($allPendientes[$item->applicant_id])) {
-                        $allPendientes[$item->applicant_id] = [
-                            'applicant' => $item->applicant,
-                            'datos_manifestacion' => null,
-                            'informacion_cove' => null,
-                            'documentos' => null,
-                            'updated_at' => $item->updated_at,
-                            'created_at' => $item->created_at
-                        ];
-                    }
-                    $allPendientes[$item->applicant_id]['datos_manifestacion'] = $item;
-                    if ($item->updated_at > $allPendientes[$item->applicant_id]['updated_at']) {
-                        $allPendientes[$item->applicant_id]['updated_at'] = $item->updated_at;
-                    }
-                }
-                
-                foreach($covePendientes as $item) {
-                    if (!isset($allPendientes[$item->applicant_id])) {
-                        $allPendientes[$item->applicant_id] = [
-                            'applicant' => $item->applicant,
-                            'datos_manifestacion' => null,
-                            'informacion_cove' => null,
-                            'documentos' => null,
-                            'updated_at' => $item->updated_at,
-                            'created_at' => $item->created_at
-                        ];
-                    }
-                    $allPendientes[$item->applicant_id]['informacion_cove'] = $item;
-                    if ($item->updated_at > $allPendientes[$item->applicant_id]['updated_at']) {
-                        $allPendientes[$item->applicant_id]['updated_at'] = $item->updated_at;
-                    }
-                }
-                
-                foreach($documentosPendientes as $item) {
-                    if (!isset($allPendientes[$item->applicant_id])) {
-                        $allPendientes[$item->applicant_id] = [
-                            'applicant' => $item->applicant,
-                            'datos_manifestacion' => null,
-                            'informacion_cove' => null,
-                            'documentos' => null,
-                            'updated_at' => $item->updated_at,
-                            'created_at' => $item->created_at
-                        ];
-                    }
-                    $allPendientes[$item->applicant_id]['documentos'] = $item;
-                    if ($item->updated_at > $allPendientes[$item->applicant_id]['updated_at']) {
-                        $allPendientes[$item->applicant_id]['updated_at'] = $item->updated_at;
-                    }
+                foreach($mvesPendientes as $mve) {
+                    $allPendientes[$mve->id] = [
+                        'applicant' => $mve->applicant,
+                        'datos_manifestacion' => $mve,
+                        'informacion_cove' => $mve->informacionCove,
+                        'documentos' => $mve->documentos,
+                        'updated_at' => $mve->updated_at,
+                        'created_at' => $mve->created_at,
+                    ];
                 }
             @endphp
 
@@ -141,7 +99,7 @@
                         <i data-lucide="file-text" class="w-10 h-10 text-amber-500"></i>
                     </div>
                     <h3 class="text-xl font-bold text-slate-700 mb-2">No hay MVE pendientes</h3>
-                    <p class="text-slate-500 mb-6">Aún no tienes manifestaciones de valor en borrador</p>
+                    <p class="text-slate-500 mb-6">AÃºn no tienes manifestaciones de valor en borrador</p>
                     <a href="{{ route('mve.select-applicant', ['mode' => 'manual']) }}" class="inline-flex items-center px-6 py-3 bg-[#003399] hover:bg-[#001a4d] text-white font-bold rounded-lg transition-all">
                         <i data-lucide="plus" class="w-5 h-5 mr-2"></i>
                         Crear Nueva MVE
@@ -149,11 +107,11 @@
                 </div>
             @else
                 <div class="space-y-4">
-                    @foreach($allPendientes as $applicantId => $mveData)
+                    @foreach($allPendientes as $mveId => $mveData)
                         <div class="bg-white rounded-xl shadow-sm border border-slate-200 hover:shadow-md transition-shadow duration-200 overflow-hidden">
                             <div class="p-6">
                                 <div class="flex flex-col md:flex-row items-start justify-between gap-6">
-                                    {{-- Información del Solicitante --}}
+                                    {{-- InformaciÃ³n del Solicitante --}}
                                     <div class="flex items-start gap-4 flex-1">
                                         <div class="w-14 h-14 bg-gradient-to-br from-amber-400 to-amber-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md">
                                             <i data-lucide="building-2" class="w-7 h-7 text-white"></i>
@@ -171,13 +129,13 @@
                                                 @if($mveData['datos_manifestacion'])
                                                     <div class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 border border-blue-200 rounded-lg">
                                                         <div class="w-2 h-2 bg-blue-500 rounded-full"></div>
-                                                        <span class="text-xs font-bold text-blue-700">Datos Manifestación</span>
+                                                        <span class="text-xs font-bold text-blue-700">Datos ManifestaciÃ³n</span>
                                                     </div>
                                                 @endif
                                                 @if($mveData['informacion_cove'] && $mveData['informacion_cove']->informacion_cove)
                                                     <div class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-purple-50 border border-purple-200 rounded-lg">
                                                         <div class="w-2 h-2 bg-purple-500 rounded-full"></div>
-                                                        <span class="text-xs font-bold text-purple-700">Información COVE</span>
+                                                        <span class="text-xs font-bold text-purple-700">InformaciÃ³n COVE</span>
                                                     </div>
                                                 @endif
                                                 @if($mveData['informacion_cove'] && $mveData['informacion_cove']->valor_en_aduana)
@@ -194,7 +152,7 @@
                                                 @endif
                                             </div>
 
-                                            {{-- Información de Fechas --}}
+                                            {{-- InformaciÃ³n de Fechas --}}
                                             <div class="flex items-center gap-4 text-xs text-slate-500">
                                                 <div class="flex items-center gap-1.5">
                                                     <i data-lucide="clock" class="w-3.5 h-3.5"></i>
@@ -219,21 +177,21 @@
                                             
                                             <div class="flex gap-2">
                                                 <button type="button"
-                                                    onclick="mostrarVistaPreviaYFirmar({{ $applicantId }}, '{{ $mveData['applicant']->business_name }}')"
+                                                    onclick="mostrarVistaPreviaYFirmar({{ $mveData['datos_manifestacion']->applicant_id }}, {{ $mveId }}, '{{ $mveData['applicant']->business_name }}')"
                                                     class="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-bold rounded-lg shadow-md hover:shadow-lg transition-all duration-200 transform hover:scale-105">
                                                     <i data-lucide="send" class="w-4 h-4"></i>
                                                     <span>Firmar y Enviar a VUCEM</span>
                                                 </button>
 
-                                                <a href="{{ route('mve.create-manual', $applicantId) }}"
-                                                   onclick="return confirm('¿Desea editar esta MVE? El estado volverá a Borrador y deberá confirmarla nuevamente antes de enviar.')"
+                                                <a href="{{ route('mve.create-manual', $mveData['datos_manifestacion']->applicant_id) . '?edit=' . $mveId }}"
+                                                   onclick="return confirm('Â¿Desea editar esta MVE? El estado volverÃ¡ a Borrador y deberÃ¡ confirmarla nuevamente antes de enviar.')"
                                                    class="inline-flex items-center gap-2 px-4 py-3 bg-amber-50 hover:bg-amber-100 border border-amber-300 text-amber-700 font-bold rounded-lg transition-all duration-200">
                                                     <i data-lucide="edit-3" class="w-4 h-4"></i>
                                                     <span>Editar</span>
                                                 </a>
 
                                                 <button type="button"
-                                                    onclick="mostrarModalDescartar({{ $applicantId }}, '{{ $mveData['applicant']->business_name }}')"
+                                                    onclick="mostrarModalDescartar({{ $mveData['datos_manifestacion']->applicant_id }}, {{ $mveId }}, '{{ $mveData['applicant']->business_name }}')"
                                                     class="inline-flex items-center gap-2 px-4 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-lg transition-all">
                                                     <i data-lucide="trash-2" class="w-4 h-4"></i>
                                                 </button>
@@ -262,14 +220,14 @@
                                             </span>
                                             
                                             <div class="flex gap-2">
-                                                <a href="{{ route('mve.create-manual', $applicantId) }}" 
+                                                <a href="{{ route('mve.create-manual', $mveData['datos_manifestacion']->applicant_id) . '?edit=' . $mveId }}"
                                                    class="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-bold rounded-lg shadow-md hover:shadow-lg transition-all duration-200">
                                                     <i data-lucide="edit-3" class="w-4 h-4"></i>
                                                     <span>Corregir y Reenviar</span>
                                                 </a>
                                                 
                                                 <button type="button" 
-                                                    onclick="mostrarModalDescartar({{ $applicantId }}, '{{ $mveData['applicant']->business_name }}')"
+                                                    onclick="mostrarModalDescartar({{ $mveData['datos_manifestacion']->applicant_id }}, {{ $mveId }}, '{{ $mveData['applicant']->business_name }}')"
                                                     class="inline-flex items-center gap-2 px-4 py-3 bg-red-100 hover:bg-red-200 text-red-700 font-bold rounded-lg transition-all">
                                                     <i data-lucide="trash-2" class="w-4 h-4"></i>
                                                 </button>
@@ -283,14 +241,14 @@
                                             </span>
                                             
                                             <div class="flex gap-2">
-                                                <a href="{{ route('mve.create-manual', $applicantId) }}" 
+                                                <a href="{{ route('mve.create-manual', $mveData['datos_manifestacion']->applicant_id) . '?edit=' . $mveId }}"
                                                    class="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[#003399] to-[#0047cc] hover:from-[#001a4d] hover:to-[#003399] text-white font-bold rounded-lg shadow-md hover:shadow-lg transition-all duration-200 transform hover:scale-105">
                                                     <i data-lucide="edit-3" class="w-4 h-4"></i>
                                                     <span>Continuar Llenado</span>
                                                 </a>
                                                 
                                                 <button type="button" 
-                                                    onclick="mostrarModalDescartar({{ $applicantId }}, '{{ $mveData['applicant']->business_name }}')"
+                                                    onclick="mostrarModalDescartar({{ $mveData['datos_manifestacion']->applicant_id }}, {{ $mveId }}, '{{ $mveData['applicant']->business_name }}')"
                                                     class="inline-flex items-center gap-2 px-4 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-lg transition-all">
                                                     <i data-lucide="trash-2" class="w-4 h-4"></i>
                                                 </button>
@@ -306,7 +264,7 @@
         </main>
     </div>
 
-    {{-- Modal de Firma y Envío a VUCEM --}}
+    {{-- Modal de Firma y EnvÃ­o a VUCEM --}}
     <div id="modalFirma" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-[9999]" style="display: none;">
         <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
             <div class="p-6 border-b border-slate-200">
@@ -323,6 +281,7 @@
             
             <form id="formFirmaEnvio" enctype="multipart/form-data">
                 <input type="hidden" id="firmaApplicantId" name="applicant_id" value="">
+                <input type="hidden" id="firmaMveId" name="mve_id" value="">
                 <input type="hidden" id="useStoredCredentials" name="use_stored_credentials" value="0">
                 
                 <div class="p-6 space-y-6">
@@ -336,7 +295,7 @@
                                 </div>
                                 <div class="flex-1">
                                     <p class="text-sm font-bold text-green-800">Credenciales configuradas</p>
-                                    <p class="text-xs text-green-600 mt-0.5">Se usarán automáticamente el certificado, llave privada y clave WS almacenados para este solicitante.</p>
+                                    <p class="text-xs text-green-600 mt-0.5">Se usarÃ¡n automÃ¡ticamente el certificado, llave privada y clave WS almacenados para este solicitante.</p>
                                 </div>
                             </div>
                             <button type="button" onclick="switchToManualCredentials()" 
@@ -358,7 +317,7 @@
                                 <div class="flex flex-col items-center justify-center pt-5 pb-6">
                                     <i data-lucide="upload-cloud" class="w-8 h-8 text-slate-400 mb-2"></i>
                                     <p class="text-sm text-slate-500"><span class="font-semibold">Click para seleccionar</span> archivo .cer</p>
-                                    <p class="text-xs text-slate-400 mt-1" id="certificadoFileName">Ningún archivo seleccionado</p>
+                                    <p class="text-xs text-slate-400 mt-1" id="certificadoFileName">NingÃºn archivo seleccionado</p>
                                 </div>
                                 <input id="certificado" name="certificado" type="file" accept=".cer,.crt" class="hidden" required />
                             </label>
@@ -375,22 +334,22 @@
                                 <div class="flex flex-col items-center justify-center pt-5 pb-6">
                                     <i data-lucide="key" class="w-8 h-8 text-slate-400 mb-2"></i>
                                     <p class="text-sm text-slate-500"><span class="font-semibold">Click para seleccionar</span> archivo .key</p>
-                                    <p class="text-xs text-slate-400 mt-1" id="llaveFileName">Ningún archivo seleccionado</p>
+                                    <p class="text-xs text-slate-400 mt-1" id="llaveFileName">NingÃºn archivo seleccionado</p>
                                 </div>
                                 <input id="llave_privada" name="llave_privada" type="file" accept=".key,.pem" class="hidden" required />
                             </label>
                         </div>
                     </div>
                     
-                    {{-- Contraseña --}}
+                    {{-- ContraseÃ±a --}}
                     <div>
                         <label for="password_llave" class="block text-sm font-bold text-slate-700 mb-2">
-                            Contraseña de la Llave Privada <span class="text-red-500">*</span>
+                            ContraseÃ±a de la Llave Privada <span class="text-red-500">*</span>
                         </label>
                         <div class="relative">
                             <input type="password" id="password_llave" name="password_llave" required
                                 class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                placeholder="Ingrese la contraseña de su llave privada">
+                                placeholder="Ingrese la contraseÃ±a de su llave privada">
                             <button type="button" onclick="togglePasswordVisibility()" class="absolute inset-y-0 right-0 pr-3 flex items-center">
                                 <i data-lucide="eye" id="eyeIcon" class="w-5 h-5 text-slate-400"></i>
                             </button>
@@ -410,7 +369,7 @@
                                 <i data-lucide="eye" id="eyeIconWs" class="w-5 h-5 text-slate-400"></i>
                             </button>
                         </div>
-                        <p class="text-xs text-slate-500 mt-1">La clave de autenticación proporcionada por VUCEM para su RFC.</p>
+                        <p class="text-xs text-slate-500 mt-1">La clave de autenticaciÃ³n proporcionada por VUCEM para su RFC.</p>
                     </div>
                     </div>{{-- Cierre manualCredsContainer --}}
                     
@@ -420,26 +379,26 @@
                             <i data-lucide="alert-triangle" class="w-5 h-5 text-amber-500 mr-3 flex-shrink-0 mt-0.5"></i>
                             <div>
                                 <p class="text-sm text-amber-700">
-                                    Al firmar y enviar, la manifestación será procesada por VUCEM.
+                                    Al firmar y enviar, la manifestaciÃ³n serÃ¡ procesada por VUCEM.
                                     @if(config('vucem.send_manifestation_enabled'))
-                                        <strong>Se realizará el envío real a VUCEM.</strong>
+                                        <strong>Se realizarÃ¡ el envÃ­o real a VUCEM.</strong>
                                     @else
-                                        <strong class="text-blue-600">Modo de prueba activado - No se enviará a VUCEM.</strong>
+                                        <strong class="text-blue-600">Modo de prueba activado - No se enviarÃ¡ a VUCEM.</strong>
                                     @endif
                                 </p>
                             </div>
                         </div>
                     </div>
                     
-                    {{-- Checkbox de confirmación --}}
+                    {{-- Checkbox de confirmaciÃ³n --}}
                     <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
                         <label class="flex items-start cursor-pointer">
                             <input type="checkbox" id="confirmacion" name="confirmacion" 
                                 class="w-5 h-5 text-blue-600 border-slate-300 rounded focus:ring-blue-500 mt-0.5"
                                 onchange="toggleBotonEnviar()">
                             <span class="ml-3 text-sm text-slate-700">
-                                <strong>Confirmo que la información contenida en esta Manifestación de Valor es correcta y sin error.</strong>
-                                Entiendo que una vez enviada a VUCEM no podré modificarla.
+                                <strong>Confirmo que la informaciÃ³n contenida en esta ManifestaciÃ³n de Valor es correcta y sin error.</strong>
+                                Entiendo que una vez enviada a VUCEM no podrÃ© modificarla.
                             </span>
                         </label>
                     </div>
@@ -467,14 +426,15 @@
                 <div class="flex items-center justify-center w-16 h-16 bg-red-100 rounded-full mx-auto mb-4">
                     <i data-lucide="trash-2" class="w-8 h-8 text-red-600"></i>
                 </div>
-                <h3 class="text-xl font-black text-center text-slate-800 mb-2">¿Descartar Manifestación?</h3>
+                <h3 class="text-xl font-black text-center text-slate-800 mb-2">Â¿Descartar ManifestaciÃ³n?</h3>
                 <p id="descartarEmpresaNombre" class="text-center text-slate-500 mb-4"></p>
                 <p class="text-center text-sm text-slate-600">
-                    Esta acción eliminará permanentemente todos los datos de la manifestación de valor. 
-                    <strong class="text-red-600">Esta acción no se puede deshacer.</strong>
+                    Esta acciÃ³n eliminarÃ¡ permanentemente todos los datos de la manifestaciÃ³n de valor. 
+                    <strong class="text-red-600">Esta acciÃ³n no se puede deshacer.</strong>
                 </p>
                 <input type="hidden" id="descartarApplicantId" value="">
             </div>
+                <input type="hidden" id="descartarMveId" value="">
             
             <div class="p-6 border-t border-slate-200 flex justify-center gap-3">
                 <button type="button" onclick="cerrarModalDescartar()" 
@@ -484,7 +444,7 @@
                 <button type="button" onclick="confirmarDescartar()" id="btnConfirmarDescartar"
                     class="px-6 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg transition-colors flex items-center gap-2">
                     <i data-lucide="trash-2" class="w-5 h-5"></i>
-                    <span>Sí, Descartar</span>
+                    <span>SÃ­, Descartar</span>
                 </button>
             </div>
         </div>
@@ -496,7 +456,7 @@
             <div class="p-6 border-b border-slate-200 flex-shrink-0">
                 <div class="flex items-center justify-between">
                     <div>
-                        <h3 class="text-2xl font-black text-slate-700">Vista Previa de Manifestación</h3>
+                        <h3 class="text-2xl font-black text-slate-700">Vista Previa de ManifestaciÃ³n</h3>
                         <p id="vistaPreviaEmpresaNombre" class="text-slate-500 mt-1"></p>
                     </div>
                     <button onclick="cerrarVistaPrevia()" class="text-slate-400 hover:text-slate-600">
@@ -520,7 +480,7 @@
                 <button type="button" onclick="continuarAFirmar()" id="btnContinuarFirmar"
                     class="px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg transition-colors flex items-center gap-2">
                     <i data-lucide="check" class="w-5 h-5"></i>
-                    <span>Información Correcta - Continuar a Firmar</span>
+                    <span>InformaciÃ³n Correcta - Continuar a Firmar</span>
                 </button>
             </div>
         </div>
@@ -530,6 +490,7 @@
         // Variables globales para el flujo de firma
         let vistaPreviaApplicantId = null;
         let vistaPreviaEmpresaNombre = null;
+        let vistaPreviaMveId = null;
         
         // URLs de Laravel (resueltas en servidor para evitar problemas con subdirectorios)
         const urlCheckCredentials = '{{ url("/cove/credenciales") }}';
@@ -539,16 +500,16 @@
         
         // Mostrar nombres de archivos seleccionados
         document.getElementById('certificado')?.addEventListener('change', function(e) {
-            const fileName = e.target.files[0]?.name || 'Ningún archivo seleccionado';
+            const fileName = e.target.files[0]?.name || 'NingÃºn archivo seleccionado';
             document.getElementById('certificadoFileName').textContent = fileName;
         });
         
         document.getElementById('llave_privada')?.addEventListener('change', function(e) {
-            const fileName = e.target.files[0]?.name || 'Ningún archivo seleccionado';
+            const fileName = e.target.files[0]?.name || 'NingÃºn archivo seleccionado';
             document.getElementById('llaveFileName').textContent = fileName;
         });
         
-        // Toggle visibilidad de contraseña
+        // Toggle visibilidad de contraseÃ±a
         function togglePasswordVisibility() {
             const input = document.getElementById('password_llave');
             const icon = document.getElementById('eyeIcon');
@@ -576,7 +537,7 @@
             lucide.createIcons();
         }
         
-        // Toggle botón de enviar basado en checkbox
+        // Toggle botÃ³n de enviar basado en checkbox
         function toggleBotonEnviar() {
             const checkbox = document.getElementById('confirmacion');
             const btn = document.getElementById('btnEnviarVucem');
@@ -584,8 +545,9 @@
         }
         
         // Mostrar modal de firma
-        async function mostrarModalFirma(applicantId, empresaNombre) {
+        async function mostrarModalFirma(applicantId, mveId, empresaNombre) {
             document.getElementById('firmaApplicantId').value = applicantId;
+            document.getElementById('firmaMveId').value = mveId || '';
             document.getElementById('firmaEmpresaNombre').textContent = empresaNombre;
             
             // Reset estado
@@ -623,7 +585,7 @@
                         document.getElementById('manualCredsContainer').classList.add('hidden');
                         setManualFieldsRequired(false);
                         lucide.createIcons();
-                        console.log('[MVE] Credenciales almacenadas detectadas - usando automáticamente');
+                        console.log('[MVE] Credenciales almacenadas detectadas - usando automÃ¡ticamente');
                     } else if (data.has_credentials) {
                         // Tiene cert/key pero no clave WS: ocultar solo cert/key
                         document.getElementById('useStoredCredentials').value = '1';
@@ -644,7 +606,7 @@
                     console.warn('[MVE] Error verificando credenciales:', response.status, response.statusText);
                 }
             } catch (err) {
-                console.error('[MVE] Error de conexión verificando credenciales:', err);
+                console.error('[MVE] Error de conexiÃ³n verificando credenciales:', err);
             }
         }
         
@@ -674,9 +636,10 @@
         }
         
         // Mostrar vista previa antes de firmar
-        async function mostrarVistaPreviaYFirmar(applicantId, empresaNombre) {
+        async function mostrarVistaPreviaYFirmar(applicantId, mveId, empresaNombre) {
             vistaPreviaApplicantId = applicantId;
             vistaPreviaEmpresaNombre = empresaNombre;
+            vistaPreviaMveId = mveId || null;
             
             document.getElementById('vistaPreviaEmpresaNombre').textContent = empresaNombre;
             document.getElementById('modalVistaPrevia').style.display = 'flex';
@@ -685,7 +648,8 @@
             
             // Cargar la vista previa
             try {
-                const response = await fetch(`${urlPreviewData}/${applicantId}`, {
+                const mveQuery = vistaPreviaMveId ? \`?mve_id=${vistaPreviaMveId}\` : '';
+                const response = await fetch(\`${urlPreviewData}/${applicantId}${mveQuery}\`, {
                     headers: {
                         'Accept': 'application/json',
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
@@ -712,7 +676,7 @@
                 document.getElementById('vistaPreviaContenido').innerHTML = `
                     <div class="text-center py-12">
                         <i data-lucide="alert-circle" class="w-12 h-12 text-red-500 mx-auto mb-4"></i>
-                        <p class="text-red-600 font-semibold">Error de conexión</p>
+                        <p class="text-red-600 font-semibold">Error de conexiÃ³n</p>
                         <p class="text-slate-500 mt-2">${error.message}</p>
                     </div>
                 `;
@@ -724,13 +688,13 @@
         function generarContenidoVistaPrevia(data) {
             let html = '';
             
-            // Obtener datos — nuevo formato multi-COVE
+            // Obtener datos â€” nuevo formato multi-COVE
             const coves = data.informacion_cove?.informacion_cove || [];
             const valorAduana = data.valor_aduana?.valor_en_aduana_data || {};
             const personasConsulta = data.datos_manifestacion?.persona_consulta || [];
             const documentos = data.documentos || [];
             
-            // Función helper para generar bloque de un COVE
+            // FunciÃ³n helper para generar bloque de un COVE
             function generarBloqueCove(cove, index) {
                 const pedimentos = cove.pedimentos || [];
                 const incrementables = cove.incrementables || [];
@@ -747,13 +711,13 @@
                             <h3 class="text-sm font-bold text-blue-900">COVE: ${cove.numero_cove || ''}</h3>
                         </div>
                         
-                        <!-- Información Acuse de Valor -->
+                        <!-- InformaciÃ³n Acuse de Valor -->
                         <div class="border-b-2 border-slate-300 pb-4 mb-4">
-                            <h4 class="text-xs font-bold text-slate-700 mb-2 border-b border-slate-200 pb-1">Información Acuse de Valor</h4>
+                            <h4 class="text-xs font-bold text-slate-700 mb-2 border-b border-slate-200 pb-1">InformaciÃ³n Acuse de Valor</h4>
                             <div class="overflow-x-auto w-full">
                             <table class="w-full text-xs">
                                 <tr class="bg-slate-100">
-                                    <td class="border border-slate-300 p-2 font-semibold" colspan="2">Método de valoración aduanera</td>
+                                    <td class="border border-slate-300 p-2 font-semibold" colspan="2">MÃ©todo de valoraciÃ³n aduanera</td>
                                 </tr>
                                 <tr><td class="border border-slate-300 p-2" colspan="2">${cove.metodo_valoracion || 'N/A'}</td></tr>
                                 <tr class="bg-slate-100">
@@ -761,9 +725,9 @@
                                 </tr>
                                 <tr><td class="border border-slate-300 p-2" colspan="2">${cove.incoterm || 'N/A'}</td></tr>
                                 <tr class="bg-slate-100">
-                                    <td class="border border-slate-300 p-2 font-semibold" colspan="2">¿Existe vinculación entre importador y vendedor/proveedor?</td>
+                                    <td class="border border-slate-300 p-2 font-semibold" colspan="2">Â¿Existe vinculaciÃ³n entre importador y vendedor/proveedor?</td>
                                 </tr>
-                                <tr><td class="border border-slate-300 p-2" colspan="2">${cove.vinculacion === '1' || cove.vinculacion === 1 ? 'Sí' : (cove.vinculacion === '0' || cove.vinculacion === 0 ? 'No' : 'N/A')}</td></tr>
+                                <tr><td class="border border-slate-300 p-2" colspan="2">${cove.vinculacion === '1' || cove.vinculacion === 1 ? 'SÃ­' : (cove.vinculacion === '0' || cove.vinculacion === 0 ? 'No' : 'N/A')}</td></tr>
                             </table>
                             </div>
                         </div>
@@ -791,11 +755,11 @@
                         
                         <!-- Incrementables -->
                         <div class="border-b-2 border-slate-300 pb-4 mb-4">
-                            <h4 class="text-xs font-bold text-slate-700 mb-1 border-b border-slate-200 pb-1">Incrementables conforme al artículo 65 de la ley</h4>
+                            <h4 class="text-xs font-bold text-slate-700 mb-1 border-b border-slate-200 pb-1">Incrementables conforme al artÃ­culo 65 de la ley</h4>
                             <div class="overflow-x-auto w-full">
                             <table class="w-full text-xs">
                                 <tr class="bg-slate-100">
-                                    <td class="border border-slate-300 p-2 font-semibold">Fecha de erogación</td>
+                                    <td class="border border-slate-300 p-2 font-semibold">Fecha de erogaciÃ³n</td>
                                     <td class="border border-slate-300 p-2 font-semibold">Importe</td>
                                     <td class="border border-slate-300 p-2 font-semibold">Tipo de moneda</td>
                                 </tr>
@@ -808,12 +772,12 @@
                                 `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="3">N/A</td></tr>`}
                                 <tr class="bg-slate-100">
                                     <td class="border border-slate-300 p-2 font-semibold">Tipo de cambio</td>
-                                    <td class="border border-slate-300 p-2 font-semibold" colspan="2">¿Está a cargo del importador?</td>
+                                    <td class="border border-slate-300 p-2 font-semibold" colspan="2">Â¿EstÃ¡ a cargo del importador?</td>
                                 </tr>
                                 ${incrementables.length > 0 ? incrementables.map(inc => `
                                     <tr>
                                         <td class="border border-slate-300 p-2">${inc.tipoCambio || ''}</td>
-                                        <td class="border border-slate-300 p-2" colspan="2">${inc.aCargoImportador !== undefined ? (inc.aCargoImportador ? 'Sí' : 'No') : ''}</td>
+                                        <td class="border border-slate-300 p-2" colspan="2">${inc.aCargoImportador !== undefined ? (inc.aCargoImportador ? 'SÃ­' : 'No') : ''}</td>
                                     </tr>
                                 `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="3">N/A</td></tr>`}
                             </table>
@@ -826,7 +790,7 @@
                             <div class="overflow-x-auto w-full">
                             <table class="w-full text-xs">
                                 <tr class="bg-slate-100">
-                                    <td class="border border-slate-300 p-2 font-semibold">Fecha de erogación</td>
+                                    <td class="border border-slate-300 p-2 font-semibold">Fecha de erogaciÃ³n</td>
                                     <td class="border border-slate-300 p-2 font-semibold">Importe</td>
                                     <td class="border border-slate-300 p-2 font-semibold">Tipo de moneda</td>
                                 </tr>
@@ -910,7 +874,7 @@
                                     </tr>
                                 `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="4">N/A</td></tr>`}
                                 <tr class="bg-slate-100">
-                                    <td class="border border-slate-300 p-2 font-semibold" colspan="4">Momento(s) o situación(es) cuando se realizará el pago</td>
+                                    <td class="border border-slate-300 p-2 font-semibold" colspan="4">Momento(s) o situaciÃ³n(es) cuando se realizarÃ¡ el pago</td>
                                 </tr>
                                 ${precioPorPagar.length > 0 ? precioPorPagar.map(p => `
                                     <tr><td class="border border-slate-300 p-2" colspan="4">${p.momentoSituacion || ''}</td></tr>
@@ -937,13 +901,13 @@
                                     </tr>
                                 `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="3">N/A</td></tr>`}
                                 <tr class="bg-slate-100">
-                                    <td class="border border-slate-300 p-2 font-semibold" colspan="3">Motivo por lo que se realizó</td>
+                                    <td class="border border-slate-300 p-2 font-semibold" colspan="3">Motivo por lo que se realizÃ³</td>
                                 </tr>
                                 ${compensoPago.length > 0 ? compensoPago.map(c => `
                                     <tr><td class="border border-slate-300 p-2" colspan="3">${c.motivo || ''}</td></tr>
                                 `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="3">N/A</td></tr>`}
                                 <tr class="bg-slate-100">
-                                    <td class="border border-slate-300 p-2 font-semibold" colspan="3">Prestación de la mercancía</td>
+                                    <td class="border border-slate-300 p-2 font-semibold" colspan="3">PrestaciÃ³n de la mercancÃ­a</td>
                                 </tr>
                                 ${compensoPago.length > 0 ? compensoPago.map(c => `
                                     <tr><td class="border border-slate-300 p-2" colspan="3">${c.prestacionMercancia || ''}</td></tr>
@@ -961,23 +925,23 @@
                 <div class="bg-slate-600 text-white p-4">
                     <div class="text-2xl font-bold italic">gob.mx</div>
                     <div class="text-center mt-2">
-                        <div class="text-sm font-bold tracking-wide">MANIFESTACIÓN DE VALOR</div>
+                        <div class="text-sm font-bold tracking-wide">MANIFESTACIÃ“N DE VALOR</div>
                         <div class="text-xs">Ventanilla Digital Mexicana de Comercio Exterior</div>
-                        <div class="text-xs">Promoción o solicitud en materia de comercio exterior</div>
+                        <div class="text-xs">PromociÃ³n o solicitud en materia de comercio exterior</div>
                     </div>
                 </div>
                 
                 <!-- Contenido Principal -->
                 <div class="p-6 space-y-6">
                     
-                    <!-- Datos de la Manifestación de valor -->
+                    <!-- Datos de la ManifestaciÃ³n de valor -->
                     <div class="border-b-2 border-slate-300 pb-4">
-                        <h3 class="text-sm font-bold text-slate-700 mb-3 border-b border-slate-200 pb-1">Datos de la Manifestación de valor</h3>
+                        <h3 class="text-sm font-bold text-slate-700 mb-3 border-b border-slate-200 pb-1">Datos de la ManifestaciÃ³n de valor</h3>
                         <div class="overflow-x-auto w-full">
                         <table class="w-full text-xs">
                             <tr class="bg-slate-100">
                                 <td class="border border-slate-300 p-2 font-semibold w-1/3">RFC del importador</td>
-                                <td class="border border-slate-300 p-2 w-2/3">Nombre o Razón social</td>
+                                <td class="border border-slate-300 p-2 w-2/3">Nombre o RazÃ³n social</td>
                             </tr>
                             <tr>
                                 <td class="border border-slate-300 p-2 font-medium">${data.datos_manifestacion?.rfc_importador || data.applicant?.rfc || 'N/A'}</td>
@@ -994,7 +958,7 @@
                         <table class="w-full text-xs">
                             <tr class="bg-slate-100">
                                 <td class="border border-slate-300 p-2 font-semibold w-1/4">RFC</td>
-                                <td class="border border-slate-300 p-2 w-2/4">Nombre o Razón social</td>
+                                <td class="border border-slate-300 p-2 w-2/4">Nombre o RazÃ³n social</td>
                             </tr>
                             ${personasConsulta.length > 0 ? personasConsulta.map(p => `
                                 <tr>
@@ -1025,7 +989,7 @@
                     
                     <!-- Bloques de COVEs secuenciales -->
                     <div class="border-b-2 border-slate-300 pb-4">
-                        <h3 class="text-sm font-bold text-slate-700 mb-4 border-b border-slate-200 pb-1">Información de COVEs (${coves.length})</h3>
+                        <h3 class="text-sm font-bold text-slate-700 mb-4 border-b border-slate-200 pb-1">InformaciÃ³n de COVEs (${coves.length})</h3>
                         <div class="space-y-6">
                             ${coves.length > 0 ? coves.map((cove, i) => generarBloqueCove(cove, i)).join('') : `
                                 <p class="text-sm text-slate-400 text-center py-4">No hay COVEs registrados</p>
@@ -1039,23 +1003,23 @@
                         <div class="overflow-x-auto w-full">
                         <table class="w-full text-xs">
                             <tr class="bg-slate-100">
-                                <td class="border border-slate-300 p-2 font-semibold">Importe total del precio pagado (Sumatoria de los conceptos y deberán ser declarados en MN)</td>
-                                <td class="border border-slate-300 p-2 font-semibold">Importe total del precio por pagar (Sumatoria de los conceptos y deberán ser declarados en MN)</td>
+                                <td class="border border-slate-300 p-2 font-semibold">Importe total del precio pagado (Sumatoria de los conceptos y deberÃ¡n ser declarados en MN)</td>
+                                <td class="border border-slate-300 p-2 font-semibold">Importe total del precio por pagar (Sumatoria de los conceptos y deberÃ¡n ser declarados en MN)</td>
                             </tr>
                             <tr>
                                 <td class="border border-slate-300 p-2">$${parseFloat(valorAduana.total_precio_pagado || 0).toLocaleString('es-MX', {minimumFractionDigits: 2})}</td>
                                 <td class="border border-slate-300 p-2">$${parseFloat(valorAduana.total_precio_por_pagar || 0).toLocaleString('es-MX', {minimumFractionDigits: 2})}</td>
                             </tr>
                             <tr class="bg-slate-100">
-                                <td class="border border-slate-300 p-2 font-semibold">Importe total de incrementables (Sumatoria de los conceptos y deberán ser declarados en MN)</td>
-                                <td class="border border-slate-300 p-2 font-semibold">Importe total de decrementables (Sumatoria de los conceptos y deberán ser declarados en MN)</td>
+                                <td class="border border-slate-300 p-2 font-semibold">Importe total de incrementables (Sumatoria de los conceptos y deberÃ¡n ser declarados en MN)</td>
+                                <td class="border border-slate-300 p-2 font-semibold">Importe total de decrementables (Sumatoria de los conceptos y deberÃ¡n ser declarados en MN)</td>
                             </tr>
                             <tr>
                                 <td class="border border-slate-300 p-2">$${parseFloat(valorAduana.total_incrementables || 0).toLocaleString('es-MX', {minimumFractionDigits: 2})}</td>
                                 <td class="border border-slate-300 p-2">$${parseFloat(valorAduana.total_decrementables || 0).toLocaleString('es-MX', {minimumFractionDigits: 2})}</td>
                             </tr>
                             <tr class="bg-slate-100">
-                                <td class="border border-slate-300 p-2 font-semibold" colspan="2">Total del valor en aduana (Sumatoria de los conceptos y deberán ser declarados en MN)</td>
+                                <td class="border border-slate-300 p-2 font-semibold" colspan="2">Total del valor en aduana (Sumatoria de los conceptos y deberÃ¡n ser declarados en MN)</td>
                             </tr>
                             <tr>
                                 <td class="border border-slate-300 p-2 text-lg font-bold text-green-700" colspan="2">$${parseFloat(valorAduana.total_valor_aduana || 0).toLocaleString('es-MX', {minimumFractionDigits: 2})}</td>
@@ -1099,7 +1063,7 @@
                                 ${data.cadena_original || '||Sin datos||'}
                             </div>
                             <p class="text-xs text-slate-500 mt-2 italic">
-                                * Los campos vacíos se representan con || (doble pipe). El orden de los campos sigue el XSD de VUCEM.
+                                * Los campos vacÃ­os se representan con || (doble pipe). El orden de los campos sigue el XSD de VUCEM.
                             </p>
                         </div>
                     </div>
@@ -1128,18 +1092,20 @@
             document.getElementById('modalVistaPrevia').classList.add('hidden');
             vistaPreviaApplicantId = null;
             vistaPreviaEmpresaNombre = null;
+            vistaPreviaMveId = null;
         }
         
-        // Continuar a firmar después de verificar vista previa
+        // Continuar a firmar despuÃ©s de verificar vista previa
         function continuarAFirmar() {
             // Guardar valores antes de cerrar el modal
             const applicantId = vistaPreviaApplicantId;
             const empresaNombre = vistaPreviaEmpresaNombre;
+            const mveId = vistaPreviaMveId;
             
             cerrarVistaPrevia();
             
             if (applicantId && empresaNombre) {
-                mostrarModalFirma(applicantId, empresaNombre);
+                mostrarModalFirma(applicantId, mveId, empresaNombre);
             }
         }
         
@@ -1148,8 +1114,8 @@
             document.getElementById('modalFirma').style.display = 'none';
             document.getElementById('modalFirma').classList.add('hidden');
             document.getElementById('formFirmaEnvio').reset();
-            document.getElementById('certificadoFileName').textContent = 'Ningún archivo seleccionado';
-            document.getElementById('llaveFileName').textContent = 'Ningún archivo seleccionado';
+            document.getElementById('certificadoFileName').textContent = 'NingÃºn archivo seleccionado';
+            document.getElementById('llaveFileName').textContent = 'NingÃºn archivo seleccionado';
             document.getElementById('btnEnviarVucem').disabled = true;
             // Reset credenciales almacenadas
             document.getElementById('useStoredCredentials').value = '0';
@@ -1162,8 +1128,9 @@
         }
         
         // Mostrar modal de descartar
-        function mostrarModalDescartar(applicantId, empresaNombre) {
+        function mostrarModalDescartar(applicantId, mveId, empresaNombre) {
             document.getElementById('descartarApplicantId').value = applicantId;
+            document.getElementById('descartarMveId').value = mveId || '';
             document.getElementById('descartarEmpresaNombre').textContent = empresaNombre;
             document.getElementById('modalDescartar').style.display = 'flex';
             document.getElementById('modalDescartar').classList.remove('hidden');
@@ -1179,6 +1146,7 @@
         // Confirmar descartar
         async function confirmarDescartar() {
             const applicantId = document.getElementById('descartarApplicantId').value;
+            const mveId = document.getElementById('descartarMveId').value;
             const btn = document.getElementById('btnConfirmarDescartar');
             const originalHtml = btn.innerHTML;
             
@@ -1187,12 +1155,14 @@
                 btn.innerHTML = '<i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i><span>Eliminando...</span>';
                 lucide.createIcons();
                 
-                const response = await fetch(`${urlDescartar}/${applicantId}`, {
+                const response = await fetch(\`${urlDescartar}/${applicantId}\`, {
                     method: 'DELETE',
                     headers: {
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                        'Accept': 'application/json'
-                    }
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(mveId ? { mve_id: parseInt(mveId) } : {})
                 });
                 
                 const result = await response.json();
@@ -1207,7 +1177,7 @@
                 }
             } catch (error) {
                 console.error('Error:', error);
-                alert('Error al descartar la manifestación');
+                alert('Error al descartar la manifestaciÃ³n');
                 btn.disabled = false;
                 btn.innerHTML = originalHtml;
             }
@@ -1243,13 +1213,13 @@
                 if (result.success) {
                     cerrarModalFirma();
                     
-                    // Mostrar mensaje de éxito
+                    // Mostrar mensaje de Ã©xito
                     const alertDiv = document.createElement('div');
                     alertDiv.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-4 rounded-lg shadow-lg z-[10000] flex items-center gap-3';
                     alertDiv.innerHTML = `
                         <i data-lucide="check-circle" class="w-6 h-6"></i>
                         <div>
-                            <p class="font-bold">¡Enviado exitosamente!</p>
+                            <p class="font-bold">Â¡Enviado exitosamente!</p>
                             <p class="text-sm">${result.message}</p>
                             ${result.folio ? `<p class="text-sm mt-1">Folio: ${result.folio}</p>` : ''}
                         </div>
