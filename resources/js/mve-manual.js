@@ -146,6 +146,16 @@ const totalSteps = 5;
 window.goToStep = function(stepNumber) {
     if (stepNumber < 1 || stepNumber > totalSteps) return;
 
+    // Bloquear navegación hacia adelante si los pasos previos no están guardados
+    if (stepNumber >= 2 && !step1Saved) {
+        alert('Primero debes guardar el Paso 1: Datos de Manifestación.');
+        return;
+    }
+    if (stepNumber >= 3 && !step2Saved) {
+        alert('Primero debes guardar el Paso 2: Información COVE.');
+        return;
+    }
+
     // Auto-guardar datos al salir del paso 2 (Información COVE)
     if (currentStep === 2 && stepNumber !== 2) {
         // Guardar datos de trabajo al covesDataMap (si hay COVE en edición)
@@ -247,9 +257,12 @@ function updateStepperIndicator(activeStep) {
             circle.className = 'stepper-circle w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all duration-300 border-[#003399] bg-[#003399] text-white shadow-lg shadow-blue-200';
             label.className = 'stepper-label text-[10px] font-bold uppercase tracking-wide mt-2 transition-colors duration-300 text-center leading-tight max-w-[80px] text-[#003399]';
         } else {
-            // Paso pendiente
-            circle.className = 'stepper-circle w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all duration-300 border-slate-300 bg-white text-slate-400';
+            // Paso pendiente - bloquear visualmente si no cumple requisitos
+            const locked = (i >= 2 && !step1Saved) || (i >= 3 && !step2Saved);
+            circle.className = 'stepper-circle w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all duration-300 border-slate-300 bg-white text-slate-400' + (locked ? ' cursor-not-allowed opacity-50' : ' cursor-pointer');
             label.className = 'stepper-label text-[10px] font-bold uppercase tracking-wide mt-2 transition-colors duration-300 text-center leading-tight max-w-[80px] text-slate-400';
+            const btn = indicator.closest('button');
+            if (btn) btn.style.cursor = locked ? 'not-allowed' : '';
         }
     }
 
