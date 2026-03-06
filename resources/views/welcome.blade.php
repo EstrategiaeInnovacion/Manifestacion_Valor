@@ -23,11 +23,11 @@
     <body class="bg-[#F8FAFC] text-[#1e293b] min-h-screen flex flex-col">
         
         {{-- ELIMINADO: dark:bg-[#161615] dark:border-slate-800 --}}
-        <header class="w-full bg-white border-b border-slate-200 px-8 py-4">
+        <header class="w-full bg-white border-b border-slate-200 px-4 sm:px-8 py-4">
             <div class="max-w-7xl mx-auto flex justify-between items-center">
                 <div class="flex items-center">
                     <a href="/">
-                        <img src="{{ asset('images/logo-ei.png') }}" alt="Logo E&I" width="48" height="48" class="h-12 w-auto object-contain">
+                        <img src="{{ asset('images/logo-ei.png') }}" alt="Logo E&I" width="48" height="48" class="h-10 sm:h-12 w-auto object-contain">
                     </a>
                 </div>
 
@@ -36,32 +36,32 @@
             </div>
         </header>
 
-        <main class="flex-grow flex items-center justify-center p-6 lg:p-12">
+        <main class="flex-grow flex items-center justify-center p-4 sm:p-6 lg:p-12">
             {{-- ELIMINADO: dark:bg-[#161615] dark:border-slate-800 --}}
-            <div class="max-w-6xl w-full grid lg:grid-cols-2 bg-white rounded-[3.5rem] shadow-2xl overflow-hidden border border-slate-100">
+            <div class="max-w-6xl w-full grid lg:grid-cols-2 bg-white rounded-3xl sm:rounded-[3.5rem] shadow-2xl overflow-hidden border border-slate-100">
                 
-                <div class="p-12 lg:p-24 flex flex-col justify-center">
-                    <div class="w-12 h-1.5 bg-[#003399] mb-8 rounded-full"></div>
+                <div class="p-8 sm:p-12 lg:p-24 flex flex-col justify-center">
+                    <div class="w-12 h-1.5 bg-[#003399] mb-6 sm:mb-8 rounded-full"></div>
 
                     {{-- ELIMINADO: dark:text-white --}}
-                    <h1 class="text-6xl font-black text-[#001a4d] mb-6 leading-[1.1] tracking-tight">
+                    <h1 class="text-4xl sm:text-5xl lg:text-6xl font-black text-[#001a4d] mb-4 sm:mb-6 leading-[1.1] tracking-tight">
                         Manifestación <br><span class="text-[#003399]">de Valor.</span>
                     </h1>
                     
                     {{-- ELIMINADO: dark:text-slate-400 --}}
-                    <p class="text-slate-500 mb-12 text-xl leading-relaxed max-w-md">
+                    <p class="text-slate-500 mb-8 sm:mb-12 text-base sm:text-xl leading-relaxed max-w-md">
                         Plataforma inteligente para la gestión de documentos de valor aduanal y control de operaciones internacionales.
                     </p>
 
-                    <div class="flex items-center">
-                        <a href="{{ route('login') }}" class="bg-[#001a4d] hover:bg-[#003399] text-white font-bold py-5 px-12 rounded-2xl transition shadow-2xl flex items-center gap-3 group text-lg">
+                    <div class="flex items-center justify-center sm:justify-start">
+                        <a href="{{ route('login') }}" class="w-full sm:w-auto bg-[#001a4d] hover:bg-[#003399] text-white font-bold py-4 sm:py-5 px-8 sm:px-12 rounded-2xl transition shadow-2xl flex items-center justify-center gap-3 group text-base sm:text-lg">
                             Ingresar al Portal
-                            <i data-lucide="arrow-right" aria-hidden="true" class="w-6 h-6 group-hover:translate-x-1 transition-transform"></i>
+                            <i data-lucide="arrow-right" aria-hidden="true" class="w-5 h-5 sm:w-6 sm:h-6 group-hover:translate-x-1 transition-transform"></i>
                         </a>
                     </div>
                 </div>
 
-                <div class="bg-ei-gradient relative flex items-center justify-center p-12 lg:p-20">
+                <div class="hidden lg:flex bg-ei-gradient relative items-center justify-center p-12 lg:p-20">
                     <div class="absolute inset-0 opacity-10 welcome-pattern"></div>
                     
                     <div class="relative w-full max-w-[400px]">
@@ -69,9 +69,9 @@
                             <div class="aspect-[4/5] rounded-[2.5rem] overflow-hidden image-container border border-white/20">
                                 <img src="https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&q=80&w=600" 
                                      alt="Comercio Exterior E&I"
-             width="600"
-             height="750"
-             class="w-full h-full object-cover">
+                     width="600"
+                     height="750"
+                     class="w-full h-full object-cover">
                             </div>
                         </div>
                     </div>
@@ -79,7 +79,7 @@
             </div>
         </main>
 
-        <footer class="py-10 text-center">
+        <footer class="py-8 sm:py-10 text-center">
             <div class="flex items-center justify-center gap-4 mb-4 opacity-30">
                 <div class="h-px w-12 bg-slate-400"></div>
                 <i data-lucide="ship" aria-hidden="true" class="w-4 h-4 text-slate-500"></i>
