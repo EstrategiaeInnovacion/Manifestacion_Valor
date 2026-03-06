@@ -1787,6 +1787,74 @@ window.loadCoveToFields = function(cove, metodoValor, factura, fechaExpedicion, 
     console.log('Datos COVE cargados en campos del formulario:', { cove, metodoValor, factura, fechaExpedicion, fechaFormateada, emisorOriginal, destinatario });
 };
 
+/**
+ * Buscar información del COVE en VUCEM o caché local y pre-llenar los campos del formulario.
+ */
+window.buscarInfoCove = async function() {
+    const coveInput = document.getElementById('coveInput');
+    const folio = coveInput ? coveInput.value.trim().toUpperCase() : '';
+
+    if (!folio || folio.length < 5) {
+        showNotification('Ingresa el número de COVE antes de buscar.', 'warning');
+        return;
+    }
+
+    const container = document.getElementById('mveManualData');
+    const url = container ? container.dataset.buscarCoveUrl : null;
+    if (!url) {
+        showNotification('URL de búsqueda no configurada.', 'error');
+        return;
+    }
+
+    const btn = document.getElementById('btnBuscarCove');
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Buscando...';
+        lucide.createIcons();
+    }
+
+    try {
+        const response = await fetch(url + '?folio=' + encodeURIComponent(folio), {
+            headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+        });
+        const result = await response.json();
+
+        if (!result.success) {
+            showNotification(result.message || 'No se encontró información del COVE.', 'warning', 'COVE no encontrado');
+            return;
+        }
+
+        const d = result.data;
+
+        // Pre-llenar campos
+        if (d.fecha_expedicion && document.getElementById('fechaExpedicionInput')) {
+            document.getElementById('fechaExpedicionInput').value = convertDateToInputFormat(d.fecha_expedicion);
+        }
+        if (d.emisor_original && document.getElementById('emisorOriginalInput')) {
+            document.getElementById('emisorOriginalInput').value = d.emisor_original.toUpperCase();
+        }
+        if (d.destinatario && document.getElementById('destinatarioInput')) {
+            document.getElementById('destinatarioInput').value = d.destinatario.toUpperCase();
+        }
+        if (d.numero_factura && document.getElementById('facturaInput') && !document.getElementById('facturaInput').value) {
+            document.getElementById('facturaInput').value = d.numero_factura;
+        }
+
+        const src = result.source === 'vucem' ? 'VUCEM' : 'caché local';
+        showNotification('Información del COVE cargada desde ' + src + '.', 'success', 'COVE encontrado');
+
+    } catch (err) {
+        console.error('[COVE_BUSCAR]', err);
+        showNotification('Error al consultar el COVE. Intenta de nuevo.', 'error');
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<i data-lucide="search" class="w-4 h-4"></i> Buscar';
+            lucide.createIcons();
+        }
+    }
+};
+
 window.addCoveToTableFromData = function(cove, metodoValor, factura, fechaExpedicion, emisorOriginal, destinatario, incoterm = '', vinculacion = '') {
     const tableBody = document.getElementById('informacionCoveTableBody');
     if (!tableBody) return;

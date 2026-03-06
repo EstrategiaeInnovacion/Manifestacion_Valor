@@ -19,7 +19,13 @@
                             Acuse de Valor (COVE)
                             <span class="text-red-500">*</span>
                         </label>
-                        <input type="text" id="coveInput" class="form-input" placeholder="Ingrese el COVE" maxlength="20" oninput="validateCoveInput(this)">
+                        <div class="flex gap-2">
+                            <input type="text" id="coveInput" class="form-input flex-1" placeholder="Ingrese el COVE" maxlength="20" oninput="validateCoveInput(this)">
+                            <button type="button" id="btnBuscarCove" onclick="buscarInfoCove()" class="btn-secondary flex items-center gap-1 whitespace-nowrap" title="Consultar información del COVE en VUCEM">
+                                <i data-lucide="search" class="w-4 h-4"></i>
+                                Buscar
+                            </button>
+                        </div>
                     </div>
 
                     <div class="form-group flex-1">

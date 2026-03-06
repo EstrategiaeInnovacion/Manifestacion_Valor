@@ -591,9 +591,7 @@ class ManifestacionValorService
         foreach ($result['informacion_cove'] as $index => &$cove) {
             // Secuencia es 1-based (index + 1)
             $secuencia = $index + 1;
-            if (isset($result['fechas_expedicion'][$secuencia])) {
-                $cove['fecha_expedicion'] = $result['fechas_expedicion'][$secuencia];
-            }
+            // fecha_expedicion se obtiene desde VUCEM al buscar el COVE, no del Archivo M
             // Destinatario = importador
             $cove['destinatario'] = $destinatario;
             // Vinculación del registro 551 (aplica a todos los COVEs del pedimento)

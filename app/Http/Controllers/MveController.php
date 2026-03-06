@@ -1121,6 +1121,148 @@ class MveController extends Controller
         }
     }
 
+    /**
+     * Buscar información de un COVE en caché local (EdocumentRegistrado) o VUCEM.
+     * Permite pre-llenar campos del formulario COVE en el paso 2.
+     */
+    public function buscarCoveInfo(Request $request, $applicantId)
+    {
+        $request->validate([
+            'folio' => 'required|string|min:5|max:30'
+        ]);
+
+        $applicant = \App\Models\MvClientApplicant::findOrFail($applicantId);
+
+        if (!auth()->user()->canAccessApplicant($applicant)) {
+            return response()->json(['success' => false, 'message' => 'Sin permiso'], 403);
+        }
+
+        $folio = strtoupper(trim($request->input('folio')));
+
+        // 1. Buscar en caché local
+        $registro = EdocumentRegistrado::where('folio_edocument', $folio)
+            ->whereNotNull('cove_data')
+            ->first();
+
+        if ($registro && !empty($registro->cove_data)) {
+            $cove = $registro->cove_data;
+            return response()->json([
+                'success' => true,
+                'source' => 'cache',
+                'data' => $this->extractCoveFormFields($cove),
+            ]);
+        }
+
+        // 2. Si no hay caché, intentar consulta VUCEM con credenciales almacenadas
+        if (!$applicant->hasVucemCredentials() || !$applicant->hasWebserviceKey()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'COVE no encontrado en caché. Usa la sección "Consulta COVE" para obtenerlo primero, o verifica que el solicitante tenga credenciales VUCEM configuradas.'
+            ], 404);
+        }
+
+        try {
+            $claveWebService = $applicant->vucem_webservice_key;
+            $certContent = base64_decode($applicant->vucem_cert_file);
+            $keyContent = base64_decode($applicant->vucem_key_file);
+            $passwordLlave = $applicant->vucem_password;
+
+            if (!$certContent || !$keyContent || !$passwordLlave) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Credenciales almacenadas incompletas. Actualízalas en el módulo de Solicitantes.'
+                ], 422);
+            }
+
+            $tempCert = tempnam(sys_get_temp_dir(), 'cert_');
+            $tempKey = tempnam(sys_get_temp_dir(), 'key_');
+            file_put_contents($tempCert, $certContent);
+            file_put_contents($tempKey, $keyContent);
+
+            try {
+                $consultarService = app(\App\Services\ConsultarEdocumentService::class);
+                $result = $consultarService->consultarEdocument(
+                    $folio,
+                    $applicant->applicant_rfc,
+                    $claveWebService,
+                    $tempCert,
+                    $tempKey,
+                    $passwordLlave
+                );
+            } finally {
+                if (file_exists($tempCert)) @unlink($tempCert);
+                if (file_exists($tempKey)) @unlink($tempKey);
+            }
+
+            if (!$result['success'] || empty($result['cove_data'])) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No se pudo obtener información del COVE: ' . ($result['message'] ?? 'Error desconocido')
+                ], 422);
+            }
+
+            // Guardar en caché para próximas consultas
+            EdocumentRegistrado::updateOrCreate(
+                ['folio_edocument' => $folio],
+                [
+                    'existe_en_vucem' => true,
+                    'fecha_ultima_consulta' => now(),
+                    'response_code' => '200',
+                    'response_message' => $result['message'],
+                    'cove_data' => $result['cove_data'],
+                ]
+            );
+
+            return response()->json([
+                'success' => true,
+                'source' => 'vucem',
+                'data' => $this->extractCoveFormFields($result['cove_data']),
+            ]);
+
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('[COVE_BUSCAR] Error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al consultar VUCEM: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Extraer campos relevantes del cove_data para pre-llenar el formulario.
+     */
+    private function extractCoveFormFields(array $cove): array
+    {
+        $emisor = '';
+        if (isset($cove['emisor'])) {
+            $id = $cove['emisor']['identificacion'] ?? '';
+            $nombre = $cove['emisor']['nombre'] ?? '';
+            $emisor = $id && $nombre ? $id . ' - ' . $nombre : ($nombre ?: $id);
+        }
+
+        $destinatario = '';
+        if (isset($cove['destinatario'])) {
+            $id = $cove['destinatario']['identificacion'] ?? '';
+            $nombre = $cove['destinatario']['nombre'] ?? '';
+            $destinatario = $id && $nombre ? $id . ' - ' . $nombre : ($nombre ?: $id);
+        }
+
+        // Número de factura: puede venir en numeroFacturaRelacionFacturas o en facturas.factura[0].numeroFactura
+        $factura = $cove['numeroFacturaRelacionFacturas'] ?? '';
+        if (empty($factura) && isset($cove['facturas']['factura'])) {
+            $f = $cove['facturas']['factura'];
+            if (isset($f[0]) && is_array($f[0])) $f = $f[0];
+            $factura = $f['numeroFactura'] ?? '';
+        }
+
+        return [
+            'fecha_expedicion' => $cove['fechaExpedicion'] ?? '',
+            'emisor_original'  => $emisor,
+            'destinatario'     => $destinatario,
+            'numero_factura'   => $factura,
+        ];
+    }
+
     public function parsePedimentoEdocuments(Request $request, ManifestacionValorService $service)
     {
         $request->validate([

@@ -35,6 +35,7 @@
          data-incoterm-archivo-m="{{ isset($datosExtraidos) && isset($datosExtraidos['informacion_cove'][0]) ? ($datosExtraidos['informacion_cove'][0]['incoterm'] ?? '') : '' }}"
          data-vinculacion-archivo-m="{{ isset($datosExtraidos) ? ($datosExtraidos['vinculacion'] ?? '') : '' }}"
          data-rfc-agente-archivo-m="{{ isset($datosExtraidos) ? ($datosExtraidos['datos_manifestacion']['rfc_agente_aduanal'] ?? '') : '' }}"
+         data-buscar-cove-url="{{ route('mve.cove.info', $applicant->id) }}"
          data-tipo-cambio-archivo-m="{{ isset($datosExtraidos) ? ($datosExtraidos['datos_manifestacion']['tipo_cambio'] ?? '') : '' }}"
          data-desde-archivo-m="{{ isset($datosExtraidos) ? 'true' : 'false' }}"
          data-initial-step="{{ $initialStep }}"
