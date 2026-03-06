@@ -126,19 +126,6 @@ class DigitalizarDocumentoService
                 'xml_total_length' => strlen($xml),
             ]);
 
-<<<<<<< HEAD
-            $response = Http::withOptions([
-                'verify' => false,
-                'timeout' => 300,
-                'curl' => [CURLOPT_SSL_CIPHER_LIST => 'DEFAULT@SECLEVEL=0'],
-            ])
-                ->withHeaders(['Content-Type' => 'text/xml; charset=utf-8', 'SOAPAction' => ''])
-                ->withBody(trim($xml), 'text/xml')
-                ->post($this->endpoint);
-
-            $responseBody = $response->body();
-
-=======
             // Usar cURL directo para mejor control de SSL
             $ch = curl_init($this->endpoint);
             curl_setopt_array($ch, [
@@ -165,8 +152,6 @@ class DigitalizarDocumentoService
             if ($curlError) {
                 return $this->handleCurlError($curlError, 'DIGITALIZACION');
             }
-            
->>>>>>> 46f4f974d663a2669dd6353d7295499da6461001
             Log::info('[DIGITALIZACION] Respuesta VUCEM', [
                 'status' => $httpCode,
                 'body_preview' => substr($responseBody, 0, 2000)
@@ -349,19 +334,6 @@ class DigitalizarDocumentoService
    </soapenv:Body>
 </soapenv:Envelope>';
 
-<<<<<<< HEAD
-            $response = Http::withOptions([
-                'verify' => false,
-                'timeout' => 30,
-                'curl' => [CURLOPT_SSL_CIPHER_LIST => 'DEFAULT@SECLEVEL=0'],
-            ])
-                ->withHeaders([
-                'Content-Type' => 'text/xml; charset=utf-8',
-                'SOAPAction' => 'http://www.ventanillaunica.gob.mx/ConsultaEDocumentDigitalizarDocumento',
-            ])
-                ->withBody(trim($xml), 'text/xml')
-                ->post($this->endpoint);
-=======
             // Usar cURL directo para mejor control de SSL
             $ch = curl_init($this->endpoint);
             curl_setopt_array($ch, [
@@ -379,7 +351,6 @@ class DigitalizarDocumentoService
                     'Content-Length: ' . strlen(trim($xml))
                 ]
             ]);
->>>>>>> 46f4f974d663a2669dd6353d7295499da6461001
 
             $body = curl_exec($ch);
             $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -486,16 +457,6 @@ class DigitalizarDocumentoService
    </soapenv:Body>
 </soapenv:Envelope>';
 
-<<<<<<< HEAD
-            $response = Http::withOptions([
-                'verify' => false,
-                'timeout' => 60,
-                'curl' => [CURLOPT_SSL_CIPHER_LIST => 'DEFAULT@SECLEVEL=0'],
-            ])
-                ->withHeaders(['Content-Type' => 'text/xml; charset=utf-8', 'SOAPAction' => ''])
-                ->withBody(trim($xml), 'text/xml')
-                ->post($this->endpoint);
-=======
             // Usar cURL directo para mejor control de SSL
             $ch = curl_init($this->endpoint);
             curl_setopt_array($ch, [
@@ -513,7 +474,6 @@ class DigitalizarDocumentoService
                     'Content-Length: ' . strlen(trim($xml))
                 ]
             ]);
->>>>>>> 46f4f974d663a2669dd6353d7295499da6461001
 
             $body = curl_exec($ch);
             $curlError = curl_error($ch);

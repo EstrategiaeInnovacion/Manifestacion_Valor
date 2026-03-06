@@ -183,7 +183,7 @@ class MveConsultaService
             if ($error) {
                 return array_merge(
                     $this->handleCurlError($error, 'MV_CONSULTA'),
-                    ['xml_sent' => $xml, 'response' => null]
+                ['xml_sent' => $xml, 'response' => null]
                 );
             }
 
@@ -200,27 +200,12 @@ class MveConsultaService
             // 3. Parsear respuesta
             return $this->parseConsultaResponse($responseBody, $xml, $numeroOperacion);
 
-<<<<<<< HEAD
         }
         catch (Exception $e) {
-            Log::error('[MV_CONSULTA] Error al consultar VUCEM', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-
-            return [
-                'success' => false,
-                'message' => 'Error de conexión con VUCEM: ' . $e->getMessage(),
-                'xml_sent' => $xml,
-                'response' => null
-            ];
-=======
-        } catch (Exception $e) {
             return array_merge(
                 $this->handleConnectionException($e, 'MV_CONSULTA'),
-                ['xml_sent' => $xml, 'response' => null]
+            ['xml_sent' => $xml, 'response' => null]
             );
->>>>>>> 46f4f974d663a2669dd6353d7295499da6461001
         }
     }
 
