@@ -750,7 +750,8 @@
                         <!-- Información Acuse de Valor -->
                         <div class="border-b-2 border-slate-300 pb-4 mb-4">
                             <h4 class="text-xs font-bold text-slate-700 mb-2 border-b border-slate-200 pb-1">Información Acuse de Valor</h4>
-                            <div class="overflow-x-auto w-full">`r`n                            <table class="w-full text-xs">
+                            <div class="overflow-x-auto w-full">
+                            <table class="w-full text-xs">
                                 <tr class="bg-slate-100">
                                     <td class="border border-slate-300 p-2 font-semibold" colspan="2">Método de valoración aduanera</td>
                                 </tr>
@@ -763,13 +764,15 @@
                                     <td class="border border-slate-300 p-2 font-semibold" colspan="2">¿Existe vinculación entre importador y vendedor/proveedor?</td>
                                 </tr>
                                 <tr><td class="border border-slate-300 p-2" colspan="2">${cove.vinculacion === '1' || cove.vinculacion === 1 ? 'Sí' : (cove.vinculacion === '0' || cove.vinculacion === 0 ? 'No' : 'N/A')}</td></tr>
-                            </table>`r`n                            </div>
+                            </table>
+                            </div>
                         </div>
                         
                         <!-- Pedimentos -->
                         <div class="border-b-2 border-slate-300 pb-4 mb-4">
                             <h4 class="text-xs font-bold text-slate-700 mb-2 border-b border-slate-200 pb-1">Pedimentos</h4>
-                            <div class="overflow-x-auto w-full">`r`n                            <table class="w-full text-xs">
+                            <div class="overflow-x-auto w-full">
+                            <table class="w-full text-xs">
                                 <tr class="bg-slate-100">
                                     <td class="border border-slate-300 p-2 font-semibold w-1/3">Pedimento</td>
                                     <td class="border border-slate-300 p-2 font-semibold w-1/3">Patente</td>
@@ -782,13 +785,15 @@
                                         <td class="border border-slate-300 p-2">${p.aduanaText || p.aduana || ''}</td>
                                     </tr>
                                 `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="3">N/A</td></tr>`}
-                            </table>`r`n                            </div>
+                            </table>
+                            </div>
                         </div>
                         
                         <!-- Incrementables -->
                         <div class="border-b-2 border-slate-300 pb-4 mb-4">
                             <h4 class="text-xs font-bold text-slate-700 mb-1 border-b border-slate-200 pb-1">Incrementables conforme al artículo 65 de la ley</h4>
-                            <div class="overflow-x-auto w-full">`r`n                            <table class="w-full text-xs">
+                            <div class="overflow-x-auto w-full">
+                            <table class="w-full text-xs">
                                 <tr class="bg-slate-100">
                                     <td class="border border-slate-300 p-2 font-semibold">Fecha de erogación</td>
                                     <td class="border border-slate-300 p-2 font-semibold">Importe</td>
@@ -811,13 +816,15 @@
                                         <td class="border border-slate-300 p-2" colspan="2">${inc.aCargoImportador !== undefined ? (inc.aCargoImportador ? 'Sí' : 'No') : ''}</td>
                                     </tr>
                                 `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="3">N/A</td></tr>`}
-                            </table>`r`n                            </div>
+                            </table>
+                            </div>
                         </div>
                         
                         <!-- Decrementables -->
                         <div class="border-b-2 border-slate-300 pb-4 mb-4">
                             <h4 class="text-xs font-bold text-slate-700 mb-1 border-b border-slate-200 pb-1">Decrementables (Art. 66)</h4>
-                            <div class="overflow-x-auto w-full">`r`n                            <table class="w-full text-xs">
+                            <div class="overflow-x-auto w-full">
+                            <table class="w-full text-xs">
                                 <tr class="bg-slate-100">
                                     <td class="border border-slate-300 p-2 font-semibold">Fecha de erogación</td>
                                     <td class="border border-slate-300 p-2 font-semibold">Importe</td>
@@ -836,13 +843,15 @@
                                 ${decrementables.length > 0 ? decrementables.map(dec => `
                                     <tr><td class="border border-slate-300 p-2" colspan="3">${dec.tipoCambio || ''}</td></tr>
                                 `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="3">N/A</td></tr>`}
-                            </table>`r`n                            </div>
+                            </table>
+                            </div>
                         </div>
                         
                         <!-- Precio pagado -->
                         <div class="border-b-2 border-slate-300 pb-4 mb-4">
                             <h4 class="text-xs font-bold text-slate-700 mb-2 border-b border-slate-200 pb-1">Precio pagado</h4>
-                            <div class="overflow-x-auto w-full">`r`n                            <table class="w-full text-xs">
+                            <div class="overflow-x-auto w-full">
+                            <table class="w-full text-xs">
                                 <tr class="bg-slate-100">
                                     <td class="border border-slate-300 p-2 font-semibold">Fecha de pago</td>
                                     <td class="border border-slate-300 p-2 font-semibold">Importe</td>
@@ -867,13 +876,15 @@
                                         <td class="border border-slate-300 p-2" colspan="3">${p.tipoCambio || ''}</td>
                                     </tr>
                                 `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="4">N/A</td></tr>`}
-                            </table>`r`n                            </div>
+                            </table>
+                            </div>
                         </div>
                         
                         <!-- Precio por pagar -->
                         <div class="border-b-2 border-slate-300 pb-4 mb-4">
                             <h4 class="text-xs font-bold text-slate-700 mb-2 border-b border-slate-200 pb-1">Precio por pagar</h4>
-                            <div class="overflow-x-auto w-full">`r`n                            <table class="w-full text-xs">
+                            <div class="overflow-x-auto w-full">
+                            <table class="w-full text-xs">
                                 <tr class="bg-slate-100">
                                     <td class="border border-slate-300 p-2 font-semibold">Fecha de pago</td>
                                     <td class="border border-slate-300 p-2 font-semibold">Importe</td>
@@ -904,13 +915,15 @@
                                 ${precioPorPagar.length > 0 ? precioPorPagar.map(p => `
                                     <tr><td class="border border-slate-300 p-2" colspan="4">${p.momentoSituacion || ''}</td></tr>
                                 `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="4">N/A</td></tr>`}
-                            </table>`r`n                            </div>
+                            </table>
+                            </div>
                         </div>
                         
                         <!-- Compenso pago -->
                         <div class="pb-2">
                             <h4 class="text-xs font-bold text-slate-700 mb-2 border-b border-slate-200 pb-1">Compenso pago</h4>
-                            <div class="overflow-x-auto w-full">`r`n                            <table class="w-full text-xs">
+                            <div class="overflow-x-auto w-full">
+                            <table class="w-full text-xs">
                                 <tr class="bg-slate-100">
                                     <td class="border border-slate-300 p-2 font-semibold">Fecha de pago</td>
                                     <td class="border border-slate-300 p-2 font-semibold">Forma de pago</td>
@@ -935,7 +948,8 @@
                                 ${compensoPago.length > 0 ? compensoPago.map(c => `
                                     <tr><td class="border border-slate-300 p-2" colspan="3">${c.prestacionMercancia || ''}</td></tr>
                                 `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="3">N/A</td></tr>`}
-                            </table>`r`n                            </div>
+                            </table>
+                            </div>
                         </div>
                     </div>
                 `;
@@ -959,7 +973,8 @@
                     <!-- Datos de la Manifestación de valor -->
                     <div class="border-b-2 border-slate-300 pb-4">
                         <h3 class="text-sm font-bold text-slate-700 mb-3 border-b border-slate-200 pb-1">Datos de la Manifestación de valor</h3>
-                        <div class="overflow-x-auto w-full">`r`n                        <table class="w-full text-xs">
+                        <div class="overflow-x-auto w-full">
+                        <table class="w-full text-xs">
                             <tr class="bg-slate-100">
                                 <td class="border border-slate-300 p-2 font-semibold w-1/3">RFC del importador</td>
                                 <td class="border border-slate-300 p-2 w-2/3">Nombre o Razón social</td>
@@ -968,13 +983,15 @@
                                 <td class="border border-slate-300 p-2 font-medium">${data.datos_manifestacion?.rfc_importador || data.applicant?.rfc || 'N/A'}</td>
                                 <td class="border border-slate-300 p-2">${data.applicant?.razon_social || 'N/A'}</td>
                             </tr>
-                        </table>`r`n                        </div>
+                        </table>
+                        </div>
                     </div>
                     
                     <!-- RFC's de consulta -->
                     <div class="border-b-2 border-slate-300 pb-4">
                         <h3 class="text-sm font-bold text-slate-700 mb-3 border-b border-slate-200 pb-1">RFC's de consulta</h3>
-                        <div class="overflow-x-auto w-full">`r`n                        <table class="w-full text-xs">
+                        <div class="overflow-x-auto w-full">
+                        <table class="w-full text-xs">
                             <tr class="bg-slate-100">
                                 <td class="border border-slate-300 p-2 font-semibold w-1/4">RFC</td>
                                 <td class="border border-slate-300 p-2 w-2/4">Nombre o Razón social</td>
@@ -1002,7 +1019,8 @@
                                     <td class="border border-slate-300 p-2" colspan="2">N/A</td>
                                 </tr>
                             `}
-                        </table>`r`n                        </div>
+                        </table>
+                        </div>
                     </div>
                     
                     <!-- Bloques de COVEs secuenciales -->
@@ -1018,7 +1036,8 @@
                     <!-- Valor en aduana (totales across all COVEs) -->
                     <div class="border-b-2 border-slate-300 pb-4">
                         <h3 class="text-sm font-bold text-slate-700 mb-3 border-b border-slate-200 pb-1">Valor en aduana</h3>
-                        <div class="overflow-x-auto w-full">`r`n                        <table class="w-full text-xs">
+                        <div class="overflow-x-auto w-full">
+                        <table class="w-full text-xs">
                             <tr class="bg-slate-100">
                                 <td class="border border-slate-300 p-2 font-semibold">Importe total del precio pagado (Sumatoria de los conceptos y deberán ser declarados en MN)</td>
                                 <td class="border border-slate-300 p-2 font-semibold">Importe total del precio por pagar (Sumatoria de los conceptos y deberán ser declarados en MN)</td>
@@ -1041,13 +1060,15 @@
                             <tr>
                                 <td class="border border-slate-300 p-2 text-lg font-bold text-green-700" colspan="2">$${parseFloat(valorAduana.total_valor_aduana || 0).toLocaleString('es-MX', {minimumFractionDigits: 2})}</td>
                             </tr>
-                        </table>`r`n                        </div>
+                        </table>
+                        </div>
                     </div>
                     
                     <!-- eDocuments -->
                     <div class="pb-4">
                         <h3 class="text-sm font-bold text-slate-700 mb-3 border-b border-slate-200 pb-1">eDocuments</h3>
-                        <div class="overflow-x-auto w-full">`r`n                        <table class="w-full text-xs">
+                        <div class="overflow-x-auto w-full">
+                        <table class="w-full text-xs">
                             <tr class="bg-slate-100">
                                 <td class="border border-slate-300 p-2 font-semibold">eDocument</td>
                             </tr>
@@ -1060,7 +1081,8 @@
                                     <td class="border border-slate-300 p-2">N/A</td>
                                 </tr>
                             `}
-                        </table>`r`n                        </div>
+                        </table>
+                        </div>
                     </div>
                     
                     <!-- Cadena Original -->
@@ -1257,4 +1279,5 @@
     </script>
 
 </x-app-layout>
+
 

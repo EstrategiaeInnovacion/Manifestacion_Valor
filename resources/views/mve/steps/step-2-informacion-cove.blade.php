@@ -88,7 +88,8 @@
 
                 {{-- Tabla de COVE agregados --}}
                 <div class="table-container">
-                    <div class="overflow-x-auto w-full">`r`n                    <table class="mve-table">
+                    <div class="overflow-x-auto w-full">
+                    <table class="mve-table">
                         <thead>
                             <tr>
                                 <th class="table-checkbox">
@@ -111,7 +112,8 @@
                                 </td>
                             </tr>
                         </tbody>
-                    </table>`r`n                    </div>
+                    </table>
+                    </div>
                 </div>
                 {{-- Botón Guardar Información COVE --}}
                 <div class="form-actions-save mt-6">
@@ -249,7 +251,8 @@
 
                         {{-- Tabla de Pedimentos --}}
                         <div class="table-container">
-                            <div class="overflow-x-auto w-full">`r`n                            <table class="mve-table">
+                            <div class="overflow-x-auto w-full">
+                            <table class="mve-table">
                                 <thead>
                                     <tr>
                                         <th class="table-header table-header-checkbox">
@@ -268,7 +271,8 @@
                                         </td>
                                     </tr>
                                 </tbody>
-                            </table>`r`n                            </div>
+                            </table>
+                            </div>
                         </div>
                     </div>
                     {{-- Sección de Incrementables --}}
@@ -372,7 +376,8 @@
 
                         {{-- Tabla de Incrementables agregados --}}
                         <div class="table-container">
-                            <div class="overflow-x-auto w-full">`r`n                            <table class="mve-table">
+                            <div class="overflow-x-auto w-full">
+                            <table class="mve-table">
                                 <thead>
                                     <tr>
                                         <th class="table-checkbox">
@@ -394,7 +399,8 @@
                                         </td>
                                     </tr>
                                 </tbody>
-                            </table>`r`n                            </div>
+                            </table>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -487,7 +493,8 @@
 
                         {{-- Tabla de Decrementables agregados --}}
                         <div class="table-container">
-                            <div class="overflow-x-auto w-full">`r`n                            <table class="mve-table">
+                            <div class="overflow-x-auto w-full">
+                            <table class="mve-table">
                                 <thead>
                                     <tr>
                                         <th class="table-checkbox">
@@ -507,7 +514,8 @@
                                         </td>
                                     </tr>
                                 </tbody>
-                            </table>`r`n                            </div>
+                            </table>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -599,7 +607,8 @@
 
                         {{-- Tabla de Precio Pagado agregados --}}
                         <div class="table-container">
-                            <div class="overflow-x-auto w-full">`r`n                            <table class="mve-table">
+                            <div class="overflow-x-auto w-full">
+                            <table class="mve-table">
                                 <thead>
                                     <tr>
                                         <th class="table-checkbox">
@@ -620,7 +629,8 @@
                                         </td>
                                     </tr>
                                 </tbody>
-                            </table>`r`n                            </div>
+                            </table>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -720,7 +730,8 @@
 
                         {{-- Tabla de Precio por Pagar agregados --}}
                         <div class="table-container">
-                            <div class="overflow-x-auto w-full">`r`n                            <table class="mve-table">
+                            <div class="overflow-x-auto w-full">
+                            <table class="mve-table">
                                 <thead>
                                     <tr>
                                         <th class="table-checkbox">
@@ -741,7 +752,8 @@
                                         </td>
                                     </tr>
                                 </tbody>
-                            </table>`r`n                            </div>
+                            </table>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -812,7 +824,8 @@
 
                         {{-- Tabla de Compenso Pago agregados --}}
                         <div class="table-container">
-                            <div class="overflow-x-auto w-full">`r`n                            <table class="mve-table">
+                            <div class="overflow-x-auto w-full">
+                            <table class="mve-table">
                                 <thead>
                                     <tr>
                                         <th class="table-checkbox">
@@ -832,7 +845,8 @@
                                         </td>
                                     </tr>
                                 </tbody>
-                            </table>`r`n                            </div>
+                            </table>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -866,4 +880,5 @@
     </button>
 </div>
 </div>{{-- /step-2 --}}
+
 
