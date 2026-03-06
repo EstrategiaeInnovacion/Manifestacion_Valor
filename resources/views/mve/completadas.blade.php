@@ -1,9 +1,9 @@
-Ôªø<x-app-layout>
+<x-app-layout>
     <x-slot name="title">MVE Completadas</x-slot>
     @vite(['resources/css/users-list.css'])
 
     <div class="min-h-screen bg-[#F8FAFC]">
-        {{-- Navegaci√≥n --}}
+        {{-- NavegaciÛn --}}
         <nav class="bg-white border-b border-slate-200 sticky top-0 z-50">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="flex justify-between h-20">
@@ -42,7 +42,7 @@
                                     @csrf
                                     <button type="submit" class="dropdown-item logout w-full">
                                         <i data-lucide="log-out" class="w-5 h-5"></i>
-                                        <span class="font-semibold text-sm">Cerrar Sesi√≥n</span>
+                                        <span class="font-semibold text-sm">Cerrar SesiÛn</span>
                                     </button>
                                 </form>
                             </div>
@@ -63,7 +63,7 @@
                 </div>
                 
                 <div class="flex items-center gap-3">
-                    {{-- Tabs de navegaci√≥n --}}
+                    {{-- Tabs de navegaciÛn --}}
                     <a href="{{ route('mve.pendientes') }}" 
                        class="inline-flex items-center px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-lg transition-all">
                         <i data-lucide="clock" class="w-5 h-5 mr-2"></i>
@@ -110,7 +110,7 @@
                                         </h3>
                                         <p class="text-slate-500 text-sm">RFC: {{ $acuse->applicant->applicant_rfc ?? 'N/A' }}</p>
                                         
-                                        {{-- Folio y N√∫mero de MV --}}
+                                        {{-- Folio y N˙mero de MV --}}
                                         <div class="mt-2 flex flex-wrap items-center gap-2">
                                             <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold
                                                 @if($acuse->status === 'ACEPTADO') bg-green-100 text-green-700
@@ -144,7 +144,7 @@
                                             @endif
                                         </div>
                                         
-                                        {{-- Fecha de env√≠o --}}
+                                        {{-- Fecha de envÌo --}}
                                         <p class="text-xs text-slate-400 mt-2 flex items-center">
                                             <i data-lucide="calendar" class="w-3 h-3 mr-1"></i>
                                             Enviado: {{ $acuse->fecha_envio ? $acuse->fecha_envio->format('d/m/Y H:i') : 'N/A' }}
@@ -154,7 +154,7 @@
                                 
                                 {{-- Acciones --}}
                                 <div class="flex items-center gap-2 flex-shrink-0">
-                                    {{-- Bot√≥n Consultar VUCEM --}}
+                                    {{-- BotÛn Consultar VUCEM --}}
                                     <button onclick="abrirModalConsulta({{ $acuse->id }}, '{{ $acuse->applicant->applicant_rfc }}')"
                                        class="inline-flex items-center px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg transition-all">
                                         <i data-lucide="search" class="w-4 h-4 mr-2"></i>
@@ -196,10 +196,10 @@
                             <i data-lucide="inbox" class="w-8 h-8 text-slate-400"></i>
                         </div>
                         <h3 class="text-lg font-bold text-slate-700 mb-2">No hay manifestaciones completadas</h3>
-                        <p class="text-slate-500 mb-6">Las manifestaciones enviadas a VUCEM aparecer√°n aqu√≠.</p>
+                        <p class="text-slate-500 mb-6">Las manifestaciones enviadas a VUCEM aparecer·n aquÌ.</p>
                         <a href="{{ route('mve.select-applicant') }}" class="inline-flex items-center px-6 py-3 bg-[#003399] hover:bg-[#001a4d] text-white font-bold rounded-lg transition-all">
                             <i data-lucide="plus" class="w-5 h-5 mr-2"></i>
-                            Crear Nueva Manifestaci√≥n
+                            Crear Nueva ManifestaciÛn
                         </a>
                     </div>
                 @endforelse
@@ -232,7 +232,7 @@
                     <div>
                         <h3 class="text-xl font-bold text-white flex items-center">
                             <i data-lucide="file-text" class="w-6 h-6 mr-3"></i>
-                            Vista Previa - Manifestaci√≥n de Valor
+                            Vista Previa - ManifestaciÛn de Valor
                         </h3>
                         <p class="text-white/90 text-sm mt-2">Documento oficial obtenido de VUCEM</p>
                     </div>
@@ -243,7 +243,7 @@
             </div>
 
             <div class="flex-1 overflow-auto p-6" id="vistaPreviaContenido">
-                <!-- El contenido se llenar√° din√°micamente -->
+                <!-- El contenido se llenar· din·micamente -->
             </div>
 
             <div class="p-6 border-t border-slate-200 bg-slate-50">
@@ -255,16 +255,16 @@
         </div>
     </div>
 
-    {{-- Modal para Consultar Manifestaci√≥n --}}
+    {{-- Modal para Consultar ManifestaciÛn --}}
     <div id="consultaModal" class="fixed inset-0 z-[1000] hidden">
         <div class="fixed inset-0 bg-black/50" onclick="cerrarConsultaModal()"></div>
         <div class="fixed inset-y-10 inset-x-4 md:inset-x-auto md:left-1/2 md:-translate-x-1/2 md:w-full md:max-w-lg bg-white rounded-xl shadow-2xl flex flex-col overflow-hidden">
             <div class="p-6 border-b border-slate-200 bg-gradient-to-r from-emerald-500 to-teal-600">
                 <h3 class="text-xl font-bold text-white flex items-center">
                     <i data-lucide="search" class="w-6 h-6 mr-3"></i>
-                    Consultar Manifestaci√≥n en VUCEM
+                    Consultar ManifestaciÛn en VUCEM
                 </h3>
-                <p class="text-emerald-50 text-sm mt-2">Obtenga el N√∫mero de MV y acuse sellado</p>
+                <p class="text-emerald-50 text-sm mt-2">Obtenga el N˙mero de MV y acuse sellado</p>
             </div>
 
             <div class="flex-1 overflow-auto p-6">
@@ -288,7 +288,7 @@
                     {{-- Folio (editable) --}}
                     <div>
                         <label class="block text-sm font-bold text-slate-700 mb-2">
-                            Folio de Manifestaci√≥n
+                            Folio de ManifestaciÛn
                             <span class="text-red-500">*</span>
                         </label>
                         <input
@@ -297,11 +297,11 @@
                             name="folio"
                             required
                             class="w-full px-4 py-3 border-2 border-slate-200 rounded-lg focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-all font-mono"
-                            placeholder="Ej: MNVA26001W5O7 o n√∫mero de operaci√≥n"
+                            placeholder="Ej: MNVA26001W5O7 o n˙mero de operaciÛn"
                         />
                         <p class="text-xs text-slate-500 mt-2">
                             <i data-lucide="info" class="w-3 h-3 inline mr-1"></i>
-                            Puede usar el N√∫mero de MV (MNVA...) o el n√∫mero de operaci√≥n
+                            Puede usar el N˙mero de MV (MNVA...) o el n˙mero de operaciÛn
                         </p>
                     </div>
 
@@ -325,7 +325,7 @@
                         </p>
                     </div>
 
-                    {{-- √Årea de resultados --}}
+                    {{-- ¡rea de resultados --}}
                     <div id="consultaResultado" class="hidden mt-4"></div>
 
                     {{-- Botones --}}
@@ -421,7 +421,7 @@
         function abrirModalConsulta(acuseId, rfc) {
             const acuse = acusesData[acuseId];
             if (!acuse) {
-                alert('No se encontr√≥ informaci√≥n del acuse');
+                alert('No se encontrÛ informaciÛn del acuse');
                 return;
             }
 
@@ -484,14 +484,14 @@
         function abrirVistaPreviaCompleta() {
             const data = window.consultaActual;
             if (!data || !data.datos_manifestacion) {
-                alert('No hay datos de manifestaci√≥n disponibles');
+                alert('No hay datos de manifestaciÛn disponibles');
                 return;
             }
 
             const dm = data.datos_manifestacion;
             const contenido = document.getElementById('vistaPreviaContenido');
 
-            // Funci√≥n helper para formatear fechas
+            // FunciÛn helper para formatear fechas
             const formatFecha = (fecha) => {
                 if (!fecha) return 'N/A';
                 try {
@@ -508,24 +508,24 @@
                     <!-- Header gob.mx -->
                     <div class="bg-slate-600 text-white px-8 py-6">
                         <div class="text-sm font-light mb-4">gob.mx</div>
-                        <h1 class="text-2xl font-bold mb-2">MANIFESTACI√ìN DE VALOR</h1>
+                        <h1 class="text-2xl font-bold mb-2">MANIFESTACI”N DE VALOR</h1>
                         <p class="text-sm font-light">Ventanilla Digital Mexicana de Comercio Exterior</p>
-                        <p class="text-xs font-light mt-1">Promoci√≥n y defensa en materia de Comercio exterior</p>
+                        <p class="text-xs font-light mt-1">PromociÛn y defensa en materia de Comercio exterior</p>
                     </div>
 
                     <!-- Contenido del documento -->
                     <div class="px-8 py-6 space-y-6">
-                        <!-- Datos de la Manifestaci√≥n de valor -->
+                        <!-- Datos de la ManifestaciÛn de valor -->
                         <div>
                             <h2 class="text-base font-bold text-slate-800 mb-3 pb-2 border-b-2 border-slate-300">
-                                Datos de la Manifestaci√≥n de valor
+                                Datos de la ManifestaciÛn de valor
                             </h2>
                             <div class="overflow-x-auto w-full">
                             <table class="w-full border-collapse">
                                 <thead>
                                     <tr class="bg-slate-100">
                                         <th class="border border-slate-300 px-4 py-2 text-left text-sm font-semibold text-slate-700">RFC del importador</th>
-                                        <th class="border border-slate-300 px-4 py-2 text-left text-sm font-semibold text-slate-700">Nombre o Raz√≥n social</th>
+                                        <th class="border border-slate-300 px-4 py-2 text-left text-sm font-semibold text-slate-700">Nombre o RazÛn social</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -589,14 +589,14 @@
                             </div>
                         ` : ''}
 
-                        <!-- Informaci√≥n General de la MV -->
+                        <!-- InformaciÛn General de la MV -->
                         <div>
                             <h2 class="text-base font-bold text-slate-800 mb-3 pb-2 border-b-2 border-slate-300">
-                                Informaci√≥n General
+                                InformaciÛn General
                             </h2>
                             <div class="grid grid-cols-2 gap-4 mb-4">
                                 <div class="bg-slate-50 border border-slate-200 rounded p-3">
-                                    <p class="text-xs font-semibold text-slate-600 mb-1">N√∫mero de MV</p>
+                                    <p class="text-xs font-semibold text-slate-600 mb-1">N˙mero de MV</p>
                                     <p class="text-sm font-bold text-slate-900">${data.numero_mv || 'N/A'}</p>
                                 </div>
                                 <div class="bg-slate-50 border border-slate-200 rounded p-3">
@@ -606,11 +606,11 @@
                             </div>
                         </div>
 
-                        <!-- Informaci√≥n de COVEs (todos) -->
+                        <!-- InformaciÛn de COVEs (todos) -->
                         ${dm.informacion_coves && dm.informacion_coves.length > 0 ? dm.informacion_coves.map((cove, idx) => `
                             <div class="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                                 <h2 class="text-base font-bold text-blue-900 mb-3 pb-2 border-b-2 border-blue-300">
-                                    Informaci√≥n COVE ${idx + 1} ${cove.cove ? '- ' + cove.cove : ''}
+                                    InformaciÛn COVE ${idx + 1} ${cove.cove ? '- ' + cove.cove : ''}
                                 </h2>
                                 <div class="grid grid-cols-2 gap-4 mb-4">
                                     ${cove.cove ? `
@@ -644,7 +644,7 @@
                                     <tbody>
                                         ${cove.metodo_valoracion ? `
                                             <tr>
-                                                <td class="border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 bg-slate-100 w-1/3">M√©todo de valoraci√≥n aduanera</td>
+                                                <td class="border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 bg-slate-100 w-1/3">MÈtodo de valoraciÛn aduanera</td>
                                                 <td class="border border-slate-300 px-4 py-2 text-sm">${cove.metodo_valoracion}</td>
                                             </tr>
                                         ` : ''}
@@ -656,7 +656,7 @@
                                         ` : ''}
                                         ${cove.existe_vinculacion ? `
                                             <tr>
-                                                <td class="border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 bg-slate-100">Existe Vinculaci√≥n</td>
+                                                <td class="border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 bg-slate-100">Existe VinculaciÛn</td>
                                                 <td class="border border-slate-300 px-4 py-2 text-sm">${cove.existe_vinculacion}</td>
                                             </tr>
                                         ` : ''}
@@ -708,7 +708,7 @@
                             <!-- Fallback: mostrar datos del primer COVE si no hay array -->
                             <div>
                                 <h2 class="text-base font-bold text-slate-800 mb-3 pb-2 border-b-2 border-slate-300">
-                                    Informaci√≥n General
+                                    InformaciÛn General
                                 </h2>
                                 <div class="grid grid-cols-2 gap-4 mb-4">
                                     <div class="bg-slate-50 border border-slate-200 rounded p-3">
@@ -778,7 +778,7 @@
                                                 ${ppp.situacion_no_fecha ? `
                                                     <tr>
                                                         <td class="border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 bg-slate-100">
-                                                            Situaci√≥n sin Fecha de Pago
+                                                            SituaciÛn sin Fecha de Pago
                                                         </td>
                                                         <td class="border border-slate-300 px-4 py-2 text-sm">
                                                             ${ppp.situacion_no_fecha}
@@ -838,7 +838,7 @@
                                                 ${cp.prestacion_mercancia ? `
                                                     <tr>
                                                         <td class="border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 bg-slate-100">
-                                                            Prestaci√≥n Mercanc√≠a
+                                                            PrestaciÛn MercancÌa
                                                         </td>
                                                         <td class="border border-slate-300 px-4 py-2 text-sm">
                                                             ${cp.prestacion_mercancia}
@@ -884,7 +884,7 @@
                                     <thead>
                                         <tr class="bg-slate-100">
                                             <th class="border border-slate-300 px-4 py-2 text-left text-sm font-semibold text-slate-700">Tipo</th>
-                                            <th class="border border-slate-300 px-4 py-2 text-left text-sm font-semibold text-slate-700">Fecha Erogaci√≥n</th>
+                                            <th class="border border-slate-300 px-4 py-2 text-left text-sm font-semibold text-slate-700">Fecha ErogaciÛn</th>
                                             <th class="border border-slate-300 px-4 py-2 text-left text-sm font-semibold text-slate-700">Importe</th>
                                             <th class="border border-slate-300 px-4 py-2 text-left text-sm font-semibold text-slate-700">Moneda</th>
                                             <th class="border border-slate-300 px-4 py-2 text-left text-sm font-semibold text-slate-700">Tipo Cambio</th>
@@ -1004,9 +1004,9 @@
                             </div>
                         ` : ''}
 
-                        <!-- Pie de p√°gina oficial -->
+                        <!-- Pie de p·gina oficial -->
                         <div class="mt-8 pt-4 border-t border-slate-300 text-center text-xs text-slate-500">
-                            <p>Documento generado desde el sistema de Manifestaci√≥n de Valor</p>
+                            <p>Documento generado desde el sistema de ManifestaciÛn de Valor</p>
                             <p class="mt-1">Ventanilla Digital Mexicana de Comercio Exterior - VUCEM</p>
                         </div>
                     </div>
@@ -1030,7 +1030,7 @@
 
             // Validar
             if (!folio) {
-                mostrarResultadoConsulta('error', 'Debe ingresar el folio de manifestaci√≥n');
+                mostrarResultadoConsulta('error', 'Debe ingresar el folio de manifestaciÛn');
                 return;
             }
 
@@ -1039,7 +1039,7 @@
                 return;
             }
 
-            // Deshabilitar bot√≥n
+            // Deshabilitar botÛn
             btnConsultar.disabled = true;
             btnTexto.innerHTML = '<i data-lucide="loader" class="w-5 h-5 mr-2 animate-spin"></i>Consultando...';
             lucide.createIcons();
@@ -1075,9 +1075,9 @@
 
             } catch (error) {
                 console.error('Error:', error);
-                mostrarResultadoConsulta('error', 'Error de conexi√≥n al consultar la manifestaci√≥n');
+                mostrarResultadoConsulta('error', 'Error de conexiÛn al consultar la manifestaciÛn');
             } finally {
-                // Re-habilitar bot√≥n
+                // Re-habilitar botÛn
                 btnConsultar.disabled = false;
                 btnTexto.innerHTML = '<i data-lucide="search" class="w-5 h-5 mr-2"></i>Consultar';
                 lucide.createIcons();
@@ -1093,14 +1093,14 @@
                         <div class="flex items-start">
                             <i data-lucide="check-circle" class="w-5 h-5 text-green-500 mr-3 flex-shrink-0 mt-0.5"></i>
                             <div class="flex-1">
-                                <h4 class="text-sm font-bold text-green-800 mb-2">¬°Consulta Exitosa!</h4>
+                                <h4 class="text-sm font-bold text-green-800 mb-2">°Consulta Exitosa!</h4>
                                 <p class="text-sm text-green-700 mb-3">${mensaje}</p>
                                 ${data ? `
                                     <div class="space-y-2 text-sm mb-4">
                                         ${data.numero_mv ? `
                                             <div class="flex items-center">
                                                 <i data-lucide="award" class="w-4 h-4 text-green-600 mr-2"></i>
-                                                <span class="font-semibold text-green-800">N√∫mero de MV:</span>
+                                                <span class="font-semibold text-green-800">N˙mero de MV:</span>
                                                 <span class="ml-2 font-mono text-green-900">${data.numero_mv}</span>
                                             </div>
                                         ` : ''}

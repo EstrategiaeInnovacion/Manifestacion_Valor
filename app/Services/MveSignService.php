@@ -30,7 +30,8 @@ class MveSignService
         string $privateKeyPath,
         string $privateKeyPassword,
         string $claveWebservice
-    ): array {
+        ): array
+    {
         try {
             // 1. Cadena Original
             $cadenaOriginal = $this->mveService->buildCadenaOriginal(
@@ -43,7 +44,7 @@ class MveSignService
             // --- DEBUG: VER LA CADENA QUE SE VA A FIRMAR ---
             Log::info('MVE - Cadena Original Generada', [
                 'longitud' => strlen($cadenaOriginal),
-                'CONTENIDO_CADENA' => $cadenaOriginal 
+                'CONTENIDO_CADENA' => $cadenaOriginal
             ]);
             // -----------------------------------------------
 
@@ -71,7 +72,7 @@ class MveSignService
             Log::info('MVE - SOAP Envelope construido', [
                 'envelope_size' => strlen($soapEnvelope)
             ]);
-            
+
             // --- DEBUG: VER EL XML QUE SE ENVÍA ---
             Log::debug('MVE - XML ENVIADO A VUCEM: ' . $soapEnvelope);
             // --------------------------------------
@@ -79,7 +80,8 @@ class MveSignService
             // 4. Enviar
             return $this->enviarAVucem($applicant, $datosManifestacion, $soapEnvelope);
 
-        } catch (\Exception $e) {
+        }
+        catch (\Exception $e) {
             Log::error('MVE - Error en firma y envío', ['error' => $e->getMessage()]);
             return [
                 'success' => false,
@@ -97,7 +99,8 @@ class MveSignService
         string $selloDigital,
         string $certificado,
         string $claveWebservice
-    ): string {
+        ): string
+    {
         $ns = 'http://ws.ingresomanifestacion.manifestacion.www.ventanillaunica.gob.mx';
         $rfcFirmante = strtoupper($applicant->applicant_rfc);
         $timestamp = gmdate('Y-m-d\TH:i:s\Z');
@@ -142,7 +145,8 @@ class MveSignService
         MvDatosManifestacion $datosManifestacion,
         MvInformacionCove $informacionCove,
         array $documentos
-    ): string {
+        ): string
+    {
         $xml = '<datosManifestacionValor>';
 
         // ... (Personas y Documentos igual que antes) ...
@@ -162,10 +166,14 @@ class MveSignService
         $decrementablesList = $informacionCove->decrementables ?? []; // Agregado por si acaso
 
         if (!empty($covesList)) {
-            if (empty($covesList[0]['pedimentos']) && !empty($pedimentosList)) $covesList[0]['pedimentos'] = $pedimentosList;
-            if (empty($covesList[0]['precios_pagados']) && !empty($preciosPagadosList)) $covesList[0]['precios_pagados'] = $preciosPagadosList;
-            if (empty($covesList[0]['incrementables']) && !empty($incrementablesList)) $covesList[0]['incrementables'] = $incrementablesList;
-            if (empty($covesList[0]['decrementables']) && !empty($decrementablesList)) $covesList[0]['decrementables'] = $decrementablesList;
+            if (empty($covesList[0]['pedimentos']) && !empty($pedimentosList))
+                $covesList[0]['pedimentos'] = $pedimentosList;
+            if (empty($covesList[0]['precios_pagados']) && !empty($preciosPagadosList))
+                $covesList[0]['precios_pagados'] = $preciosPagadosList;
+            if (empty($covesList[0]['incrementables']) && !empty($incrementablesList))
+                $covesList[0]['incrementables'] = $incrementablesList;
+            if (empty($covesList[0]['decrementables']) && !empty($decrementablesList))
+                $covesList[0]['decrementables'] = $decrementablesList;
         }
 
         foreach ($covesList as $cove) {
@@ -186,7 +194,8 @@ class MveSignService
 
             // Precio Pagado - CRÍTICO: USAR formatXmlDate
             $preciosPagados = $cove['precios_pagados'] ?? $cove['precio_pagado'] ?? [];
-            if (empty($preciosPagados) && !empty($informacionCove->precio_pagado)) $preciosPagados = $informacionCove->precio_pagado; // Fallback final
+            if (empty($preciosPagados) && !empty($informacionCove->precio_pagado))
+                $preciosPagados = $informacionCove->precio_pagado; // Fallback final
 
             foreach ($preciosPagados as $pp) {
                 $xml .= '<precioPagado>';
@@ -210,9 +219,11 @@ class MveSignService
                     $xml .= '<fechaPago>' . $this->mveService->formatXmlDate($ppp['fecha'] ?? $ppp['fechaPago'] ?? '') . '</fechaPago>';
                     $xml .= '<total>' . $this->mveService->formatVucemNumber($ppp['importe'] ?? $ppp['total'] ?? 0) . '</total>';
                     $situacionVal = $ppp['situacionNofechaPago'] ?? $ppp['situacion_no_fecha_pago'] ?? $ppp['momentoSituacion'] ?? '';
-                    if (!empty($situacionVal)) $xml .= '<situacionNofechaPago>' . htmlspecialchars($situacionVal, ENT_XML1) . '</situacionNofechaPago>';
+                    if (!empty($situacionVal))
+                        $xml .= '<situacionNofechaPago>' . htmlspecialchars($situacionVal, ENT_XML1) . '</situacionNofechaPago>';
                     $xml .= '<tipoPago>' . ($ppp['tipoPago'] ?? $ppp['formaPago'] ?? $ppp['tipo_pago'] ?? '') . '</tipoPago>';
-                    if (!empty($ppp['especifique'])) $xml .= '<especifique>' . htmlspecialchars($ppp['especifique'], ENT_XML1) . '</especifique>';
+                    if (!empty($ppp['especifique']))
+                        $xml .= '<especifique>' . htmlspecialchars($ppp['especifique'], ENT_XML1) . '</especifique>';
                     $xml .= '<tipoMoneda>' . ($ppp['tipoMoneda'] ?? $ppp['tipo_moneda'] ?? 'USD') . '</tipoMoneda>';
                     $xml .= '<tipoCambio>' . $this->mveService->formatVucemNumber($ppp['tipoCambio'] ?? $ppp['tipo_cambio'] ?? 1) . '</tipoCambio>';
                     $xml .= '</precioPorPagar>';
@@ -229,7 +240,8 @@ class MveSignService
                     $xml .= '<motivo>' . htmlspecialchars($cp['motivo'] ?? '', ENT_XML1) . '</motivo>';
                     $xml .= '<prestacionMercancia>' . ($cp['prestacionMercancia'] ?? $cp['prestacion_mercancia'] ?? '') . '</prestacionMercancia>';
                     $xml .= '<tipoPago>' . ($cp['tipoPago'] ?? $cp['formaPago'] ?? $cp['tipo_pago'] ?? '') . '</tipoPago>';
-                    if (!empty($cp['especifique'])) $xml .= '<especifique>' . htmlspecialchars($cp['especifique'], ENT_XML1) . '</especifique>';
+                    if (!empty($cp['especifique']))
+                        $xml .= '<especifique>' . htmlspecialchars($cp['especifique'], ENT_XML1) . '</especifique>';
                     $xml .= '</compensoPago>';
                 }
             }
@@ -238,7 +250,8 @@ class MveSignService
 
             // Incrementables - CRÍTICO: USAR formatXmlDate
             $incrementables = $cove['incrementables'] ?? $cove['incrementable'] ?? [];
-            if (empty($incrementables) && !empty($informacionCove->incrementables)) $incrementables = $informacionCove->incrementables;
+            if (empty($incrementables) && !empty($informacionCove->incrementables))
+                $incrementables = $informacionCove->incrementables;
 
             foreach ($incrementables as $inc) {
                 $xml .= '<incrementables>';
@@ -255,7 +268,8 @@ class MveSignService
 
             // Decrementables - CRÍTICO: USAR formatXmlDate
             $decrementables = $cove['decrementables'] ?? $cove['decrementable'] ?? [];
-            if (empty($decrementables) && !empty($informacionCove->decrementables)) $decrementables = $informacionCove->decrementables;
+            if (empty($decrementables) && !empty($informacionCove->decrementables))
+                $decrementables = $informacionCove->decrementables;
 
             foreach ($decrementables as $dec) {
                 $xml .= '<decrementables>';
@@ -318,19 +332,21 @@ class MveSignService
             }
 
             Log::info('MVE - Respuesta VUCEM recibida', ['http_code' => $httpCode, 'response_length' => strlen($response)]);
-            
+
             // --- DEBUG: VER RESPUESTA COMPLETA DE VUCEM ---
             Log::info('MVE - RESPUESTA COMPLETA VUCEM: ' . $response);
             // ----------------------------------------------
-            
+
             return $this->procesarRespuestaVucemXml($applicant, $datosManifestacion, $soapEnvelope, $response, $httpCode);
-            
-        } catch (\Exception $e) {
+
+        }
+        catch (\Exception $e) {
             return ['success' => false, 'message' => $e->getMessage()];
         }
     }
 
-    private function procesarRespuestaVucemXml($applicant, $datosManifestacion, $xmlEnviado, $xmlRespuesta, $httpCode): array {
+    private function procesarRespuestaVucemXml($applicant, $datosManifestacion, $xmlEnviado, $xmlRespuesta, $httpCode): array
+    {
         $numeroOperacion = '';
         $numeroManifestacion = '';
         $acusePdf = null;
@@ -350,7 +366,8 @@ class MveSignService
             if (preg_match('/<numeroManifestacion[^>]*>([^<]+)<\/numeroManifestacion>/i', $xmlClean, $m)) {
                 $numeroManifestacion = trim($m[1]);
                 Log::info('[MVE] Número de Manifestación (eDocument) capturado de respuesta VUCEM', ['numero_manifestacion' => $numeroManifestacion]);
-            } elseif (preg_match('/<eDocument[^>]*>([^<]+)<\/eDocument>/i', $xmlClean, $m)) {
+            }
+            elseif (preg_match('/<eDocument[^>]*>([^<]+)<\/eDocument>/i', $xmlClean, $m)) {
                 $numeroManifestacion = trim($m[1]);
                 Log::info('[MVE] eDocument capturado de respuesta VUCEM', ['eDocument' => $numeroManifestacion]);
             }
@@ -373,37 +390,38 @@ class MveSignService
         $folioReal = $numeroManifestacion ?: $numeroOperacion;
 
         if ($folioReal) {
-             MvAcuse::create([
+            MvAcuse::create([
                 'applicant_id' => $applicant->id,
                 'datos_manifestacion_id' => $datosManifestacion->id,
-                'folio_manifestacion' => $folioReal,  // Usar numeroManifestacion como folio principal
-                'numero_cove' => $numeroManifestacion ?: null,  // eDocument/MNVA...
+                'folio_manifestacion' => $folioReal, // Usar numeroManifestacion como folio principal
+                'numero_cove' => $numeroManifestacion ?: null, // eDocument/MNVA...
                 'numero_pedimento' => $datosManifestacion->pedimento,
-                'acuse_pdf' => $acusePdf,  // Guardar acuse PDF si viene en respuesta
+                'acuse_pdf' => $acusePdf, // Guardar acuse PDF si viene en respuesta
                 'xml_enviado' => $xmlEnviado,
                 'xml_respuesta' => $xmlRespuesta,
                 'status' => 'ENVIADO',
                 'fecha_envio' => now(),
                 'fecha_respuesta' => now(),
-             ]);
+            ]);
 
-             $datosManifestacion->update(['status' => 'enviado']);
-             MvInformacionCove::where('applicant_id', $applicant->id)->update(['status' => 'enviado']);
+            $datosManifestacion->update(['status' => 'enviado']);
+            MvInformacionCove::where('applicant_id', $applicant->id)->update(['status' => 'enviado']);
+            MvDocumentos::where('applicant_id', $applicant->id)->update(['status' => 'enviado']);
 
-             Log::info('[MVE] Manifestación enviada exitosamente', [
-                 'folio_real' => $folioReal,
-                 'numero_manifestacion' => $numeroManifestacion,
-                 'numero_operacion' => $numeroOperacion,
-                 'tiene_acuse_pdf' => !empty($acusePdf)
-             ]);
+            Log::info('[MVE] Manifestación enviada exitosamente', [
+                'folio_real' => $folioReal,
+                'numero_manifestacion' => $numeroManifestacion,
+                'numero_operacion' => $numeroOperacion,
+                'tiene_acuse_pdf' => !empty($acusePdf)
+            ]);
 
-             return [
-                 'success' => true,
-                 'folio' => $folioReal,
-                 'numero_manifestacion' => $numeroManifestacion,
-                 'numero_operacion' => $numeroOperacion,
-                 'message' => 'Manifestación enviada con éxito. Folio: ' . $folioReal
-             ];
+            return [
+                'success' => true,
+                'folio' => $folioReal,
+                'numero_manifestacion' => $numeroManifestacion,
+                'numero_operacion' => $numeroOperacion,
+                'message' => 'Manifestación enviada con éxito. Folio: ' . $folioReal
+            ];
         }
 
         $datosManifestacion->update(['status' => 'rechazado']);
