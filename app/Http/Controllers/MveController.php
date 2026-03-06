@@ -170,8 +170,9 @@ class MveController extends Controller
             // Instanciar el servicio
             $mveService = new ManifestacionValorService();
             
-            // Parsear el archivo M
-            $datosExtraidos = $mveService->parseArchivoMForMV($content);
+            // Parsear el archivo M (respetando preferencia del usuario sobre eDocs)
+            $loadEdocs = auth()->user()->load_edocs_from_m ?? true;
+            $datosExtraidos = $mveService->parseArchivoMForMV($content, $loadEdocs);
             
             // VALIDACIÃ“N CRÃTICA: Verificar que el RFC del archivo coincide con el del solicitante
             $rfcArchivoM = $datosExtraidos['datos_manifestacion']['rfc_importador'] ?? null;

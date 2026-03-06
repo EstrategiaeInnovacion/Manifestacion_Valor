@@ -38,6 +38,17 @@ class ProfileController extends Controller
     }
 
     /**
+     * Update user preferences (toggles).
+     */
+    public function updatePreferences(Request $request): RedirectResponse
+    {
+        $user = $request->user();
+        $user->load_edocs_from_m = $request->boolean('load_edocs_from_m');
+        $user->save();
+        return Redirect::route('profile.edit')->with('status', 'preferences-updated');
+    }
+
+    /**
      * Delete the user's account.
      */
     public function destroy(Request $request): RedirectResponse

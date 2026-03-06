@@ -31,6 +31,7 @@ class User extends Authenticatable
         'max_applicants',
         'created_by',
         'rfc',
+        'load_edocs_from_m',
     ];
 
     /**
@@ -48,6 +49,7 @@ class User extends Authenticatable
         'rfc' => 'encrypted',
         'max_users' => 'integer',
         'max_applicants' => 'integer',
+        'load_edocs_from_m' => 'boolean',
     ];
 
     /**

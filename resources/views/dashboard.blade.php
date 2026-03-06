@@ -161,11 +161,11 @@
                 </div>
             </div>
 
-            {{-- SECCIÓN 2: CENTRO DE OPERACIONES --}}
+            {{-- SECCIÓN 2: MANIFESTACIÓN DE VALOR --}}
             <div>
                 <div class="flex items-center gap-4 mb-6">
                     <div class="h-8 w-1 bg-[#003399]"></div>
-                    <h3 class="text-xl font-bold text-[#001a4d] uppercase tracking-widest">Centro de Operaciones</h3>
+                    <h3 class="text-xl font-bold text-[#001a4d] uppercase tracking-widest">Manifestación de Valor</h3>
                     <div class="h-px flex-grow bg-slate-200"></div>
                 </div>
 
@@ -176,7 +176,7 @@
                             <div class="icon-box bg-blue-50 text-[#003399] group-hover:bg-[#003399] group-hover:text-white transition-all duration-500">
                                 <i data-lucide="file-text" class="w-8 h-8"></i>
                             </div>
-                            <h3 class="text-xl font-bold text-[#001a4d] mt-6">Crear Manifestación</h3>
+                            <h3 class="text-xl font-bold text-[#001a4d] mt-6">Manifestación de Valor</h3>
                             <p class="text-slate-500 text-sm mt-3 leading-relaxed">
                                 Generación de documentos de valor.
                             </p>
@@ -186,7 +186,18 @@
                             </div>
                         </div>
                     </button>
+                </div>
+            </div>
 
+            {{-- SECCIÓN 3: OTRAS CONSULTAS --}}
+            <div class="mt-10">
+                <div class="flex items-center gap-4 mb-6">
+                    <div class="h-8 w-1 bg-emerald-500"></div>
+                    <h3 class="text-xl font-bold text-[#001a4d] uppercase tracking-widest">Otras Consultas</h3>
+                    <div class="h-px flex-grow bg-slate-200"></div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
                     {{-- DIGITALIZACIÓN --}}
                     <a href="{{ route('digitalizacion.create') }}" class="modern-card group border-t-4 border-t-[#003399]">
                         <div class="card-content">

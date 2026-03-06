@@ -54,6 +54,7 @@ Route::middleware(['auth', 'license'])->group(function () {
     Route::get('/profile', [ProfileController::class , 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class , 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class , 'destroy'])->name('profile.destroy');
+    Route::patch('/profile/preferences', [ProfileController::class , 'updatePreferences'])->name('profile.preferences');
 
     // Rutas de gestión de usuarios (solo Admin y SuperAdmin)
     Route::middleware('role:SuperAdmin,Admin')->group(function () {

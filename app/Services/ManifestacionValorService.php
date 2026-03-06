@@ -314,7 +314,7 @@ class ManifestacionValorService
      * - 551: Vinculación
      * - 552: Incrementables/Decrementables
      */
-    public function parseArchivoMForMV(string $content): array
+    public function parseArchivoMForMV(string $content, bool $loadEdocs = true): array
     {
         $result = [
             'datos_manifestacion' => [
@@ -473,7 +473,10 @@ class ManifestacionValorService
 
                 case '507':
                     // 507|num_pedimento|tipo_doc|folio|||
+                    // Solo procesar registros con identificador ED (eDocs)
+                    if (!$loadEdocs) break; // Toggle desactivado: ignorar todos los eDocs
                     $tipoDoc = trim($fields[2] ?? '');
+                    if ($tipoDoc !== 'ED') break;
                     $folio = trim($fields[3] ?? '');
                     if (!empty($folio)) {
                         $result['documentos'][] = [

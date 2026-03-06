@@ -125,6 +125,44 @@
                     @include('profile.partials.update-password-form')
                 </div>
 
+                
+                <div class="profile-card">
+                    <div class="flex items-center gap-3 mb-6">
+                        <div class="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center">
+                            <i data-lucide="settings-2" class="w-5 h-5 text-[#003399]"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-lg font-bold text-[#001a4d]">Preferencias del Sistema</h2>
+                            <p class="text-xs text-slate-400">Configuración de comportamiento del Archivo M</p>
+                        </div>
+                    </div>
+
+                    <form method="POST" action="{{ route('profile.preferences') }}">
+                        @csrf
+                        @method('PATCH')
+
+                        @if (session('status') === 'preferences-updated')
+                            <div class="mb-4 px-4 py-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-700 font-medium">
+                                Preferencias guardadas correctamente.
+                            </div>
+                        @endif
+
+                        <div class="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-200">
+                            <div class="flex-1 pr-4">
+                                <p class="text-sm font-bold text-[#001a4d]">Cargar eDocs desde Archivo M</p>
+                                <p class="text-xs text-slate-500 mt-1">Si está activo, los documentos electrónicos (ED) del Archivo M se cargarán automáticamente en la sección de Documentos al importar un archivo M.</p>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer flex-shrink-0">
+                                <input type="checkbox" name="load_edocs_from_m" value="1"
+                                    class="sr-only peer"
+                                    {{ auth()->user()->load_edocs_from_m ? 'checked' : '' }}
+                                    onchange="this.form.submit()">
+                                <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-[#003399] rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#003399]"></div>
+                            </label>
+                        </div>
+                    </form>
+                </div>
+
                 <div class="profile-card">
                     @include('profile.partials.delete-user-form')
                 </div>
