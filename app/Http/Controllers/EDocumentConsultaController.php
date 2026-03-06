@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\ConsultarEDocumentRequest;
 use App\Models\EdocumentRegistrado;
+use App\Models\MvClientApplicant;
+use App\Models\User;
 use App\Services\ManifestacionValorService;
 use App\Services\ConsultarEdocumentService;
 use App\Services\MveConsultaService;
@@ -37,16 +39,80 @@ class EDocumentConsultaController extends Controller
     public function checkCredentials(int $applicant)
     {
         $user = Auth::user();
-        $solicitante = $user->clientApplicants()->find($applicant);
+        
+        Log::info('[CREDENCIALES] Verificando credenciales', [
+            'applicant_id' => $applicant,
+            'user_email' => $user->email,
+            'user_role' => $user->role,
+        ]);
+        
+        // Buscar solicitante según rol del usuario
+        $solicitante = null;
+        
+        if ($user->role === 'SuperAdmin') {
+            // SuperAdmin puede ver solicitantes de toda su empresa
+            $companyUserIds = User::where('company', $user->company)->pluck('id')->toArray();
+            $companyUserEmails = User::where('company', $user->company)->pluck('email')->toArray();
+            
+            $solicitante = MvClientApplicant::where('id', $applicant)
+                ->where(function($q) use ($user, $companyUserIds, $companyUserEmails) {
+                    $q->where('created_by_user_id', $user->id)
+                        ->orWhereIn('created_by_user_id', $companyUserIds)
+                        ->orWhere(function($sub) use ($companyUserEmails) {
+                            $sub->whereNull('created_by_user_id')
+                                ->whereIn('user_email', $companyUserEmails);
+                        });
+                })
+                ->first();
+        }
+        elseif ($user->role === 'Admin') {
+            // Admin puede ver sus solicitantes y legacy por user_email
+            $solicitante = MvClientApplicant::where('id', $applicant)
+                ->where(function($q) use ($user) {
+                    $q->where('created_by_user_id', $user->id)
+                        ->orWhere(function($sub) use ($user) {
+                            $sub->whereNull('created_by_user_id')
+                                ->where('user_email', $user->email);
+                        });
+                })
+                ->first();
+        }
+        else {
+            // Usuario: solo puede ver solicitantes asignados o por user_email
+            $solicitante = MvClientApplicant::where('id', $applicant)
+                ->where(function($q) use ($user) {
+                    $q->where('assigned_user_id', $user->id)
+                        ->orWhere('user_email', $user->email);
+                })
+                ->first();
+        }
 
         if (!$solicitante) {
+            Log::warning('[CREDENCIALES] Solicitante no encontrado o no pertenece al usuario', [
+                'applicant_id' => $applicant,
+                'user_email' => $user->email,
+                'user_role' => $user->role,
+            ]);
             return response()->json(['found' => false], 404);
         }
 
+        $hasCredentials = $solicitante->hasVucemCredentials();
+        $hasWebserviceKey = $solicitante->hasWebserviceKey();
+        
+        Log::info('[CREDENCIALES] Estado de credenciales', [
+            'applicant_id' => $applicant,
+            'business_name' => $solicitante->business_name,
+            'has_credentials' => $hasCredentials,
+            'has_webservice_key' => $hasWebserviceKey,
+            'has_cert_file' => !empty($solicitante->vucem_cert_file),
+            'has_key_file' => !empty($solicitante->vucem_key_file),
+            'has_password' => !empty($solicitante->vucem_password),
+        ]);
+
         return response()->json([
             'found' => true,
-            'has_credentials' => $solicitante->hasVucemCredentials(),
-            'has_webservice_key' => $solicitante->hasWebserviceKey(),
+            'has_credentials' => $hasCredentials,
+            'has_webservice_key' => $hasWebserviceKey,
         ]);
     }
 

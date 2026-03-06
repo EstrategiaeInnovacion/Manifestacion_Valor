@@ -377,13 +377,96 @@ class VucemCatalogs
 
     /**
      * Tipos de Documento aceptados por VUCEM para digitalización.
+     * Catálogo oficial según documentación VUCEM 2026
      */
     public static $tiposDocumento = [
-        '421' => 'Factura Comercial',
+        // Documentos más comunes (ordenados primero)
+        '170' => 'Factura o CFDI',
+        '177' => 'Identificación Oficial',
+        '172' => 'Contratos',
+        '171' => 'Documento con el que se acredite la propiedad de la mercancía',
+        '179' => 'Comprobante de domicilio',
+        '180' => 'Documento que ampare el avalúo de las mercancías',
+        '189' => 'Actas',
+        '192' => 'Escritos',
+        '360' => 'Documento complementario',
+        
+        // Documentos de comercio exterior
+        '168' => 'Calca o fotografía digital del NIV del vehículo',
+        '169' => 'Aviso / Certificado de Exportación de Tequila',
+        '176' => 'Documentación relacionada con garantía (artículos 84-A y 86-A de la L.A.)',
+        '185' => 'Documentos de adjudicación judicial de las mercancías',
+        '187' => 'Solicitud de retiro de mercancías que causaron abandono',
+        
+        // Certificados y comprobantes
+        '420' => 'Certificado de peso o volumen',
+        '421' => 'Comprobante de importación temporal de embarcación debidamente formalizado',
+        '422' => 'Comprobante expedido por donataria',
+        '423' => 'Consulta que el vehículo no está reportado robado/siniestrado/restringido',
+        '424' => 'Clave Única del Registro de Población (CURP)',
+        
+        // Declaraciones
+        '425' => 'Declaración de internación/extracción de cantidades en efectivo y/o documentos por cobrar',
+        '426' => 'Declaración de operaciones que no confieren origen (países no parte del TLCI)',
+        '427' => 'Declaración de motivos de devolución de mercancías (regla 3.8.9)',
+        
+        // Documentación especial
+        '428' => 'Documentación para identificación, análisis y control (artículo 36-A de la L.A.)',
+        '429' => 'Documento que acredite que acepta y subsana la irregularidad',
+        '430' => 'Documentación que ampare la importación temporal del vehículo',
+        '431' => 'Documentación que compruebe adquisición de mercancías bajo Programa IMMEX',
+        '433' => 'Documento que determine la procedencia y el origen de las mercancías',
+        '434' => 'Documento que acredite el reintegro del IVA (devolución/acreditamiento)',
+        '435' => 'Documentos previstos en la regla 8.7, fracciones I a IV del TLCAN',
+        '436' => 'Documento que compruebe cumplimiento de regulaciones no arancelarias',
+        '438' => 'Conocimiento de embarque, lista de empaque, guía u otros documentos de transporte',
+        '439' => 'Hoja con datos de matrícula y nombre del barco (mercancía almacenada)',
+        '440' => 'Manifiesto de carga',
+        '442' => 'Pedimentos',
+        '443' => 'Programa IMMEX',
+        '444' => 'Relación de candados',
+        '445' => 'Relación de certificados de origen',
+        
+        // Otros documentos del catálogo anterior
+        '047' => 'Pago de Derechos',
         '112' => 'Acta Constitutiva',
         '368' => 'Otros (Documento Universal)',
+        '441' => 'Oficios emitidos por autoridad',
         '479' => 'Lista de Empaque',
-        '441' => 'Oficios omitidos por autoridad',
-        '4'   => 'Identificación Oficial',
+    ];
+
+    /**
+     * Tipos de Documento específicos para Manifestación de Valor (MVE)
+     * Según Artículo 81 del Reglamento de la Ley Aduanera
+     */
+    public static $tiposDocumentoMve = [
+        // I. Factura comercial
+        '170' => 'I. Factura comercial (CFDI)',
+        
+        // II. Conocimiento de embarque, lista de empaque, guía aérea o demás documentos de transporte
+        '438' => 'II. Conocimiento de embarque, guía aérea o documento de transporte',
+        '479' => 'II. Lista de Empaque',
+        
+        // III. El que compruebe el origen cuando corresponda, y la procedencia de las mercancías
+        '433' => 'III. Documento que determina procedencia y origen de mercancías',
+        '445' => 'III. Relación de certificados de origen',
+        
+        // IV. En el que conste la garantía (artículo 36-A de la Ley)
+        '176' => 'IV. Documentación relacionada con garantía (art. 36-A L.A.)',
+        
+        // V. En el que conste el pago de las Mercancías (transferencia, carta de crédito)
+        '360' => 'V. Comprobante de pago de mercancías (transferencia/carta de crédito)',
+        
+        // VI. El relativo a los gastos de transporte, seguros y gastos conexos
+        '172' => 'VI. Gastos de transporte, seguros y gastos conexos',
+        
+        // VII. Contratos relacionados con la transacción de la Mercancía
+        '171' => 'VII. Contratos relacionados con la transacción de mercancía',
+        
+        // VIII. Los que soporten los conceptos incrementables (Artículo 65 de la Ley)
+        '180' => 'VIII. Documento que soporte conceptos incrementables (art. 65)',
+        
+        // IX. Cualquier otra información y documentación necesaria
+        '368' => 'IX. Otros - Documentación adicional para valor en aduana',
     ];
 }

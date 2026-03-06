@@ -8,6 +8,7 @@ use App\Http\Controllers\DocumentUploadController;
 use App\Http\Controllers\EDocumentConsultaController;
 use App\Http\Controllers\DigitalizacionController;
 use App\Http\Controllers\SupportController;
+use App\Http\Controllers\TicketController;
 use App\Http\Controllers\LicenseController;
 use App\Models\MvClientApplicant;
 use App\Models\MvDatosManifestacion;
@@ -40,7 +41,15 @@ Route::get('/dashboard', function () {
 
 Route::middleware(['auth', 'license'])->group(function () {
     // Soporte técnico
-    Route::post('/support/send', [SupportController::class , 'send'])->name('support.send');
+    Route::post('/support/send', [SupportController::class, 'send'])->name('support.send');
+
+    // Tickets de soporte
+    Route::get('/tickets', [TicketController::class, 'index'])->name('tickets.index');
+    Route::get('/tickets/{ticket}', [TicketController::class, 'show'])->name('tickets.show');
+    Route::post('/tickets/{ticket}/respond', [TicketController::class, 'respond'])->name('tickets.respond');
+    Route::patch('/tickets/{ticket}/status', [TicketController::class, 'updateStatus'])->name('tickets.status');
+    Route::get('/tickets/attachment/{attachment}', [TicketController::class, 'downloadAttachment'])->name('tickets.attachment');
+    Route::post('/tickets/{ticket}/cancel', [TicketController::class, 'cancel'])->name('tickets.cancel');
 
     Route::get('/profile', [ProfileController::class , 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class , 'update'])->name('profile.update');

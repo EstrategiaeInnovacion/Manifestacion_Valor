@@ -1,4 +1,4 @@
-<x-app-layout>
+﻿<x-app-layout>
     <x-slot name="title">MVE Pendientes</x-slot>
     @vite(['resources/css/users-list.css', 'resources/js/mve-pendientes.js'])
 
@@ -9,7 +9,7 @@
                 <div class="flex justify-between h-20">
                     <div class="flex items-center gap-4">
                         <a href="{{ route('dashboard') }}">
-                            <img src="{{ asset('logo-ei.png') }}" alt="Logo E&I" class="h-10 w-auto">
+                            <img src="{{ asset('Gemini_Generated_Image_bmz5e9bmz5e9bmz5-removebg-preview.png') }}" alt="Logo E&I" class="h-10 w-auto">
                         </a>
                         <div class="hidden md:block h-8 w-px bg-slate-200"></div>
                         <span class="hidden md:block text-sm font-bold text-[#001a4d] uppercase tracking-wider">MVE Pendientes</span>
@@ -218,14 +218,21 @@
                                             </span>
                                             
                                             <div class="flex gap-2">
-                                                <button type="button" 
+                                                <button type="button"
                                                     onclick="mostrarVistaPreviaYFirmar({{ $applicantId }}, '{{ $mveData['applicant']->business_name }}')"
                                                     class="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-bold rounded-lg shadow-md hover:shadow-lg transition-all duration-200 transform hover:scale-105">
                                                     <i data-lucide="send" class="w-4 h-4"></i>
                                                     <span>Firmar y Enviar a VUCEM</span>
                                                 </button>
-                                                
-                                                <button type="button" 
+
+                                                <a href="{{ route('mve.create-manual', $applicantId) }}"
+                                                   onclick="return confirm('¿Desea editar esta MVE? El estado volverá a Borrador y deberá confirmarla nuevamente antes de enviar.')"
+                                                   class="inline-flex items-center gap-2 px-4 py-3 bg-amber-50 hover:bg-amber-100 border border-amber-300 text-amber-700 font-bold rounded-lg transition-all duration-200">
+                                                    <i data-lucide="edit-3" class="w-4 h-4"></i>
+                                                    <span>Editar</span>
+                                                </a>
+
+                                                <button type="button"
                                                     onclick="mostrarModalDescartar({{ $applicantId }}, '{{ $mveData['applicant']->business_name }}')"
                                                     class="inline-flex items-center gap-2 px-4 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-lg transition-all">
                                                     <i data-lucide="trash-2" class="w-4 h-4"></i>
@@ -524,6 +531,12 @@
         let vistaPreviaApplicantId = null;
         let vistaPreviaEmpresaNombre = null;
         
+        // URLs de Laravel (resueltas en servidor para evitar problemas con subdirectorios)
+        const urlCheckCredentials = '{{ url("/cove/credenciales") }}';
+        const urlPreviewData = '{{ url("/mve/preview-data") }}';
+        const urlFirmarEnviar = '{{ url("/mve/firmar-enviar") }}';
+        const urlDescartar = '{{ url("/mve/descartar") }}';
+        
         // Mostrar nombres de archivos seleccionados
         document.getElementById('certificado')?.addEventListener('change', function(e) {
             const fileName = e.target.files[0]?.name || 'Ningún archivo seleccionado';
@@ -590,15 +603,19 @@
             // Verificar si tiene credenciales almacenadas
             try {
                 const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-                const response = await fetch(`/cove/credenciales/${applicantId}`, {
+                const response = await fetch(`${urlCheckCredentials}/${applicantId}`, {
                     headers: {
                         'Accept': 'application/json',
                         'X-CSRF-TOKEN': csrfToken
                     }
                 });
                 
+                console.log('[MVE] Verificando credenciales para solicitante:', applicantId, 'Status:', response.status);
+                
                 if (response.ok) {
                     const data = await response.json();
+                    console.log('[MVE] Respuesta credenciales:', data);
+                    
                     if (data.has_credentials && data.has_webservice_key) {
                         // Tiene todas las credenciales almacenadas
                         document.getElementById('useStoredCredentials').value = '1';
@@ -606,6 +623,7 @@
                         document.getElementById('manualCredsContainer').classList.add('hidden');
                         setManualFieldsRequired(false);
                         lucide.createIcons();
+                        console.log('[MVE] Credenciales almacenadas detectadas - usando automáticamente');
                     } else if (data.has_credentials) {
                         // Tiene cert/key pero no clave WS: ocultar solo cert/key
                         document.getElementById('useStoredCredentials').value = '1';
@@ -618,10 +636,15 @@
                         setManualFieldsRequired(false);
                         document.getElementById('clave_webservice').required = true;
                         lucide.createIcons();
+                        console.log('[MVE] Credenciales parciales - falta clave WS');
+                    } else {
+                        console.log('[MVE] Sin credenciales almacenadas - modo manual');
                     }
+                } else {
+                    console.warn('[MVE] Error verificando credenciales:', response.status, response.statusText);
                 }
             } catch (err) {
-                console.log('No se pudo verificar credenciales almacenadas, usando modo manual', err);
+                console.error('[MVE] Error de conexión verificando credenciales:', err);
             }
         }
         
@@ -662,7 +685,7 @@
             
             // Cargar la vista previa
             try {
-                const response = await fetch(`/mve/preview-data/${applicantId}`, {
+                const response = await fetch(`${urlPreviewData}/${applicantId}`, {
                     headers: {
                         'Accept': 'application/json',
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
@@ -727,26 +750,26 @@
                         <!-- Información Acuse de Valor -->
                         <div class="border-b-2 border-slate-300 pb-4 mb-4">
                             <h4 class="text-xs font-bold text-slate-700 mb-2 border-b border-slate-200 pb-1">Información Acuse de Valor</h4>
-                            <table class="w-full text-xs">
+                            <div class="overflow-x-auto w-full">`r`n                            <table class="w-full text-xs">
                                 <tr class="bg-slate-100">
                                     <td class="border border-slate-300 p-2 font-semibold" colspan="2">Método de valoración aduanera</td>
                                 </tr>
-                                <tr><td class="border border-slate-300 p-2" colspan="2">${cove.metodo_valoracion || ''}</td></tr>
+                                <tr><td class="border border-slate-300 p-2" colspan="2">${cove.metodo_valoracion || 'N/A'}</td></tr>
                                 <tr class="bg-slate-100">
                                     <td class="border border-slate-300 p-2 font-semibold" colspan="2">INCOTERM</td>
                                 </tr>
-                                <tr><td class="border border-slate-300 p-2" colspan="2">${cove.incoterm || ''}</td></tr>
+                                <tr><td class="border border-slate-300 p-2" colspan="2">${cove.incoterm || 'N/A'}</td></tr>
                                 <tr class="bg-slate-100">
                                     <td class="border border-slate-300 p-2 font-semibold" colspan="2">¿Existe vinculación entre importador y vendedor/proveedor?</td>
                                 </tr>
-                                <tr><td class="border border-slate-300 p-2" colspan="2">${cove.vinculacion === '1' || cove.vinculacion === 1 ? 'Sí' : (cove.vinculacion === '0' || cove.vinculacion === 0 ? 'No' : '')}</td></tr>
-                            </table>
+                                <tr><td class="border border-slate-300 p-2" colspan="2">${cove.vinculacion === '1' || cove.vinculacion === 1 ? 'Sí' : (cove.vinculacion === '0' || cove.vinculacion === 0 ? 'No' : 'N/A')}</td></tr>
+                            </table>`r`n                            </div>
                         </div>
                         
                         <!-- Pedimentos -->
                         <div class="border-b-2 border-slate-300 pb-4 mb-4">
                             <h4 class="text-xs font-bold text-slate-700 mb-2 border-b border-slate-200 pb-1">Pedimentos</h4>
-                            <table class="w-full text-xs">
+                            <div class="overflow-x-auto w-full">`r`n                            <table class="w-full text-xs">
                                 <tr class="bg-slate-100">
                                     <td class="border border-slate-300 p-2 font-semibold w-1/3">Pedimento</td>
                                     <td class="border border-slate-300 p-2 font-semibold w-1/3">Patente</td>
@@ -758,14 +781,14 @@
                                         <td class="border border-slate-300 p-2">${p.patente || ''}</td>
                                         <td class="border border-slate-300 p-2">${p.aduanaText || p.aduana || ''}</td>
                                     </tr>
-                                `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="3">&nbsp;</td></tr>`}
-                            </table>
+                                `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="3">N/A</td></tr>`}
+                            </table>`r`n                            </div>
                         </div>
                         
                         <!-- Incrementables -->
                         <div class="border-b-2 border-slate-300 pb-4 mb-4">
                             <h4 class="text-xs font-bold text-slate-700 mb-1 border-b border-slate-200 pb-1">Incrementables conforme al artículo 65 de la ley</h4>
-                            <table class="w-full text-xs">
+                            <div class="overflow-x-auto w-full">`r`n                            <table class="w-full text-xs">
                                 <tr class="bg-slate-100">
                                     <td class="border border-slate-300 p-2 font-semibold">Fecha de erogación</td>
                                     <td class="border border-slate-300 p-2 font-semibold">Importe</td>
@@ -777,7 +800,7 @@
                                         <td class="border border-slate-300 p-2">${inc.importe ? '$' + parseFloat(inc.importe).toLocaleString('es-MX', {minimumFractionDigits: 2}) : ''}</td>
                                         <td class="border border-slate-300 p-2">${inc.tipoMonedaText || inc.tipoMoneda || ''}</td>
                                     </tr>
-                                `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="3">&nbsp;</td></tr>`}
+                                `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="3">N/A</td></tr>`}
                                 <tr class="bg-slate-100">
                                     <td class="border border-slate-300 p-2 font-semibold">Tipo de cambio</td>
                                     <td class="border border-slate-300 p-2 font-semibold" colspan="2">¿Está a cargo del importador?</td>
@@ -787,14 +810,14 @@
                                         <td class="border border-slate-300 p-2">${inc.tipoCambio || ''}</td>
                                         <td class="border border-slate-300 p-2" colspan="2">${inc.aCargoImportador !== undefined ? (inc.aCargoImportador ? 'Sí' : 'No') : ''}</td>
                                     </tr>
-                                `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="3">&nbsp;</td></tr>`}
-                            </table>
+                                `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="3">N/A</td></tr>`}
+                            </table>`r`n                            </div>
                         </div>
                         
                         <!-- Decrementables -->
                         <div class="border-b-2 border-slate-300 pb-4 mb-4">
                             <h4 class="text-xs font-bold text-slate-700 mb-1 border-b border-slate-200 pb-1">Decrementables (Art. 66)</h4>
-                            <table class="w-full text-xs">
+                            <div class="overflow-x-auto w-full">`r`n                            <table class="w-full text-xs">
                                 <tr class="bg-slate-100">
                                     <td class="border border-slate-300 p-2 font-semibold">Fecha de erogación</td>
                                     <td class="border border-slate-300 p-2 font-semibold">Importe</td>
@@ -806,20 +829,20 @@
                                         <td class="border border-slate-300 p-2">${dec.importe ? '$' + parseFloat(dec.importe).toLocaleString('es-MX', {minimumFractionDigits: 2}) : ''}</td>
                                         <td class="border border-slate-300 p-2">${dec.tipoMonedaText || dec.tipoMoneda || ''}</td>
                                     </tr>
-                                `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="3">&nbsp;</td></tr>`}
+                                `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="3">N/A</td></tr>`}
                                 <tr class="bg-slate-100">
                                     <td class="border border-slate-300 p-2 font-semibold" colspan="3">Tipo de cambio</td>
                                 </tr>
                                 ${decrementables.length > 0 ? decrementables.map(dec => `
                                     <tr><td class="border border-slate-300 p-2" colspan="3">${dec.tipoCambio || ''}</td></tr>
-                                `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="3">&nbsp;</td></tr>`}
-                            </table>
+                                `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="3">N/A</td></tr>`}
+                            </table>`r`n                            </div>
                         </div>
                         
                         <!-- Precio pagado -->
                         <div class="border-b-2 border-slate-300 pb-4 mb-4">
                             <h4 class="text-xs font-bold text-slate-700 mb-2 border-b border-slate-200 pb-1">Precio pagado</h4>
-                            <table class="w-full text-xs">
+                            <div class="overflow-x-auto w-full">`r`n                            <table class="w-full text-xs">
                                 <tr class="bg-slate-100">
                                     <td class="border border-slate-300 p-2 font-semibold">Fecha de pago</td>
                                     <td class="border border-slate-300 p-2 font-semibold">Importe</td>
@@ -833,7 +856,7 @@
                                         <td class="border border-slate-300 p-2">${p.formaPagoText || p.formaPago || ''}</td>
                                         <td class="border border-slate-300 p-2">${p.especifique || ''}</td>
                                     </tr>
-                                `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="4">&nbsp;</td></tr>`}
+                                `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="4">N/A</td></tr>`}
                                 <tr class="bg-slate-100">
                                     <td class="border border-slate-300 p-2 font-semibold">Tipo de moneda</td>
                                     <td class="border border-slate-300 p-2 font-semibold" colspan="3">Tipo de cambio</td>
@@ -843,14 +866,14 @@
                                         <td class="border border-slate-300 p-2">${p.tipoMonedaText || p.tipoMoneda || ''}</td>
                                         <td class="border border-slate-300 p-2" colspan="3">${p.tipoCambio || ''}</td>
                                     </tr>
-                                `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="4">&nbsp;</td></tr>`}
-                            </table>
+                                `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="4">N/A</td></tr>`}
+                            </table>`r`n                            </div>
                         </div>
                         
                         <!-- Precio por pagar -->
                         <div class="border-b-2 border-slate-300 pb-4 mb-4">
                             <h4 class="text-xs font-bold text-slate-700 mb-2 border-b border-slate-200 pb-1">Precio por pagar</h4>
-                            <table class="w-full text-xs">
+                            <div class="overflow-x-auto w-full">`r`n                            <table class="w-full text-xs">
                                 <tr class="bg-slate-100">
                                     <td class="border border-slate-300 p-2 font-semibold">Fecha de pago</td>
                                     <td class="border border-slate-300 p-2 font-semibold">Importe</td>
@@ -864,7 +887,7 @@
                                         <td class="border border-slate-300 p-2">${p.formaPagoText || p.formaPago || ''}</td>
                                         <td class="border border-slate-300 p-2">${p.especifique || ''}</td>
                                     </tr>
-                                `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="4">&nbsp;</td></tr>`}
+                                `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="4">N/A</td></tr>`}
                                 <tr class="bg-slate-100">
                                     <td class="border border-slate-300 p-2 font-semibold">Tipo de moneda</td>
                                     <td class="border border-slate-300 p-2 font-semibold" colspan="3">Tipo de cambio</td>
@@ -874,20 +897,20 @@
                                         <td class="border border-slate-300 p-2">${p.tipoMonedaText || p.tipoMoneda || ''}</td>
                                         <td class="border border-slate-300 p-2" colspan="3">${p.tipoCambio || ''}</td>
                                     </tr>
-                                `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="4">&nbsp;</td></tr>`}
+                                `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="4">N/A</td></tr>`}
                                 <tr class="bg-slate-100">
                                     <td class="border border-slate-300 p-2 font-semibold" colspan="4">Momento(s) o situación(es) cuando se realizará el pago</td>
                                 </tr>
                                 ${precioPorPagar.length > 0 ? precioPorPagar.map(p => `
                                     <tr><td class="border border-slate-300 p-2" colspan="4">${p.momentoSituacion || ''}</td></tr>
-                                `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="4">&nbsp;</td></tr>`}
-                            </table>
+                                `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="4">N/A</td></tr>`}
+                            </table>`r`n                            </div>
                         </div>
                         
                         <!-- Compenso pago -->
                         <div class="pb-2">
                             <h4 class="text-xs font-bold text-slate-700 mb-2 border-b border-slate-200 pb-1">Compenso pago</h4>
-                            <table class="w-full text-xs">
+                            <div class="overflow-x-auto w-full">`r`n                            <table class="w-full text-xs">
                                 <tr class="bg-slate-100">
                                     <td class="border border-slate-300 p-2 font-semibold">Fecha de pago</td>
                                     <td class="border border-slate-300 p-2 font-semibold">Forma de pago</td>
@@ -899,20 +922,20 @@
                                         <td class="border border-slate-300 p-2">${c.formaPagoText || c.formaPago || ''}</td>
                                         <td class="border border-slate-300 p-2">${c.especifique || ''}</td>
                                     </tr>
-                                `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="3">&nbsp;</td></tr>`}
+                                `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="3">N/A</td></tr>`}
                                 <tr class="bg-slate-100">
                                     <td class="border border-slate-300 p-2 font-semibold" colspan="3">Motivo por lo que se realizó</td>
                                 </tr>
                                 ${compensoPago.length > 0 ? compensoPago.map(c => `
                                     <tr><td class="border border-slate-300 p-2" colspan="3">${c.motivo || ''}</td></tr>
-                                `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="3">&nbsp;</td></tr>`}
+                                `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="3">N/A</td></tr>`}
                                 <tr class="bg-slate-100">
                                     <td class="border border-slate-300 p-2 font-semibold" colspan="3">Prestación de la mercancía</td>
                                 </tr>
                                 ${compensoPago.length > 0 ? compensoPago.map(c => `
                                     <tr><td class="border border-slate-300 p-2" colspan="3">${c.prestacionMercancia || ''}</td></tr>
-                                `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="3">&nbsp;</td></tr>`}
-                            </table>
+                                `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="3">N/A</td></tr>`}
+                            </table>`r`n                            </div>
                         </div>
                     </div>
                 `;
@@ -936,35 +959,35 @@
                     <!-- Datos de la Manifestación de valor -->
                     <div class="border-b-2 border-slate-300 pb-4">
                         <h3 class="text-sm font-bold text-slate-700 mb-3 border-b border-slate-200 pb-1">Datos de la Manifestación de valor</h3>
-                        <table class="w-full text-xs">
+                        <div class="overflow-x-auto w-full">`r`n                        <table class="w-full text-xs">
                             <tr class="bg-slate-100">
                                 <td class="border border-slate-300 p-2 font-semibold w-1/3">RFC del importador</td>
                                 <td class="border border-slate-300 p-2 w-2/3">Nombre o Razón social</td>
                             </tr>
                             <tr>
-                                <td class="border border-slate-300 p-2 font-medium">${data.datos_manifestacion?.rfc_importador || data.applicant?.rfc || ''}</td>
-                                <td class="border border-slate-300 p-2">${data.applicant?.razon_social || ''}</td>
+                                <td class="border border-slate-300 p-2 font-medium">${data.datos_manifestacion?.rfc_importador || data.applicant?.rfc || 'N/A'}</td>
+                                <td class="border border-slate-300 p-2">${data.applicant?.razon_social || 'N/A'}</td>
                             </tr>
-                        </table>
+                        </table>`r`n                        </div>
                     </div>
                     
                     <!-- RFC's de consulta -->
                     <div class="border-b-2 border-slate-300 pb-4">
                         <h3 class="text-sm font-bold text-slate-700 mb-3 border-b border-slate-200 pb-1">RFC's de consulta</h3>
-                        <table class="w-full text-xs">
+                        <div class="overflow-x-auto w-full">`r`n                        <table class="w-full text-xs">
                             <tr class="bg-slate-100">
                                 <td class="border border-slate-300 p-2 font-semibold w-1/4">RFC</td>
                                 <td class="border border-slate-300 p-2 w-2/4">Nombre o Razón social</td>
                             </tr>
                             ${personasConsulta.length > 0 ? personasConsulta.map(p => `
                                 <tr>
-                                    <td class="border border-slate-300 p-2 font-medium">${p.rfc || ''}</td>
-                                    <td class="border border-slate-300 p-2">${p.razon_social || ''}</td>
+                                    <td class="border border-slate-300 p-2 font-medium">${p.rfc || 'N/A'}</td>
+                                    <td class="border border-slate-300 p-2">${p.razon_social || 'N/A'}</td>
                                 </tr>
                             `).join('') : `
                                 <tr>
-                                    <td class="border border-slate-300 p-2">&nbsp;</td>
-                                    <td class="border border-slate-300 p-2">&nbsp;</td>
+                                    <td class="border border-slate-300 p-2">N/A</td>
+                                    <td class="border border-slate-300 p-2">N/A</td>
                                 </tr>
                             `}
                             <tr class="bg-slate-100">
@@ -972,14 +995,14 @@
                             </tr>
                             ${personasConsulta.length > 0 ? personasConsulta.map(p => `
                                 <tr>
-                                    <td class="border border-slate-300 p-2" colspan="2">${p.tipo_figura || ''}</td>
+                                    <td class="border border-slate-300 p-2" colspan="2">${p.tipo_figura || 'N/A'}</td>
                                 </tr>
                             `).join('') : `
                                 <tr>
-                                    <td class="border border-slate-300 p-2" colspan="2">&nbsp;</td>
+                                    <td class="border border-slate-300 p-2" colspan="2">N/A</td>
                                 </tr>
                             `}
-                        </table>
+                        </table>`r`n                        </div>
                     </div>
                     
                     <!-- Bloques de COVEs secuenciales -->
@@ -995,7 +1018,7 @@
                     <!-- Valor en aduana (totales across all COVEs) -->
                     <div class="border-b-2 border-slate-300 pb-4">
                         <h3 class="text-sm font-bold text-slate-700 mb-3 border-b border-slate-200 pb-1">Valor en aduana</h3>
-                        <table class="w-full text-xs">
+                        <div class="overflow-x-auto w-full">`r`n                        <table class="w-full text-xs">
                             <tr class="bg-slate-100">
                                 <td class="border border-slate-300 p-2 font-semibold">Importe total del precio pagado (Sumatoria de los conceptos y deberán ser declarados en MN)</td>
                                 <td class="border border-slate-300 p-2 font-semibold">Importe total del precio por pagar (Sumatoria de los conceptos y deberán ser declarados en MN)</td>
@@ -1018,26 +1041,26 @@
                             <tr>
                                 <td class="border border-slate-300 p-2 text-lg font-bold text-green-700" colspan="2">$${parseFloat(valorAduana.total_valor_aduana || 0).toLocaleString('es-MX', {minimumFractionDigits: 2})}</td>
                             </tr>
-                        </table>
+                        </table>`r`n                        </div>
                     </div>
                     
                     <!-- eDocuments -->
                     <div class="pb-4">
                         <h3 class="text-sm font-bold text-slate-700 mb-3 border-b border-slate-200 pb-1">eDocuments</h3>
-                        <table class="w-full text-xs">
+                        <div class="overflow-x-auto w-full">`r`n                        <table class="w-full text-xs">
                             <tr class="bg-slate-100">
                                 <td class="border border-slate-300 p-2 font-semibold">eDocument</td>
                             </tr>
                             ${documentos.length > 0 ? documentos.map(doc => `
                                 <tr>
-                                    <td class="border border-slate-300 p-2">${doc.folio_edocument || ''}</td>
+                                    <td class="border border-slate-300 p-2">${doc.folio_edocument || 'N/A'}</td>
                                 </tr>
                             `).join('') : `
                                 <tr>
-                                    <td class="border border-slate-300 p-2">&nbsp;</td>
+                                    <td class="border border-slate-300 p-2">N/A</td>
                                 </tr>
                             `}
-                        </table>
+                        </table>`r`n                        </div>
                     </div>
                     
                     <!-- Cadena Original -->
@@ -1142,7 +1165,7 @@
                 btn.innerHTML = '<i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i><span>Eliminando...</span>';
                 lucide.createIcons();
                 
-                const response = await fetch(`/mve/descartar/${applicantId}`, {
+                const response = await fetch(`${urlDescartar}/${applicantId}`, {
                     method: 'DELETE',
                     headers: {
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
@@ -1184,7 +1207,7 @@
                 const formData = new FormData(this);
                 formData.append('confirmacion', 'on');
                 
-                const response = await fetch(`/mve/firmar-enviar/${applicantId}`, {
+                const response = await fetch(`${urlFirmarEnviar}/${applicantId}`, {
                     method: 'POST',
                     headers: {
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
@@ -1234,3 +1257,4 @@
     </script>
 
 </x-app-layout>
+

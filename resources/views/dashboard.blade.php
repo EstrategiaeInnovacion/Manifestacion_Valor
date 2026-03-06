@@ -8,7 +8,7 @@
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="flex justify-between h-20">
                     <div class="flex items-center gap-4">
-                        <img src="{{ asset('logo-ei.png') }}" alt="Logo E&I" class="h-10 w-auto">
+                        <img src="{{ asset('Gemini_Generated_Image_bmz5e9bmz5e9bmz5-removebg-preview.png') }}" alt="Logo E&I" class="h-10 w-auto">
                         <div class="hidden md:block h-8 w-px bg-slate-200"></div>
                         <span class="hidden md:block text-sm font-bold text-[#001a4d] uppercase tracking-wider">Panel de Control</span>
                     </div>
@@ -52,30 +52,6 @@
 
         <main class="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
             
-            {{-- ALERTA DE SEGURIDAD (MINIMALISTA & LLAMATIVA) --}}
-            <div class="mb-8 rounded-lg bg-[#001a4d] p-3 shadow-lg shadow-blue-900/20 flex items-center justify-between border-l-4 border-emerald-400 relative overflow-hidden group">
-                {{-- Efecto de brillo al pasar el mouse --}}
-                <div class="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
-
-                <div class="flex items-center gap-4 relative z-10">
-                    {{-- Icono con Pulso --}}
-                    <div class="flex-shrink-0 relative flex items-center justify-center w-8 h-8 rounded-full bg-white/10">
-                        <span class="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-20 animate-ping"></span>
-                        <i data-lucide="shield-check" class="text-emerald-400 w-5 h-5 relative z-10"></i>
-                    </div>
-
-                    <div class="text-sm text-blue-100 font-medium">
-                        <span class="text-white font-bold tracking-wide mr-1">PRIVACIDAD SEGURA:</span>
-                        Tu e.firma no se almacena y se elimina tras su uso.
-                    </div>
-                </div>
-
-                {{-- Badge derecho --}}
-                <div class="hidden sm:flex items-center gap-2 px-3 py-1 rounded-full bg-black/20 border border-white/5">
-                    <div class="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]"></div>
-                    <span class="text-[10px] font-bold text-emerald-400 uppercase tracking-widest">Encrypted RAM Only</span>
-                </div>
-            </div>
 
             {{-- HEADER CORPORATIVO --}}
             <div class="mb-12 bg-white border border-slate-200 rounded-sm p-10 shadow-sm relative overflow-hidden">
@@ -84,21 +60,33 @@
                 </div>
 
                 <div class="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center">
-                    <div>
+                    <div class="flex flex-col md:flex-row gap-8 w-full justify-between items-center">
                         <div class="flex items-center gap-3 mb-4">
-                            <span class="bg-[#001a4d] text-white text-[10px] font-bold px-2 py-1 tracking-[0.2em]">V.2.0</span>
+                            <span class="bg-[#001a4d] text-white text-[10px] font-bold px-2 py-1 tracking-[0.2em]">V2.0</span>
                             <div class="h-px w-8 bg-slate-300"></div>
-                            <span class="text-xs font-medium text-slate-400 uppercase tracking-widest">Global Asset Management</span>
+                            <span class="text-xs font-medium text-slate-400 uppercase tracking-widest">
+                                {{ auth()->user()->company ?? 'Sin empresa' }}
+                            </span>
                         </div>
-                        
-                        <img src="{{ asset('Gemini_Generated_Image_bmz5e9bmz5e9bmz5-removebg-preview.png') }}" alt="Logo" class="h-20 object-contain">
-                    </div>
-
-                    <div class="mt-8 md:mt-0 text-left md:text-right border-t md:border-t-0 md:border-l border-slate-100 pt-6 md:pt-0 md:pl-12">
-                        <p class="text-sm font-bold text-[#001a4d] uppercase tracking-widest mb-2">Message of the Day</p>
-                        <p class="text-2xl text-slate-500 font-light leading-snug max-w-md">
-                            "La excelencia no es un acto, es un <span class="text-[#001a4d] font-semibold">estándar operativo.</span>"
-                        </p>
+                        <div class="flex flex-col md:items-end items-start">
+                            <span class="text-xs text-slate-500">Hora actual: <span id="hora-actual">
+                                {{ now()->setTimezone('America/Mexico_City')->format('H:i:s') }}
+                            </span></span>
+                                                    @push('scripts')
+                                                    <script>
+                                                    function actualizarHoraMexico() {
+                                                        const options = { timeZone: 'America/Mexico_City', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
+                                                        const ahora = new Date().toLocaleTimeString('es-MX', options);
+                                                        document.getElementById('hora-actual').textContent = ahora;
+                                                    }
+                                                    setInterval(actualizarHoraMexico, 1000);
+                                                    window.addEventListener('DOMContentLoaded', actualizarHoraMexico);
+                                                    </script>
+                                                    @endpush
+                            <span class="text-xs text-slate-500">Usuario: <span class="font-semibold text-[#001a4d]">
+                                {{ auth()->user()->full_name ?? auth()->user()->name ?? 'Invitado' }}
+                            </span> <span class="text-xs text-slate-400">({{ __(auth()->user()->role ?? 'Sin rol') }})</span></span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -261,6 +249,27 @@
                             </div>
                         </div>
                     </button>
+
+                    {{-- TARJETA: MIS TICKETS --}}
+                    <a href="{{ route('tickets.index') }}" class="modern-card group border-t-4 border-t-[#003399]">
+                        <div class="card-content">
+                            <div class="icon-box bg-blue-50 text-[#003399] group-hover:bg-[#003399] group-hover:text-white transition-all duration-500">
+                                <i data-lucide="ticket" class="w-8 h-8"></i>
+                            </div>
+                            <h3 class="text-xl font-bold text-[#001a4d] mt-6">
+                                {{ auth()->user()->role === 'SuperAdmin' ? 'Gestionar Tickets' : 'Mis Tickets' }}
+                            </h3>
+                            <p class="text-slate-500 text-sm mt-3 leading-relaxed">
+                                {{ auth()->user()->role === 'SuperAdmin'
+                                    ? 'Revisa, responde y gestiona todos los tickets de soporte del sistema.'
+                                    : 'Consulta el estatus y las respuestas de los tickets que has enviado.' }}
+                            </p>
+                            <div class="mt-8 flex items-center text-[#003399] font-bold text-sm">
+                                Ver Tickets
+                                <i data-lucide="arrow-right" class="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform"></i>
+                            </div>
+                        </div>
+                    </a>
                 </div>
             </div>
         </main>
@@ -322,6 +331,15 @@
             </div>
         </div>
 
+        {{-- Footer con Copyright --}}
+        <footer class="mt-16 py-6 border-t border-slate-200">
+            <div class="text-center">
+                <p class="text-sm text-slate-400">
+                    © {{ date('Y') }} <span class="font-semibold text-slate-500">Estrategia e Innovación</span>. Todos los derechos reservados.
+                </p>
+            </div>
+        </footer>
+
         {{-- Modal de Soporte --}}
         <div id="supportModal" class="mve-modal">
             <div class="mve-modal-overlay" onclick="closeSupportModal()"></div>
@@ -382,12 +400,31 @@
                         </div>
 
                         {{-- Descripción --}}
-                        <div class="mb-6">
+                        <div class="mb-5">
                             <label for="supportDescription" class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Descripción</label>
-                            <textarea id="supportDescription" name="description" required maxlength="5000" rows="5"
+                            <textarea id="supportDescription" name="description" required maxlength="5000" rows="4"
                                 placeholder="Explica con detalle tu caso o solicitud..."
                                 class="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm text-[#001a4d] font-medium focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all outline-none placeholder:text-slate-300 resize-none"></textarea>
                             <p class="text-xs text-slate-400 mt-1.5 text-right"><span id="charCount">0</span>/5000</p>
+                        </div>
+
+                        {{-- Capturas de pantalla --}}
+                        <div class="mb-6">
+                            <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">
+                                Capturas de Pantalla
+                                <span class="normal-case font-normal text-slate-300 ml-1">(opcional, máx. 5 imágenes)</span>
+                            </label>
+                            <label for="supportScreenshots"
+                                class="flex flex-col items-center justify-center w-full p-4 border-2 border-dashed border-slate-200 rounded-xl cursor-pointer hover:border-amber-400 hover:bg-amber-50/50 transition-all group">
+                                <i data-lucide="image-plus" class="w-6 h-6 text-slate-300 group-hover:text-amber-400 transition-colors mb-1.5"></i>
+                                <span class="text-sm font-medium text-slate-400 group-hover:text-amber-600 transition-colors">Haz clic para adjuntar imágenes</span>
+                                <span class="text-xs text-slate-300 mt-0.5">PNG, JPG, GIF, WEBP — Máx. 10 MB por archivo</span>
+                            </label>
+                            <input type="file" id="supportScreenshots" name="screenshots[]" multiple
+                                accept="image/jpeg,image/png,image/gif,image/webp"
+                                class="hidden"
+                                onchange="previewScreenshots(this)">
+                            <div id="screenshotPreview" class="flex flex-wrap gap-2 mt-2"></div>
                         </div>
 
                         {{-- Botones --}}

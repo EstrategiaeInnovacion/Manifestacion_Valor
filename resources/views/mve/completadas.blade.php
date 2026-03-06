@@ -1,4 +1,4 @@
-<x-app-layout>
+﻿<x-app-layout>
     <x-slot name="title">MVE Completadas</x-slot>
     @vite(['resources/css/users-list.css'])
 
@@ -9,7 +9,7 @@
                 <div class="flex justify-between h-20">
                     <div class="flex items-center gap-4">
                         <a href="{{ route('dashboard') }}">
-                            <img src="{{ asset('logo-ei.png') }}" alt="Logo E&I" class="h-10 w-auto">
+                            <img src="{{ asset('Gemini_Generated_Image_bmz5e9bmz5e9bmz5-removebg-preview.png') }}" alt="Logo E&I" class="h-10 w-auto">
                         </a>
                         <div class="hidden md:block h-8 w-px bg-slate-200"></div>
                         <span class="hidden md:block text-sm font-bold text-[#001a4d] uppercase tracking-wider">MVE Completadas</span>
@@ -520,7 +520,7 @@
                             <h2 class="text-base font-bold text-slate-800 mb-3 pb-2 border-b-2 border-slate-300">
                                 Datos de la Manifestación de valor
                             </h2>
-                            <table class="w-full border-collapse">
+                            <div class="overflow-x-auto w-full">`r`n                            <table class="w-full border-collapse">
                                 <thead>
                                     <tr class="bg-slate-100">
                                         <th class="border border-slate-300 px-4 py-2 text-left text-sm font-semibold text-slate-700">RFC del importador</th>
@@ -533,7 +533,7 @@
                                         <td class="border border-slate-300 px-4 py-2 text-sm">${acusesData[window.consultaActual.acuse_id]?.business_name || 'N/A'}</td>
                                     </tr>
                                 </tbody>
-                            </table>
+                            </table>`r`n                            </div>
                         </div>
 
                         <!-- Persona Consulta -->
@@ -542,7 +542,7 @@
                                 <h2 class="text-base font-bold text-slate-800 mb-3 pb-2 border-b-2 border-slate-300">
                                     Persona que Consulta
                                 </h2>
-                                <table class="w-full border-collapse mb-4">
+                                <div class="overflow-x-auto w-full">`r`n                                <table class="w-full border-collapse mb-4">
                                     <tbody>
                                         ${dm.persona_consulta.rfc ? `
                                             <tr>
@@ -565,7 +565,7 @@
                                             </tr>
                                         ` : ''}
                                     </tbody>
-                                </table>
+                                </table>`r`n                                </div>
                             </div>
                         ` : ''}
 
@@ -635,7 +635,7 @@
                                     ` : ''}
                                 </div>
 
-                                <table class="w-full border-collapse mb-4">
+                                <div class="overflow-x-auto w-full">`r`n                                <table class="w-full border-collapse mb-4">
                                     <tbody>
                                         ${cove.metodo_valoracion ? `
                                             <tr>
@@ -656,11 +656,11 @@
                                             </tr>
                                         ` : ''}
                                     </tbody>
-                                </table>
+                                </table>`r`n                                </div>
 
                                 ${cove.precio_pagado ? `
                                     <h3 class="text-sm font-bold text-slate-800 mb-2 mt-3">Precio Pagado</h3>
-                                    <table class="w-full border-collapse">
+                                    <div class="overflow-x-auto w-full">`r`n                                    <table class="w-full border-collapse">
                                         <tbody>
                                             ${cove.precio_pagado.fecha_pago ? `
                                                 <tr>
@@ -693,7 +693,7 @@
                                                 </tr>
                                             ` : ''}
                                         </tbody>
-                                    </table>
+                                    </table>`r`n                                    </div>
                                 ` : ''}
                             </div>
                         `).join('') : `
@@ -724,7 +724,7 @@
                                 ${dm.precios_por_pagar.map((ppp, idx) => `
                                     <div class="mb-4 p-4 bg-amber-50 border border-amber-200 rounded">
                                         <h3 class="text-sm font-bold text-amber-900 mb-2">Precio Por Pagar ${idx + 1}</h3>
-                                        <table class="w-full border-collapse">
+                                        <div class="overflow-x-auto w-full">`r`n                                        <table class="w-full border-collapse">
                                             <tbody>
                                                 ${ppp.fecha_pago ? `
                                                     <tr>
@@ -787,7 +787,7 @@
                                                     </tr>
                                                 ` : ''}
                                             </tbody>
-                                        </table>
+                                        </table>`r`n                                        </div>
                                     </div>
                                 `).join('')}
                             </div>
@@ -802,7 +802,7 @@
                                 ${dm.compensos_pago.map((cp, idx) => `
                                     <div class="mb-4 p-4 bg-purple-50 border border-purple-200 rounded">
                                         <h3 class="text-sm font-bold text-purple-900 mb-2">Compenso ${idx + 1}</h3>
-                                        <table class="w-full border-collapse">
+                                        <div class="overflow-x-auto w-full">`r`n                                        <table class="w-full border-collapse">
                                             <tbody>
                                                 ${cp.fecha ? `
                                                     <tr>
@@ -855,7 +855,7 @@
                                                     </tr>
                                                 ` : ''}
                                             </tbody>
-                                        </table>
+                                        </table>`r`n                                        </div>
                                     </div>
                                 `).join('')}
                             </div>
@@ -867,7 +867,7 @@
                                 <h2 class="text-base font-bold text-slate-800 mb-3 pb-2 border-b-2 border-slate-300">
                                     Incrementables
                                 </h2>
-                                <table class="w-full border-collapse mb-4">
+                                <div class="overflow-x-auto w-full">`r`n                                <table class="w-full border-collapse mb-4">
                                     <thead>
                                         <tr class="bg-slate-100">
                                             <th class="border border-slate-300 px-4 py-2 text-left text-sm font-semibold text-slate-700">Tipo</th>
@@ -890,7 +890,7 @@
                                             </tr>
                                         `).join('')}
                                     </tbody>
-                                </table>
+                                </table>`r`n                                </div>
                             </div>
                         ` : ''}
 
@@ -900,7 +900,7 @@
                                 <h2 class="text-base font-bold text-slate-800 mb-3 pb-2 border-b-2 border-slate-300">
                                     Decrementables
                                 </h2>
-                                <table class="w-full border-collapse mb-4">
+                                <div class="overflow-x-auto w-full">`r`n                                <table class="w-full border-collapse mb-4">
                                     <thead>
                                         <tr class="bg-slate-100">
                                             <th class="border border-slate-300 px-4 py-2 text-left text-sm font-semibold text-slate-700">Tipo</th>
@@ -919,7 +919,7 @@
                                             </tr>
                                         `).join('')}
                                     </tbody>
-                                </table>
+                                </table>`r`n                                </div>
                             </div>
                         ` : ''}
 
@@ -929,7 +929,7 @@
                                 <h2 class="text-base font-bold text-slate-800 mb-3 pb-2 border-b-2 border-slate-300">
                                     Valor en Aduana
                                 </h2>
-                                <table class="w-full border-collapse mb-4">
+                                <div class="overflow-x-auto w-full">`r`n                                <table class="w-full border-collapse mb-4">
                                     <tbody>
                                         ${dm.valor_aduana.precio_pagado ? `
                                             <tr>
@@ -982,7 +982,7 @@
                                             </tr>
                                         ` : ''}
                                     </tbody>
-                                </table>
+                                </table>`r`n                                </div>
                             </div>
                         ` : ''}
 
@@ -1155,3 +1155,4 @@
         }
     </script>
 </x-app-layout>
+

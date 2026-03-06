@@ -9,7 +9,7 @@
                 <div class="flex justify-between h-20">
                     <div class="flex items-center gap-4">
                         <a href="{{ route('dashboard') }}">
-                            <img src="{{ asset('logo-ei.png') }}" alt="Logo E&I" class="h-10 w-auto">
+                            <img src="{{ asset('Gemini_Generated_Image_bmz5e9bmz5e9bmz5-removebg-preview.png') }}" alt="Logo E&I" class="h-10 w-auto">
                         </a>
                         <div class="hidden md:block h-8 w-px bg-slate-200"></div>
                         <span class="hidden md:block text-sm font-bold text-[#001a4d] uppercase tracking-wider">Añadir Usuario</span>
@@ -188,6 +188,26 @@
                             @endif
                         </p>
                     </div>
+
+                    {{-- Campo Empresa - Solo visible para SuperAdmin --}}
+                    @if(auth()->user()->role === 'SuperAdmin')
+                    <div class="form-group" id="companyField">
+                        <label for="company" class="form-label">Empresa / Organización</label>
+                        <input id="company" 
+                               name="company" 
+                               type="text" 
+                               class="form-input" 
+                               value="{{ old('company') }}" 
+                               placeholder="Ej: Estrategia e Innovación">
+                        @error('company')
+                            <p class="error-message">{{ $message }}</p>
+                        @enderror
+                        <p class="text-xs text-slate-500 mt-2 pl-1">
+                            <i data-lucide="building" class="w-3 h-3 inline mr-1"></i>
+                            La empresa se heredará a los usuarios que cree este administrador.
+                        </p>
+                    </div>
+                    @endif
 
                     <div class="password-info-box">
                         <div class="flex items-start gap-3">

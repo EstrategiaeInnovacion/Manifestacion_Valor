@@ -84,27 +84,29 @@
 
                 {{-- Tabla de RFCs agregados --}}
                 <div class="table-container">
-                    <table class="mve-table">
-                        <thead>
-                            <tr>
-                                <th class="table-checkbox">
-                                    <input type="checkbox" id="selectAllRfcConsulta" class="table-checkbox-input" onchange="toggleAllRfcConsulta(this)">
-                                </th>
-                                <th>RFC de consulta</th>
-                                <th>Nombre o Razón Social</th>
-                                <th>Tipo Figura</th>
-                                <th class="w-16 text-center">Editar</th>
-                            </tr>
-                        </thead>
-                        <tbody id="rfcConsultaTableBody">
-                            <tr>
-                                <td colspan="5" class="table-empty">
-                                    <i data-lucide="inbox" class="w-8 h-8 text-slate-300"></i>
-                                    <p class="text-sm text-slate-400 mt-2">No hay RFC's agregados</p>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
+                    <div class="overflow-x-auto w-full">
+                        <table class="mve-table">
+                            <thead>
+                                <tr>
+                                    <th class="table-checkbox">
+                                        <input type="checkbox" id="selectAllRfcConsulta" class="table-checkbox-input" onchange="toggleAllRfcConsulta(this)">
+                                    </th>
+                                    <th>RFC de consulta</th>
+                                    <th>Nombre o Razón Social</th>
+                                    <th>Tipo Figura</th>
+                                    <th class="w-16 text-center">Editar</th>
+                                </tr>
+                            </thead>
+                            <tbody id="rfcConsultaTableBody">
+                                <tr>
+                                    <td colspan="5" class="table-empty">
+                                        <i data-lucide="inbox" class="w-8 h-8 text-slate-300"></i>
+                                        <p class="text-sm text-slate-400 mt-2">No hay RFC's agregados</p>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
 
                 {{-- Botón Guardar Sección --}}
@@ -117,7 +119,7 @@
 
                 {{-- Navegación Stepper --}}
                 <div class="flex justify-end mt-6">
-                    <button type="button" onclick="nextStep()" class="btn-primary-large">
+                    <button type="button" id="btnSiguienteStep1" onclick="nextStep()" class="btn-primary-large opacity-50 cursor-not-allowed" disabled>
                         Siguiente
                         <i data-lucide="arrow-right" class="w-5 h-5 ml-2"></i>
                     </button>

@@ -25,7 +25,7 @@ return [
         'informacionCove.*.cove'       => 'required|string|max:20',
         'informacionCove.*.incoterm'   => 'required|string|max:15',
         'existeVinculacion' => 'required|integer|in:0,1',
-        'pedimento'         => 'required|string|max:20',
+        'pedimento'         => 'required|digits:7',
         'patente'           => 'required|string|max:20',
         'aduana'            => 'required|string|max:20',
 
@@ -111,7 +111,7 @@ return [
         'rfc.required'           => 'El RFC del Importador es obligatorio.',
         'informacionCove.*.cove.required' => 'El número de COVE es obligatorio para identificar la operación.',
         'existeVinculacion.in'   => 'Especifique si existe vinculación: 0 para NO, 1 para SÍ.',
-        'pedimento.max'          => 'El número de pedimento no debe exceder los 20 caracteres.',
+        'pedimento.digits'       => 'El número de pedimento debe tener exactamente 7 dígitos.',
 
         /** Mensajes Paso 3 **/
         'precioPagado.total.numeric'           => 'El total del precio pagado debe ser numérico con hasta 3 decimales.',

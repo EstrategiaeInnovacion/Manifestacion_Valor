@@ -9,7 +9,7 @@
                 <div class="flex justify-between h-20">
                     <div class="flex items-center gap-4">
                         <a href="{{ route('dashboard') }}">
-                            <img src="{{ asset('logo-ei.png') }}" alt="Logo E&I" class="h-10 w-auto">
+                            <img src="{{ asset('Gemini_Generated_Image_bmz5e9bmz5e9bmz5-removebg-preview.png') }}" alt="Logo E&I" class="h-10 w-auto">
                         </a>
                         <div class="hidden md:block h-8 w-px bg-slate-200"></div>
                         <span class="hidden md:block text-sm font-bold text-[#001a4d] uppercase tracking-wider">Editar Solicitante</span>
@@ -113,6 +113,27 @@
                                        class="form-input" required>
                             </div>
                         </div>
+
+                        {{-- Asignación de Usuario --}}
+                        @if(isset($usersForAssignment) && $usersForAssignment->count() > 0)
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="assigned_user_id" class="form-label">
+                                    <i data-lucide="user-plus" class="w-4 h-4 inline-block mr-1"></i>
+                                    Asignar a Usuario
+                                </label>
+                                <select id="assigned_user_id" name="assigned_user_id" class="form-input">
+                                    <option value="0">-- Sin asignar --</option>
+                                    @foreach($usersForAssignment as $userOption)
+                                        <option value="{{ $userOption->id }}" {{ old('assigned_user_id', $applicant->assigned_user_id) == $userOption->id ? 'selected' : '' }}>
+                                            {{ $userOption->full_name }} ({{ $userOption->email }})
+                                        </option>
+                                    @endforeach
+                                </select>
+                                <p class="text-xs text-slate-500 mt-1">El usuario asignado podrá ver y operar con este solicitante</p>
+                            </div>
+                        </div>
+                        @endif
                     </div>
 
                     {{-- ═══════════════════════════════════════════════════════ --}}

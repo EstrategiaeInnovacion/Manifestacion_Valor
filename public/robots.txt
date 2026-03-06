@@ -1,2 +1,12 @@
 User-agent: *
-Disallow:
+Disallow: /dashboard
+Disallow: /mve/
+Disallow: /users/
+Disallow: /admin/
+Disallow: /applicants/
+Disallow: /profile
+Disallow: /cove/
+Disallow: /documents/
+Disallow: /digitalizacion
+Disallow: /tickets/
+Allow: /

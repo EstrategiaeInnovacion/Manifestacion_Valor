@@ -128,7 +128,7 @@ class ManifestacionValorService
                 }
 
                 // C. Precio Por Pagar - SOLO incluir si tiene datos reales
-                $preciosPorPagar = $cove['precios_por_pagar'] ?? [];
+                $preciosPorPagar = $cove['precios_por_pagar'] ?? $cove['precio_por_pagar'] ?? [];
                 if (!empty($preciosPorPagar)) {
                     foreach ($preciosPorPagar as $precio) {
                         $addField($this->formatVucemDate($precio['fecha'] ?? $precio['fechaPago'] ?? ''));
@@ -144,7 +144,7 @@ class ManifestacionValorService
 
                 // D. Compensación - SOLO incluir si tiene datos reales
                 // ORDEN CORRECTO según VUCEM: fecha, motivo, prestacionMercancia, tipoPago
-                $compensosPago = $cove['compensos_pago'] ?? [];
+                $compensosPago = $cove['compensos_pago'] ?? $cove['compenso_pago'] ?? [];
                 if (!empty($compensosPago)) {
                     foreach ($compensosPago as $compenso) {
                         $addField($this->formatVucemDate($compenso['fecha'] ?? ''));
@@ -356,16 +356,20 @@ class ManifestacionValorService
             switch ($codigo) {
                 case '500':
                     // 500|tipo_op|patente|num_pedimento|aduana||
+                    // El número de pedimento se extrae como los últimos 7 dígitos del campo
                     $result['datos_manifestacion']['tipo_operacion'] = trim($fields[1] ?? '');
                     $result['datos_manifestacion']['patente'] = trim($fields[2] ?? '');
-                    $result['datos_manifestacion']['pedimento'] = trim($fields[3] ?? '');
+                    $rawPedimento500 = preg_replace('/\D/', '', trim($fields[3] ?? ''));
+                    $result['datos_manifestacion']['pedimento'] = substr($rawPedimento500, -7);
                     $result['datos_manifestacion']['aduana'] = trim($fields[4] ?? '');
                     break;
 
                 case '501':
                     // 501|patente|num_pedimento|aduana|secuencia|clave_ped|aduana2||RFC|curp|...
+                    // El número de pedimento se extrae como los últimos 7 dígitos del campo
                     $patente = trim($fields[1] ?? '');
-                    $numPedimento = trim($fields[2] ?? '');
+                    $rawPedimento501 = preg_replace('/\D/', '', trim($fields[2] ?? ''));
+                    $numPedimento = substr($rawPedimento501, -7);
                     $aduana = trim($fields[3] ?? '');
                     $clavePedimento = trim($fields[5] ?? '');
                     $rfcImportador = trim($fields[8] ?? '');

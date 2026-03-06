@@ -17,6 +17,43 @@ let compensoPagoData = [];
 let covesDataMap = {}; // { 'COVE_NUMBER': { pedimentos, incrementables, decrementables, precioPagado, precioPorPagar, compensoPago } }
 let editingCoveNumber = null; // COVE actualmente en edición
 
+// ============================================
+// ESTADO DE GUARDADO POR PASO
+// ============================================
+let step1Saved = false; // true cuando se guarda Datos de Manifestación
+let step2Saved = false; // true cuando se guarda Información COVE (con al menos 1 COVE)
+
+/**
+ * Actualiza el estado habilitado/deshabilitado de los botones Siguiente
+ * de los pasos 1 y 2 según las condiciones de guardado.
+ */
+function updateNextButtonState() {
+    const btnStep1 = document.getElementById('btnSiguienteStep1');
+    const btnStep2 = document.getElementById('btnSiguienteStep2');
+
+    if (btnStep1) {
+        if (step1Saved) {
+            btnStep1.disabled = false;
+            btnStep1.classList.remove('opacity-50', 'cursor-not-allowed');
+        } else {
+            btnStep1.disabled = true;
+            btnStep1.classList.add('opacity-50', 'cursor-not-allowed');
+        }
+    }
+
+    if (btnStep2) {
+        // Requiere dos condiciones: MVE guardada (paso 1) y COVE guardado (paso 2)
+        const canProceedStep2 = step1Saved && step2Saved;
+        if (canProceedStep2) {
+            btnStep2.disabled = false;
+            btnStep2.classList.remove('opacity-50', 'cursor-not-allowed');
+        } else {
+            btnStep2.disabled = true;
+            btnStep2.classList.add('opacity-50', 'cursor-not-allowed');
+        }
+    }
+}
+
 /**
  * Inicializa una entrada vacía en covesDataMap si no existe
  */
@@ -693,9 +730,18 @@ window.loadSavedDataCallback = function() {
         });
     }
 
-    // Navegar automáticamente al siguiente paso incompleto
+    // Inicializar flags de guardado según el paso inicial (datos ya en BD)
     const container = document.getElementById('mveManualData');
     const initialStep = parseInt(container?.dataset?.initialStep || '1', 10);
+    if (initialStep > 1) {
+        step1Saved = true; // Paso 1 ya fue guardado en sesión anterior
+    }
+    if (initialStep > 2) {
+        step2Saved = true; // Paso 2 ya fue guardado en sesión anterior
+    }
+    updateNextButtonState();
+
+    // Navegar automáticamente al siguiente paso incompleto
     if (initialStep > 1) {
         goToStep(initialStep);
     }
@@ -2217,26 +2263,15 @@ window.guardarModificacionesCove = function() {
 // FUNCIONES DE VALIDACIÓN Y FORMATEO
 // ============================================
 
-// Formatear pedimento: mostrar con espacios, guardar sin espacios
+// Formatear pedimento: solo 7 dígitos numéricos
 function formatPedimentoDisplay(value) {
-    // Remover espacios y caracteres no numéricos
-    const numbers = value.replace(/\D/g, '');
-    
-    // Formatear como: XX XXX XXXX XXXXXXX (máximo 20 caracteres según validación)
-    if (numbers.length <= 2) return numbers;
-    if (numbers.length <= 5) return numbers.slice(0, 2) + ' ' + numbers.slice(2);
-    if (numbers.length <= 9) return numbers.slice(0, 2) + ' ' + numbers.slice(2, 5) + ' ' + numbers.slice(5);
-    if (numbers.length <= 16) return numbers.slice(0, 2) + ' ' + numbers.slice(2, 5) + ' ' + numbers.slice(5, 9) + ' ' + numbers.slice(9);
-    
-    // Truncar si excede 20 caracteres
-    return numbers.slice(0, 2) + ' ' + numbers.slice(2, 5) + ' ' + numbers.slice(5, 9) + ' ' + numbers.slice(9, 16);
+    // Solo conservar dígitos y limitar a 7
+    return value.replace(/\D/g, '').slice(0, 7);
 }
 
-// Obtener pedimento sin espacios para guardar
+// Obtener pedimento para guardar (7 dígitos exactos)
 function getPedimentoForStorage(value) {
-    const numbers = value.replace(/\D/g, '');
-    // Validar máximo 20 caracteres según StoreManifestacionValorRequest
-    return numbers.slice(0, 20);
+    return value.replace(/\D/g, '').slice(0, 7);
 }
 
 // Procesar clave de aduana: remover guión (48-0 -> 480)
@@ -2328,40 +2363,26 @@ function validateCove(value) {
     return { valid: true };
 }
 
-// Formatear pedimento en tiempo real
+// Formatear pedimento en tiempo real: solo permite 7 dígitos
 window.formatPedimentoInput = function(input) {
-    const cursorPosition = input.selectionStart;
-    const oldValue = input.value;
-    const newValue = formatPedimentoDisplay(oldValue);
-    
-    if (oldValue !== newValue) {
-        input.value = newValue;
-        
-        // Ajustar posición del cursor
-        let newCursorPosition = cursorPosition;
-        if (newValue.length > oldValue.length) {
-            newCursorPosition++;
-        }
-        input.setSelectionRange(newCursorPosition, newCursorPosition);
+    const formatted = formatPedimentoDisplay(input.value);
+    if (input.value !== formatted) {
+        input.value = formatted;
     }
 };
 
-// Validar formato de pedimento
+// Validar formato de pedimento: exactamente 7 dígitos
 function validatePedimento(value) {
     const numbers = value.replace(/\D/g, '');
-    
+
     if (numbers.length === 0) {
         return { valid: false, message: 'El número de pedimento es obligatorio' };
     }
-    
-    if (numbers.length > 20) {
-        return { valid: false, message: 'El número de pedimento no debe exceder los 20 caracteres' };
+
+    if (numbers.length !== 7) {
+        return { valid: false, message: 'El número de pedimento debe tener exactamente 7 dígitos' };
     }
-    
-    if (numbers.length < 10) {
-        return { valid: false, message: 'El número de pedimento debe tener al menos 10 dígitos' };
-    }
-    
+
     return { valid: true };
 }
 
@@ -2987,8 +3008,8 @@ window.addPrecioPagadoToTable = function() {
         return;
     }
 
-    if (!importe || parseFloat(importe) <= 0) {
-        showNotification('Por favor ingrese un importe válido', 'error', 'Campo Requerido');
+    if (importe === '' || isNaN(parseFloat(importe)) || parseFloat(importe) < 0) {
+        showNotification('Por favor ingrese un importe válido (puede ser 0 si no hubo pago)', 'error', 'Campo Requerido');
         return;
     }
 
@@ -3509,7 +3530,11 @@ window.saveDatosManifestacion = async function() {
         persona_consulta: personaConsulta
     };
 
-    await saveSection('datos-manifestacion', data, 'Datos de Manifestación');
+    const success = await saveSection('datos-manifestacion', data, 'Datos de Manifestación');
+    if (success) {
+        step1Saved = true;
+        updateNextButtonState();
+    }
 };
 
 window.saveInformacionCove = async function() {
@@ -3566,7 +3591,14 @@ window.saveInformacionCove = async function() {
         }))
     });
 
-    await saveSection('informacion-cove', data, 'Información COVE');
+    const success = await saveSection('informacion-cove', data, 'Información COVE');
+    // Activar Siguiente del paso 2 solo si ambas condiciones se cumplen:
+    // 1) Datos de Manifestación (paso 1) ya guardados
+    // 2) Al menos un COVE guardado exitosamente
+    if (success && informacionCove.length > 0) {
+        step2Saved = true;
+        updateNextButtonState();
+    }
 };
 
 window.saveValorAduana = async function() {
@@ -3606,7 +3638,7 @@ async function saveSection(sectionName, data, sectionLabel) {
     try {
         const applicantId = document.querySelector('[data-applicant-id]').getAttribute('data-applicant-id');
         const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-        
+
         const response = await fetch(`/mve/save-${sectionName}/${applicantId}`, {
             method: 'POST',
             headers: {
@@ -3620,11 +3652,14 @@ async function saveSection(sectionName, data, sectionLabel) {
 
         if (result.success) {
             showNotification(`${sectionLabel} guardado exitosamente`, 'success');
+            return true;
         } else {
             showNotification(`Error al guardar ${sectionLabel}: ` + (result.message || 'Error desconocido'), 'error');
+            return false;
         }
     } catch (error) {
         showNotification(`Error al guardar ${sectionLabel}. Por favor intente nuevamente.`, 'error');
+        return false;
     }
 }
 
@@ -3899,15 +3934,15 @@ function generarContenidoVistaPrevia(data) {
                         <tr class="bg-slate-100">
                             <td class="border border-slate-300 p-2 font-semibold" colspan="2">Método de valoración aduanera</td>
                         </tr>
-                        <tr><td class="border border-slate-300 p-2" colspan="2">${cove.metodo_valoracion || ''}</td></tr>
+                        <tr><td class="border border-slate-300 p-2" colspan="2">${cove.metodo_valoracion || 'N/A'}</td></tr>
                         <tr class="bg-slate-100">
                             <td class="border border-slate-300 p-2 font-semibold" colspan="2">INCOTERM</td>
                         </tr>
-                        <tr><td class="border border-slate-300 p-2" colspan="2">${cove.incoterm || ''}</td></tr>
+                        <tr><td class="border border-slate-300 p-2" colspan="2">${cove.incoterm || 'N/A'}</td></tr>
                         <tr class="bg-slate-100">
                             <td class="border border-slate-300 p-2 font-semibold" colspan="2">¿Existe vinculación entre importador y vendedor/proveedor?</td>
                         </tr>
-                        <tr><td class="border border-slate-300 p-2" colspan="2">${cove.vinculacion === '1' || cove.vinculacion === 1 ? 'Sí' : (cove.vinculacion === '0' || cove.vinculacion === 0 ? 'No' : '')}</td></tr>
+                        <tr><td class="border border-slate-300 p-2" colspan="2">${cove.vinculacion === '1' || cove.vinculacion === 1 ? 'Sí' : (cove.vinculacion === '0' || cove.vinculacion === 0 ? 'No' : 'N/A')}</td></tr>
                     </table>
                 </div>
                 
@@ -3926,7 +3961,7 @@ function generarContenidoVistaPrevia(data) {
                                 <td class="border border-slate-300 p-2">${p.patente || ''}</td>
                                 <td class="border border-slate-300 p-2">${p.aduanaText || p.aduana || ''}</td>
                             </tr>
-                        `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="3">&nbsp;</td></tr>`}
+                        `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="3">N/A</td></tr>`}
                     </table>
                 </div>
                 
@@ -3945,7 +3980,7 @@ function generarContenidoVistaPrevia(data) {
                                 <td class="border border-slate-300 p-2">${inc.importe ? '$' + parseFloat(inc.importe).toLocaleString('es-MX', {minimumFractionDigits: 2}) : ''}</td>
                                 <td class="border border-slate-300 p-2">${inc.tipoMonedaText || inc.tipoMoneda || ''}</td>
                             </tr>
-                        `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="3">&nbsp;</td></tr>`}
+                        `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="3">N/A</td></tr>`}
                         <tr class="bg-slate-100">
                             <td class="border border-slate-300 p-2 font-semibold">Tipo de cambio</td>
                             <td class="border border-slate-300 p-2 font-semibold" colspan="2">¿Está a cargo del importador?</td>
@@ -3955,7 +3990,7 @@ function generarContenidoVistaPrevia(data) {
                                 <td class="border border-slate-300 p-2">${inc.tipoCambio || ''}</td>
                                 <td class="border border-slate-300 p-2" colspan="2">${inc.aCargoImportador !== undefined ? (inc.aCargoImportador ? 'Sí' : 'No') : ''}</td>
                             </tr>
-                        `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="3">&nbsp;</td></tr>`}
+                        `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="3">N/A</td></tr>`}
                     </table>
                 </div>
                 
@@ -3974,13 +4009,13 @@ function generarContenidoVistaPrevia(data) {
                                 <td class="border border-slate-300 p-2">${dec.importe ? '$' + parseFloat(dec.importe).toLocaleString('es-MX', {minimumFractionDigits: 2}) : ''}</td>
                                 <td class="border border-slate-300 p-2">${dec.tipoMonedaText || dec.tipoMoneda || ''}</td>
                             </tr>
-                        `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="3">&nbsp;</td></tr>`}
+                        `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="3">N/A</td></tr>`}
                         <tr class="bg-slate-100">
                             <td class="border border-slate-300 p-2 font-semibold" colspan="3">Tipo de cambio</td>
                         </tr>
                         ${decrementables.length > 0 ? decrementables.map(dec => `
                             <tr><td class="border border-slate-300 p-2" colspan="3">${dec.tipoCambio || ''}</td></tr>
-                        `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="3">&nbsp;</td></tr>`}
+                        `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="3">N/A</td></tr>`}
                     </table>
                 </div>
                 
@@ -4001,7 +4036,7 @@ function generarContenidoVistaPrevia(data) {
                                 <td class="border border-slate-300 p-2">${p.formaPagoText || p.formaPago || ''}</td>
                                 <td class="border border-slate-300 p-2">${p.especifique || ''}</td>
                             </tr>
-                        `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="4">&nbsp;</td></tr>`}
+                        `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="4">N/A</td></tr>`}
                         <tr class="bg-slate-100">
                             <td class="border border-slate-300 p-2 font-semibold">Tipo de moneda</td>
                             <td class="border border-slate-300 p-2 font-semibold" colspan="3">Tipo de cambio</td>
@@ -4011,7 +4046,7 @@ function generarContenidoVistaPrevia(data) {
                                 <td class="border border-slate-300 p-2">${p.tipoMonedaText || p.tipoMoneda || ''}</td>
                                 <td class="border border-slate-300 p-2" colspan="3">${p.tipoCambio || ''}</td>
                             </tr>
-                        `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="4">&nbsp;</td></tr>`}
+                        `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="4">N/A</td></tr>`}
                     </table>
                 </div>
                 
@@ -4032,7 +4067,7 @@ function generarContenidoVistaPrevia(data) {
                                 <td class="border border-slate-300 p-2">${p.formaPagoText || p.formaPago || ''}</td>
                                 <td class="border border-slate-300 p-2">${p.especifique || ''}</td>
                             </tr>
-                        `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="4">&nbsp;</td></tr>`}
+                        `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="4">N/A</td></tr>`}
                         <tr class="bg-slate-100">
                             <td class="border border-slate-300 p-2 font-semibold">Tipo de moneda</td>
                             <td class="border border-slate-300 p-2 font-semibold" colspan="3">Tipo de cambio</td>
@@ -4042,13 +4077,13 @@ function generarContenidoVistaPrevia(data) {
                                 <td class="border border-slate-300 p-2">${p.tipoMonedaText || p.tipoMoneda || ''}</td>
                                 <td class="border border-slate-300 p-2" colspan="3">${p.tipoCambio || ''}</td>
                             </tr>
-                        `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="4">&nbsp;</td></tr>`}
+                        `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="4">N/A</td></tr>`}
                         <tr class="bg-slate-100">
                             <td class="border border-slate-300 p-2 font-semibold" colspan="4">Momento(s) o situación(es) cuando se realizará el pago</td>
                         </tr>
                         ${precioPorPagar.length > 0 ? precioPorPagar.map(p => `
                             <tr><td class="border border-slate-300 p-2" colspan="4">${p.momentoSituacion || ''}</td></tr>
-                        `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="4">&nbsp;</td></tr>`}
+                        `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="4">N/A</td></tr>`}
                     </table>
                 </div>
                 
@@ -4067,19 +4102,19 @@ function generarContenidoVistaPrevia(data) {
                                 <td class="border border-slate-300 p-2">${c.formaPagoText || c.formaPago || ''}</td>
                                 <td class="border border-slate-300 p-2">${c.especifique || ''}</td>
                             </tr>
-                        `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="3">&nbsp;</td></tr>`}
+                        `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="3">N/A</td></tr>`}
                         <tr class="bg-slate-100">
                             <td class="border border-slate-300 p-2 font-semibold" colspan="3">Motivo por lo que se realizó</td>
                         </tr>
                         ${compensoPago.length > 0 ? compensoPago.map(c => `
                             <tr><td class="border border-slate-300 p-2" colspan="3">${c.motivo || ''}</td></tr>
-                        `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="3">&nbsp;</td></tr>`}
+                        `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="3">N/A</td></tr>`}
                         <tr class="bg-slate-100">
                             <td class="border border-slate-300 p-2 font-semibold" colspan="3">Prestación de la mercancía</td>
                         </tr>
                         ${compensoPago.length > 0 ? compensoPago.map(c => `
                             <tr><td class="border border-slate-300 p-2" colspan="3">${c.prestacionMercancia || ''}</td></tr>
-                        `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="3">&nbsp;</td></tr>`}
+                        `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="3">N/A</td></tr>`}
                     </table>
                 </div>
             </div>
@@ -4110,8 +4145,8 @@ function generarContenidoVistaPrevia(data) {
                         <td class="border border-slate-300 p-2 w-2/3">Nombre o Razón social</td>
                     </tr>
                     <tr>
-                        <td class="border border-slate-300 p-2 font-medium">${data.datos_manifestacion?.rfc_importador || data.applicant?.rfc || ''}</td>
-                        <td class="border border-slate-300 p-2">${data.applicant?.razon_social || ''}</td>
+                        <td class="border border-slate-300 p-2 font-medium">${data.datos_manifestacion?.rfc_importador || data.applicant?.rfc || 'N/A'}</td>
+                        <td class="border border-slate-300 p-2">${data.applicant?.razon_social || 'N/A'}</td>
                     </tr>
                 </table>
             </div>
@@ -4126,13 +4161,13 @@ function generarContenidoVistaPrevia(data) {
                     </tr>
                     ${personasConsulta.length > 0 ? personasConsulta.map(p => `
                         <tr>
-                            <td class="border border-slate-300 p-2 font-medium">${p.rfc || ''}</td>
-                            <td class="border border-slate-300 p-2">${p.razon_social || ''}</td>
+                            <td class="border border-slate-300 p-2 font-medium">${p.rfc || 'N/A'}</td>
+                            <td class="border border-slate-300 p-2">${p.razon_social || 'N/A'}</td>
                         </tr>
                     `).join('') : `
                         <tr>
-                            <td class="border border-slate-300 p-2">&nbsp;</td>
-                            <td class="border border-slate-300 p-2">&nbsp;</td>
+                            <td class="border border-slate-300 p-2">N/A</td>
+                            <td class="border border-slate-300 p-2">N/A</td>
                         </tr>
                     `}
                     <tr class="bg-slate-100">
@@ -4140,11 +4175,11 @@ function generarContenidoVistaPrevia(data) {
                     </tr>
                     ${personasConsulta.length > 0 ? personasConsulta.map(p => `
                         <tr>
-                            <td class="border border-slate-300 p-2" colspan="2">${p.tipo_figura || ''}</td>
+                            <td class="border border-slate-300 p-2" colspan="2">${p.tipo_figura || 'N/A'}</td>
                         </tr>
                     `).join('') : `
                         <tr>
-                            <td class="border border-slate-300 p-2" colspan="2">&nbsp;</td>
+                            <td class="border border-slate-300 p-2" colspan="2">N/A</td>
                         </tr>
                     `}
                 </table>
@@ -4170,15 +4205,15 @@ function generarContenidoVistaPrevia(data) {
                         <td class="border border-slate-300 p-2 font-semibold">Tipo de moneda</td>
                     </tr>
                     <tr>
-                        <td class="border border-slate-300 p-2">&nbsp;</td>
-                        <td class="border border-slate-300 p-2">&nbsp;</td>
-                        <td class="border border-slate-300 p-2">&nbsp;</td>
+                        <td class="border border-slate-300 p-2">N/A</td>
+                        <td class="border border-slate-300 p-2">N/A</td>
+                        <td class="border border-slate-300 p-2">N/A</td>
                     </tr>
                     <tr class="bg-slate-100">
                         <td class="border border-slate-300 p-2 font-semibold" colspan="3">Tipo de cambio</td>
                     </tr>
                     <tr>
-                        <td class="border border-slate-300 p-2" colspan="3">&nbsp;</td>
+                        <td class="border border-slate-300 p-2" colspan="3">N/A</td>
                     </tr>
                 </table>
             </div>
@@ -4221,11 +4256,11 @@ function generarContenidoVistaPrevia(data) {
                     </tr>
                     ${documentos.length > 0 ? documentos.map(doc => `
                         <tr>
-                            <td class="border border-slate-300 p-2">${doc.folio_edocument || ''}</td>
+                            <td class="border border-slate-300 p-2">${doc.folio_edocument || 'N/A'}</td>
                         </tr>
                     `).join('') : `
                         <tr>
-                            <td class="border border-slate-300 p-2">&nbsp;</td>
+                            <td class="border border-slate-300 p-2">N/A</td>
                         </tr>
                     `}
                 </table>

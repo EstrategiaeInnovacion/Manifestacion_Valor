@@ -9,7 +9,7 @@
                 <div class="flex justify-between h-20">
                     <div class="flex items-center gap-4">
                         <a href="{{ route('dashboard') }}">
-                            <img src="{{ asset('logo-ei.png') }}" alt="Logo E&I" class="h-10 w-auto">
+                            <img src="{{ asset('Gemini_Generated_Image_bmz5e9bmz5e9bmz5-removebg-preview.png') }}" alt="Logo E&I" class="h-10 w-auto">
                         </a>
                         <div class="hidden md:block h-8 w-px bg-slate-200"></div>
                         <span class="hidden md:block text-sm font-bold text-[#001a4d] uppercase tracking-wider">Jerarquía de Usuarios</span>
@@ -22,7 +22,7 @@
                         </div>
                         
                         <div class="user-dropdown">
-                            <div id="avatarButton" class="avatar-button h-10 w-10 bg-ei-gradient rounded-full flex items-center justify-center text-white font-bold shadow-lg">
+                            <div id="avatarButton" class="avatar-button h-12 w-12 bg-ei-gradient rounded-full flex items-center justify-center text-white font-bold shadow-lg">
                                 {{ substr(auth()->user()->full_name, 0, 1) }}
                             </div>
 
@@ -108,6 +108,27 @@
                                         <div class="flex-1 text-left">
                                             <h4 class="user-name">{{ $admin->full_name }}</h4>
                                             <p class="user-email">{{ $admin->email }} | <b>{{ $admin->username }}</b></p>
+                                            @if($admin->company)
+                                                <p class="text-xs text-slate-400 mt-1"><i data-lucide="building" class="w-3 h-3 inline"></i> {{ $admin->company }}</p>
+                                            @endif
+                                        </div>
+                                        <div class="flex items-center gap-3">
+                                            <a href="{{ route('users.edit', $admin->id) }}" class="text-blue-600 hover:text-blue-800" title="Editar">
+                                                <i data-lucide="edit" class="w-4 h-4"></i>
+                                            </a>
+                                            @if(!$admin->isProtectedSuperAdmin())
+                                            <button type="button" onclick="confirmDeleteUser({{ $admin->id }})" class="btn-delete-user" title="Eliminar">
+                                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                            </button>
+                                            <form id="delete-user-form-{{ $admin->id }}" action="{{ route('users.destroy', $admin) }}" method="POST" class="hidden">
+                                                @csrf
+                                                @method('DELETE')
+                                            </form>
+                                            @else
+                                            <span class="text-xs text-amber-600 font-semibold" title="Este SuperAdmin está protegido">
+                                                <i data-lucide="shield" class="w-4 h-4"></i>
+                                            </span>
+                                            @endif
                                         </div>
                                     </div>
                                 </div>
@@ -134,6 +155,9 @@
                                         <div class="flex-1 text-left">
                                             <h4 class="user-name">{{ $admin->full_name }}</h4>
                                             <p class="user-email">{{ $admin->email }} | <b>{{ $admin->username }}</b></p>
+                                            @if($admin->company)
+                                                <p class="text-xs text-slate-400 mt-1"><i data-lucide="building" class="w-3 h-3 inline"></i> {{ $admin->company }}</p>
+                                            @endif
                                         </div>
                                         <div class="flex items-center gap-6">
                                             <div class="text-center">

@@ -159,25 +159,27 @@
                     Documentos Asociados
                 </h4>
                 <div class="table-container">
-                    <table class="mve-table">
-                        <thead>
-                            <tr>
-                                <th>TIPO DE DOCUMENTO</th>
-                                <th>FOLIO eDocument</th>
-                                <th>NOMBRE</th>
-                                <th>FECHA</th>
-                                <th>ACCIONES</th>
-                            </tr>
-                        </thead>
-                        <tbody id="edocumentsTableBody">
-                            <tr>
-                                <td colspan="5" class="table-empty">
-                                    <i data-lucide="inbox" class="w-8 h-8 text-slate-300"></i>
-                                    <p class="text-sm text-slate-400 mt-2">NO HAY DOCUMENTOS ASOCIADOS</p>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
+                    <div class="overflow-x-auto w-full">
+                        <table class="mve-table">
+                            <thead>
+                                <tr>
+                                    <th>TIPO DE DOCUMENTO</th>
+                                    <th>FOLIO eDocument</th>
+                                    <th>NOMBRE</th>
+                                    <th>FECHA</th>
+                                    <th>ACCIONES</th>
+                                </tr>
+                            </thead>
+                            <tbody id="edocumentsTableBody">
+                                <tr>
+                                    <td colspan="5" class="table-empty">
+                                        <i data-lucide="inbox" class="w-8 h-8 text-slate-300"></i>
+                                        <p class="text-sm text-slate-400 mt-2">NO HAY DOCUMENTOS ASOCIADOS</p>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
 
                 {{-- Agregar folio manualmente (fallback) --}}

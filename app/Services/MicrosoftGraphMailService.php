@@ -52,12 +52,14 @@ class MicrosoftGraphMailService
     /**
      * Enviar un correo electrónico usando Microsoft Graph API.
      *
-     * @param string $to        Dirección de correo del destinatario
-     * @param string $subject   Asunto del correo
-     * @param string $htmlBody  Contenido HTML del correo
-     * @param array  $attachments Array de adjuntos [['name' => ..., 'contentType' => ..., 'contentBytes' => base64...]]
+     * @param string      $to          Dirección de correo del destinatario
+     * @param string      $subject     Asunto del correo
+     * @param string      $htmlBody    Contenido HTML del correo
+     * @param array       $attachments Array de adjuntos [['name' => ..., 'contentType' => ..., 'contentBytes' => base64...]]
+     * @param string|null $replyTo     Dirección a la que se responderá (Reply-To)
+     * @param string|null $replyToName Nombre del Reply-To
      */
-    public function sendMail(string $to, string $subject, string $htmlBody, array $attachments = []): bool
+    public function sendMail(string $to, string $subject, string $htmlBody, array $attachments = [], ?string $replyTo = null, ?string $replyToName = null): bool
     {
         try {
             $token = $this->getAccessToken();
@@ -79,6 +81,17 @@ class MicrosoftGraphMailService
                 ],
                 'saveToSentItems' => true,
             ];
+
+            if ($replyTo) {
+                $message['message']['replyTo'] = [
+                    [
+                        'emailAddress' => array_filter([
+                            'address' => $replyTo,
+                            'name'    => $replyToName,
+                        ]),
+                    ],
+                ];
+            }
 
             if (!empty($attachments)) {
                 $message['message']['attachments'] = $attachments;

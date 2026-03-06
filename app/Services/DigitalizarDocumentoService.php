@@ -2,12 +2,14 @@
 
 namespace App\Services;
 
+use App\Traits\VucemConnectivityHandler;
 use Exception;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Http;
 
 class DigitalizarDocumentoService
 {
+    use VucemConnectivityHandler;
+
     private string $endpoint = 'https://www.ventanillaunica.gob.mx/ventanilla/DigitalizarDocumentoService';
 
     private const NS_DIG = 'http://www.ventanillaunica.gob.mx/aga/digitalizar/ws/oxml/DigitalizarDocumento';
@@ -124,6 +126,7 @@ class DigitalizarDocumentoService
                 'xml_total_length' => strlen($xml),
             ]);
 
+<<<<<<< HEAD
             $response = Http::withOptions([
                 'verify' => false,
                 'timeout' => 300,
@@ -135,8 +138,37 @@ class DigitalizarDocumentoService
 
             $responseBody = $response->body();
 
+=======
+            // Usar cURL directo para mejor control de SSL
+            $ch = curl_init($this->endpoint);
+            curl_setopt_array($ch, [
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_POST => true,
+                CURLOPT_POSTFIELDS => trim($xml),
+                CURLOPT_TIMEOUT => 300,
+                CURLOPT_CONNECTTIMEOUT => 60,
+                CURLOPT_SSL_VERIFYPEER => false,
+                CURLOPT_SSL_VERIFYHOST => 0,
+                CURLOPT_SSL_CIPHER_LIST => 'DEFAULT@SECLEVEL=0',
+                CURLOPT_HTTPHEADER => [
+                    'Content-Type: text/xml; charset=utf-8',
+                    'SOAPAction: ""',
+                    'Content-Length: ' . strlen(trim($xml))
+                ]
+            ]);
+
+            $responseBody = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $curlError = curl_error($ch);
+            curl_close($ch);
+
+            if ($curlError) {
+                return $this->handleCurlError($curlError, 'DIGITALIZACION');
+            }
+            
+>>>>>>> 46f4f974d663a2669dd6353d7295499da6461001
             Log::info('[DIGITALIZACION] Respuesta VUCEM', [
-                'status' => $response->status(),
+                'status' => $httpCode,
                 'body_preview' => substr($responseBody, 0, 2000)
             ]);
 
@@ -317,6 +349,7 @@ class DigitalizarDocumentoService
    </soapenv:Body>
 </soapenv:Envelope>';
 
+<<<<<<< HEAD
             $response = Http::withOptions([
                 'verify' => false,
                 'timeout' => 30,
@@ -328,18 +361,45 @@ class DigitalizarDocumentoService
             ])
                 ->withBody(trim($xml), 'text/xml')
                 ->post($this->endpoint);
+=======
+            // Usar cURL directo para mejor control de SSL
+            $ch = curl_init($this->endpoint);
+            curl_setopt_array($ch, [
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_POST => true,
+                CURLOPT_POSTFIELDS => trim($xml),
+                CURLOPT_TIMEOUT => 60,
+                CURLOPT_CONNECTTIMEOUT => 30,
+                CURLOPT_SSL_VERIFYPEER => false,
+                CURLOPT_SSL_VERIFYHOST => 0,
+                CURLOPT_SSL_CIPHER_LIST => 'DEFAULT@SECLEVEL=0',
+                CURLOPT_HTTPHEADER => [
+                    'Content-Type: text/xml; charset=utf-8',
+                    'SOAPAction: "http://www.ventanillaunica.gob.mx/ConsultaEDocumentDigitalizarDocumento"',
+                    'Content-Length: ' . strlen(trim($xml))
+                ]
+            ]);
+>>>>>>> 46f4f974d663a2669dd6353d7295499da6461001
 
-            $body = $response->body();
+            $body = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $curlError = curl_error($ch);
+            curl_close($ch);
+
+            if ($curlError) {
+                $this->handleCurlError($curlError, 'DIGITALIZACION_CONSULTA');
+                return null;
+            }
 
             Log::info("[DIGITALIZACION] Consulta operación", [
                 'operacion' => $numeroOperacion,
-                'status' => $response->status(),
+                'status' => $httpCode,
                 'cadena_original' => $cadenaOriginal,
                 'body_preview' => substr($body, 0, 2000),
             ]);
 
             // SOAP Fault
-            if ($response->status() === 500 && str_contains($body, 'Fault')) {
+            if ($httpCode === 500 && str_contains($body, 'Fault')) {
                 $faultMsg = '';
                 if (preg_match('/<[:\w]*faultstring>(.*?)<\/[:\w]*faultstring>/s', $body, $fMatch)) {
                     $faultMsg = $fMatch[1];
@@ -426,6 +486,7 @@ class DigitalizarDocumentoService
    </soapenv:Body>
 </soapenv:Envelope>';
 
+<<<<<<< HEAD
             $response = Http::withOptions([
                 'verify' => false,
                 'timeout' => 60,
@@ -434,8 +495,33 @@ class DigitalizarDocumentoService
                 ->withHeaders(['Content-Type' => 'text/xml; charset=utf-8', 'SOAPAction' => ''])
                 ->withBody(trim($xml), 'text/xml')
                 ->post($this->endpoint);
+=======
+            // Usar cURL directo para mejor control de SSL
+            $ch = curl_init($this->endpoint);
+            curl_setopt_array($ch, [
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_POST => true,
+                CURLOPT_POSTFIELDS => trim($xml),
+                CURLOPT_TIMEOUT => 60,
+                CURLOPT_CONNECTTIMEOUT => 30,
+                CURLOPT_SSL_VERIFYPEER => false,
+                CURLOPT_SSL_VERIFYHOST => 0,
+                CURLOPT_SSL_CIPHER_LIST => 'DEFAULT@SECLEVEL=0',
+                CURLOPT_HTTPHEADER => [
+                    'Content-Type: text/xml; charset=utf-8',
+                    'SOAPAction: ""',
+                    'Content-Length: ' . strlen(trim($xml))
+                ]
+            ]);
+>>>>>>> 46f4f974d663a2669dd6353d7295499da6461001
 
-            $body = $response->body();
+            $body = curl_exec($ch);
+            $curlError = curl_error($ch);
+            curl_close($ch);
+
+            if ($curlError) {
+                return $this->handleCurlError($curlError, 'DIGITALIZACION_EDOCUMENT');
+            }
 
             // Errores
             if (preg_match('/<[:\w]*tieneError>(.*?)<\/[:\w]*tieneError>/', $body, $matchErr)) {

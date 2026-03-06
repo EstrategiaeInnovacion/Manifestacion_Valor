@@ -19,7 +19,7 @@
                     
                     <div class="text-center mb-10">
                         <a href="/" class="inline-block mb-8 transition hover:opacity-80">
-                            <img src="{{ asset('logo-ei.png') }}" alt="Logo E&I" class="h-14 w-auto mx-auto object-contain">
+                            <img src="{{ asset('Gemini_Generated_Image_bmz5e9bmz5e9bmz5-removebg-preview.png') }}" alt="Logo E&I" class="h-14 w-auto mx-auto object-contain">
                         </a>
                         <div class="w-12 h-1.5 bg-[#003399] mx-auto mb-6 rounded-full"></div>
                         <h2 class="text-4xl font-black text-[#001a4d] tracking-tight leading-tight">
