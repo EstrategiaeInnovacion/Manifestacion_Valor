@@ -102,7 +102,7 @@
                     @csrf
                     
                     <div class="upload-area" id="uploadArea">
-                        <input type="file" name="archivo_m" id="archivoM" accept=".txt" class="hidden" onchange="handleFileSelect(event)">
+                        <input type="file" name="archivo_m" id="archivoM" accept="*" class="hidden" onchange="handleFileSelect(event)">
                         
                         <div id="uploadPrompt" class="upload-prompt">
                             <div class="upload-icon">
@@ -114,7 +114,7 @@
                                 <i data-lucide="upload" class="w-5 h-5 mr-2"></i>
                                 Seleccionar Archivo
                             </button>
-                            <p class="text-xs text-slate-400 mt-4">Solo archivos .txt (máx. 2MB)</p>
+                            <p class="text-xs text-slate-400 mt-4">Archivo M de VUCEM (.287, .340, .txt, etc.) · máx. 2MB</p>
                         </div>
 
                         <div id="fileInfo" class="file-info hidden">
