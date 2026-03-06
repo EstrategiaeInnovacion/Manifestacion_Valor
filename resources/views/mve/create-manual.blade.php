@@ -17,7 +17,7 @@
          data-persona-consulta='@json(optional($datosManifestacion)->persona_consulta ?? [])'
          data-metodo-valoracion="{{ optional($datosManifestacion)->metodo_valoracion ?? '' }}"
          data-existe-vinculacion="{{ optional($datosManifestacion)->existe_vinculacion ?? '' }}"
-         data-pedimento="{{ isset($datosExtraidos) ? ($datosExtraidos['datos_manifestacion']['pedimento_completo'] ?? $datosExtraidos['datos_manifestacion']['pedimento'] ?? '') : (optional($datosManifestacion)->pedimento ?? '') }}"
+         data-pedimento="{{ isset($datosExtraidos) ? ($datosExtraidos['datos_manifestacion']['pedimento'] ?? '') : (optional($datosManifestacion)->pedimento ?? '') }}"
          data-patente="{{ isset($datosExtraidos) ? ($datosExtraidos['datos_manifestacion']['patente'] ?? '') : (optional($datosManifestacion)->patente ?? '') }}"
          data-aduana="{{ isset($datosExtraidos) ? ($datosExtraidos['datos_manifestacion']['aduana'] ?? '') : (optional($datosManifestacion)->aduana ?? '') }}"
          data-informacion-cove='@json(isset($datosExtraidos) ? $datosExtraidos["informacion_cove"] : (optional($informacionCove)->informacion_cove ?? []))'
