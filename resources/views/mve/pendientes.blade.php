@@ -648,8 +648,8 @@
             
             // Cargar la vista previa
             try {
-                const mveQuery = vistaPreviaMveId ? \`?mve_id=${vistaPreviaMveId}\` : '';
-                const response = await fetch(\`${urlPreviewData}/${applicantId}${mveQuery}\`, {
+                const mveQuery = vistaPreviaMveId ? `?mve_id=${vistaPreviaMveId}` : '';
+                const response = await fetch(`${urlPreviewData}/${applicantId}${mveQuery}`, {
                     headers: {
                         'Accept': 'application/json',
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
@@ -1155,7 +1155,7 @@
                 btn.innerHTML = '<i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i><span>Eliminando...</span>';
                 lucide.createIcons();
                 
-                const response = await fetch(\`${urlDescartar}/${applicantId}\`, {
+                const response = await fetch(`${urlDescartar}/${applicantId}`, {
                     method: 'DELETE',
                     headers: {
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
