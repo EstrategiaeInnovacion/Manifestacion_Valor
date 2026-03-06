@@ -152,7 +152,7 @@
                     @foreach($allPendientes as $applicantId => $mveData)
                         <div class="bg-white rounded-xl shadow-sm border border-slate-200 hover:shadow-md transition-shadow duration-200 overflow-hidden">
                             <div class="p-6">
-                                <div class="flex items-start justify-between gap-6">
+                                <div class="flex flex-col md:flex-row items-start justify-between gap-6">
                                     {{-- Información del Solicitante --}}
                                     <div class="flex items-start gap-4 flex-1">
                                         <div class="w-14 h-14 bg-gradient-to-br from-amber-400 to-amber-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md">

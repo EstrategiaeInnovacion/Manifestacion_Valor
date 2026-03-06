@@ -126,8 +126,8 @@
             {{-- ============================================ --}}
             {{-- STEPPER INDICATOR --}}
             {{-- ============================================ --}}
-            <div class="mve-stepper mb-8" id="mveStepperIndicator">
-                <div class="flex items-center justify-between relative">
+            <div class="mve-stepper mb-8 overflow-x-auto pb-4" id="mveStepperIndicator">
+                <div class="flex items-center justify-between relative min-w-[500px]">
                     {{-- Línea conectora --}}
                     <div class="absolute top-5 left-0 right-0 h-0.5 bg-slate-200 z-0"></div>
                     <div class="absolute top-5 left-0 h-0.5 bg-[#003399] z-0 transition-all duration-500" id="stepperProgressLine" style="width: 0%"></div>

@@ -32,7 +32,7 @@
         </div>
 
         {{-- Botones --}}
-        <div class="flex justify-between items-center">
+        <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
             <div class="flex gap-3">
                 <button type="button" onclick="prevStep()" class="btn-secondary-large">
                     <i data-lucide="arrow-left" class="w-5 h-5 mr-2"></i>
