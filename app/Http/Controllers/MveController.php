@@ -900,8 +900,7 @@ class MveController extends Controller
             if ($mveId) {
                 MvDocumentos::where('datos_manifestacion_id', $mveId)->delete();
                 MvInformacionCove::where('datos_manifestacion_id', $mveId)->delete();
-                MvDatosManifestacion::where('id', $mveId)->where('applicant_id', $applicantId)
-                    ->whereIn('status', $statusEditables)->delete();
+                MvDatosManifestacion::where('id', $mveId)->where('applicant_id', $applicantId)->delete();
             } else {
                 MvDatosManifestacion::where('applicant_id', $applicantId)->whereIn('status', $statusEditables)->delete();
                 MvInformacionCove::where('applicant_id', $applicantId)->whereIn('status', $statusEditables)->delete();
