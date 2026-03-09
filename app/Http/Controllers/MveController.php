@@ -924,7 +924,7 @@ class MveController extends Controller
     /**
      * Verificar si todas las secciones estÃ¡n completas
      */
-    public function checkCompletion($applicantId)
+    public function checkCompletion(Request $request, $applicantId)
     {
         try {
             // Verificar que el applicant pertenece al usuario actual
@@ -978,7 +978,7 @@ class MveController extends Controller
     /**
      * Guardar la manifestaciÃ³n final (cambiar status a 'guardado' - lista para firmar)
      */
-    public function saveFinalManifestacion($applicantId)
+    public function saveFinalManifestacion(Request $request, $applicantId)
     {
         try {
             // Verificar que el applicant pertenece al usuario actual
@@ -991,10 +991,10 @@ class MveController extends Controller
             }
 
             // Verificar que todas las secciones estÃ¡n completas
-            $completionCheck = $this->checkCompletion($applicantId);
+            $completionCheck = $this->checkCompletion($request, $applicantId);
             $completionData = json_decode($completionCheck->getContent(), true);
             
-            if (!$completionData['all_sections_complete']) {
+            if (empty($completionData['all_sections_complete'])) {
                 return response()->json([
                     'success' => false,
                     'message' => 'No se pueden guardar manifestaciones incompletas'
@@ -1038,7 +1038,7 @@ class MveController extends Controller
     /**
      * Obtener todos los datos guardados para vista previa
      */
-    public function previewData($applicantId)
+    public function previewData(Request $request, $applicantId)
     {
         try {
             // Verificar que el applicant pertenece al usuario actual
@@ -1063,10 +1063,6 @@ class MveController extends Controller
                 $informacionCove = MvInformacionCove::where('applicant_id', $applicantId)->first();
                 $documentosRecord = MvDocumentos::where('applicant_id', $applicantId)->whereNotNull('documentos')->first();
             }
-            $informacionCove = MvInformacionCove::where('applicant_id', $applicantId)->first();
-            $documentosRecord = MvDocumentos::where('applicant_id', $applicantId)
-                ->whereNotNull('documentos')
-                ->first();
             $documentos = $documentosRecord?->documentos ?? [];
             $cadenaOriginal = app(ManifestacionValorService::class)->buildCadenaOriginal(
                 $applicant,

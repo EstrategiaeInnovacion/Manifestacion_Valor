@@ -79,6 +79,13 @@
                 </div>
             @endif
 
+            @if(session('error'))
+                <div class="alert-error">
+                    <i data-lucide="shield-off" class="w-5 h-5"></i>
+                    <span>{{ session('error') }}</span>
+                </div>
+            @endif
+
             <div class="section-card">
                 <div class="table-container">
                     <table class="data-table">

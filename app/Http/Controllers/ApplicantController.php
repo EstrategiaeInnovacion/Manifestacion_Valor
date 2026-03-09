@@ -193,8 +193,9 @@ class ApplicantController extends Controller
     {
         $user = auth()->user();
 
-        if (!$this->userOwnsApplicant($user, $applicant)) {
-            abort(403);
+        if (!$user->canAccessApplicant($applicant)) {
+            return redirect()->route('applicants.index')
+                ->with('error', 'No tienes permiso para ver este solicitante.');
         }
 
         $applicant->load('user');
