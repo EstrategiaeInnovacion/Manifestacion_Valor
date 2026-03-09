@@ -222,65 +222,55 @@
                             Aviso de Privacidad y Consentimiento
                         </h3>
 
-                        <div class="bg-slate-50 border border-slate-200 rounded-xl p-5 mb-4 max-h-64 overflow-y-auto">
-                            <h4 class="font-bold text-[#001a4d] text-sm mb-3">AVISO DE PRIVACIDAD Y AUTORIZACIÓN PARA EL TRATAMIENTO DE DATOS SENSIBLES</h4>
-                            
-                            <p class="text-xs text-slate-700 mb-3">
-                                De conformidad con lo establecido en la Ley Federal de Protección de Datos Personales en Posesión de los Particulares 
-                                y su Reglamento, se informa al usuario que el presente sistema recopila y almacena la siguiente información sensible:
-                            </p>
-                            
-                            <ul class="text-xs text-slate-700 mb-3 list-disc list-inside space-y-1">
-                                <li><strong>Sellos digitales VUCEM</strong> (archivos .key y .cer)</li>
-                                <li><strong>Contraseña</strong> asociada a los sellos digitales</li>
-                                <li><strong>Clave de Web Service</strong> para conexión con VUCEM</li>
-                            </ul>
-
-                            <p class="text-xs text-slate-700 mb-3">
-                                <strong>Finalidad del tratamiento:</strong> Esta información se almacena con el único propósito de facilitar al usuario 
-                                la ejecución de las siguientes operaciones ante la Ventanilla Única de Comercio Exterior Mexicano (VUCEM):
-                            </p>
-
-                            <ul class="text-xs text-slate-700 mb-3 list-disc list-inside space-y-1">
-                                <li><strong>Manifestación de Valor</strong> — Firma y envío electrónico de manifestaciones de valor en aduana.</li>
-                                <li><strong>Digitalización de Documentos</strong> — Registro y firma de documentos electrónicos (eDocuments) ante VUCEM.</li>
-                                <li><strong>Consulta de COVE</strong> — Consulta de Comprobantes de Valor Electrónico registrados en VUCEM.</li>
-                            </ul>
-
-                            <p class="text-xs text-slate-700 mb-3">
-                                <strong>Medidas de seguridad:</strong> Toda la información sensible se almacena bajo <strong>encriptación AES-256-CBC</strong> 
-                                en la base de datos del sistema. Los datos no son visibles en formato legible y solo se desencriptan temporalmente 
-                                al momento de ejecutar las operaciones mencionadas. En ningún caso se comparte esta información con terceros.
-                            </p>
-
-                            <p class="text-xs text-slate-700 mb-3">
-                                <strong>Derechos ARCO:</strong> El usuario tiene derecho a Acceder, Rectificar, Cancelar u Oponerse al tratamiento 
-                                de sus datos personales en cualquier momento. Puede eliminar sus sellos VUCEM desde la sección de edición del solicitante 
-                                o solicitando la eliminación de su cuenta.
-                            </p>
-
-                            <p class="text-xs text-slate-700 font-semibold">
-                                Al marcar la casilla de consentimiento a continuación, el usuario declara que ha leído y comprende este aviso de privacidad, 
-                                y autoriza expresamente al sistema para almacenar de forma encriptada los sellos VUCEM, contraseña y clave de Web Service 
-                                para las operaciones indicadas.
-                            </p>
+                        <div class="bg-slate-50 border border-slate-200 rounded-xl p-5 mb-2 max-h-64 overflow-y-auto" id="privacyScrollBox"
+                            onscroll="checkPrivacyScroll(this)">
+                            {!! \App\Models\AppSetting::get('aviso_privacidad_sellos') !!}
                         </div>
+                        <p id="scrollNotice" class="text-xs text-amber-600 font-semibold flex items-center gap-1 mb-3">
+                            <i data-lucide="arrow-down" class="w-3 h-3"></i>
+                            Desplázate hasta el final del aviso para activar el consentimiento.
+                        </p>
+                        <p id="scrollDone" class="text-xs text-emerald-600 font-semibold hidden flex items-center gap-1 mb-3">
+                            <i data-lucide="check" class="w-3 h-3"></i>
+                            Has leído el aviso. Ya puedes aceptar.
+                        </p>
 
-                        <label class="flex items-start gap-3 cursor-pointer p-3 rounded-lg hover:bg-slate-50 transition-colors">
+                        <label class="flex items-start gap-3 cursor-pointer p-3 rounded-lg hover:bg-slate-50 transition-colors" id="privacyLabel">
                             <input type="checkbox" name="privacy_consent" value="1" id="privacy_consent"
-                                   class="mt-1 h-5 w-5 rounded border-slate-300 text-[#003399] focus:ring-[#003399]"
+                                   class="mt-1 h-5 w-5 rounded border-slate-300 text-[#003399] focus:ring-[#003399] disabled:opacity-40 disabled:cursor-not-allowed"
+                                   disabled
                                    {{ old('privacy_consent') ? 'checked' : '' }}>
                             <span class="text-sm text-slate-700">
-                                <strong>Acepto y autorizo</strong> el almacenamiento encriptado de mis sellos VUCEM, contraseña y clave de Web Service 
-                                para las operaciones de Manifestación de Valor, Digitalización de Documentos y Consulta de COVE. 
+                                <strong>Acepto y autorizo</strong> el almacenamiento encriptado de mis sellos VUCEM, contraseña y clave de Web Service
+                                para las operaciones de Manifestación de Valor, Digitalización de Documentos y Consulta de COVE.
                                 He leído y comprendido el aviso de privacidad anterior.
+                                <a href="{{ route('legal.privacidad') }}" target="_blank" class="text-[#003399] underline ml-1">Ver aviso completo →</a>
                             </span>
                         </label>
                         <p class="text-xs text-slate-400 mt-2 ml-8">
                             <i data-lucide="info" class="w-3 h-3 inline-block mr-1"></i>
-                            Este consentimiento es necesario solo si proporciona sellos VUCEM. Los campos RFC y Razón Social no requieren consentimiento adicional.
+                            Este consentimiento es necesario solo si proporciona sellos VUCEM.
                         </p>
                     </div>
+
+                    <script>
+                    (function() {
+                        var box   = document.getElementById('privacyScrollBox');
+                        var cb    = document.getElementById('privacy_consent');
+                        var note  = document.getElementById('scrollNotice');
+                        var done  = document.getElementById('scrollDone');
+                        function unlock() {
+                            cb.disabled = false;
+                            note.classList.add('hidden');
+                            done.classList.remove('hidden');
+                        }
+                        window.checkPrivacyScroll = function(el) {
+                            if (el.scrollTop + el.clientHeight >= el.scrollHeight - 10) unlock();
+                        };
+                        // Auto-unlock if content is short (no scroll needed)
+                        if (box && box.scrollHeight <= box.clientHeight + 10) unlock();
+                    })();
+                    </script>
 
                     <div class="form-actions">
                         <a href="{{ route('applicants.index') }}" class="btn-secondary">

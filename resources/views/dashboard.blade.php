@@ -142,6 +142,25 @@
                         </a>
                     @endif
 
+                    {{-- TARJETA: AJUSTES (Solo SuperAdmin) --}}
+                    @if(auth()->user()->role === 'SuperAdmin')
+                        <a href="{{ route('admin.settings') }}" class="modern-card group border-t-4 border-t-indigo-500">
+                            <div class="card-content">
+                                <div class="icon-box bg-indigo-50 text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-all duration-500">
+                                    <i data-lucide="settings-2" class="w-8 h-8"></i>
+                                </div>
+                                <h3 class="text-xl font-bold text-[#001a4d] mt-6">Ajustes del Sistema</h3>
+                                <p class="text-slate-500 text-sm mt-3 leading-relaxed">
+                                    Gestiona avisos de privacidad y condiciones de uso.
+                                </p>
+                                <div class="mt-8 flex items-center text-indigo-600 font-bold text-sm">
+                                    Configurar
+                                    <i data-lucide="move-right" class="w-4 h-4 ml-2 group-hover:translate-x-2 transition-transform"></i>
+                                </div>
+                            </div>
+                        </a>
+                    @endif
+
                     {{-- TARJETA: SOLICITANTES (Para todos) --}}
                     <a href="{{ route('applicants.index') }}" class="modern-card group border-t-4 border-t-slate-600">
                         <div class="card-content">

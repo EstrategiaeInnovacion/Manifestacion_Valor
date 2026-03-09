@@ -17,5 +17,14 @@
     </head>
     <body class="font-sans antialiased">
         {{ $slot }}
+        <footer class="border-t border-slate-100 bg-white mt-0 py-4">
+            <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-400">
+                <span>© {{ date('Y') }} Estrategia e Innovación. Todos los derechos reservados.</span>
+                <div class="flex gap-4">
+                    <a href="{{ route('legal.privacidad') }}" class="hover:text-[#003399] transition-colors">Aviso de Privacidad</a>
+                    <a href="{{ route('legal.privacidad') }}#condiciones" class="hover:text-[#003399] transition-colors">Condiciones de Uso</a>
+                </div>
+            </div>
+        </footer>
     </body>
 </html>

@@ -38,6 +38,12 @@
                             {{ __('Profile') }}
                         </x-dropdown-link>
 
+                        @if(auth()->user()->role === 'SuperAdmin')
+                        <x-dropdown-link :href="route('admin.settings')">
+                            Ajustes del Sistema
+                        </x-dropdown-link>
+                        @endif
+
                         <!-- Authentication -->
                         <form method="POST" action="{{ route('logout') }}">
                             @csrf

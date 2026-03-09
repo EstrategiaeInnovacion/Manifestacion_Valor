@@ -22,6 +22,14 @@ Route::get('/', function () {
     return view('welcome');
 });
 
+// Página pública de aviso de privacidad y condiciones de uso
+Route::get('/privacidad', function() {
+    return view('legal.privacidad', [
+        'avisoCompleto'  => \App\Models\AppSetting::get('aviso_privacidad_completo'),
+        'condicionesUso' => \App\Models\AppSetting::get('condiciones_uso'),
+    ]);
+})->name('legal.privacidad');
+
 Route::get('/dashboard', function () {
     // Contar cuántos solicitantes tienen al menos una sección guardada en borrador
     $applicantIds = MvClientApplicant::where('user_email', auth()->user()->email)->pluck('id');
@@ -79,6 +87,12 @@ Route::middleware(['auth', 'license'])->group(function () {
 
         // Rutas de gestión de solicitantes
         Route::resource('applicants', ApplicantController::class);
+
+        // Ajustes del sistema (SuperAdmin)
+        Route::middleware('role:SuperAdmin')->group(function () {
+            Route::get('/admin/settings', [App\Http\Controllers\AdminSettingsController::class, 'index'])->name('admin.settings');
+            Route::patch('/admin/settings', [App\Http\Controllers\AdminSettingsController::class, 'update'])->name('admin.settings.update');
+        });
 
         // Rutas de Manifestación de Valor
         Route::get('/mve/select-applicant', [MveController::class , 'selectApplicant'])->name('mve.select-applicant');
