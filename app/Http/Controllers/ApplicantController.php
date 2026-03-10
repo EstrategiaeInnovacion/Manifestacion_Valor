@@ -153,9 +153,10 @@ class ApplicantController extends Controller
         }
 
         if ($request->hasFile('vucem_cert_file')) {
-            $data['vucem_cert_file'] = base64_encode(
-                file_get_contents($request->file('vucem_cert_file')->getRealPath())
-            );
+            $certFile = $request->file('vucem_cert_file');
+            $data['vucem_cert_file'] = base64_encode(file_get_contents($certFile->getRealPath()));
+            $data['vucem_cert_vigencia'] = $this->extractCertExpiry($certFile->getRealPath());
+            $data['seal_expiry_notified'] = false;
         }
 
         if (!empty($validated['vucem_password'])) {
@@ -278,9 +279,10 @@ class ApplicantController extends Controller
         }
 
         if ($request->hasFile('vucem_cert_file')) {
-            $data['vucem_cert_file'] = base64_encode(
-                file_get_contents($request->file('vucem_cert_file')->getRealPath())
-            );
+            $certFile = $request->file('vucem_cert_file');
+            $data['vucem_cert_file'] = base64_encode(file_get_contents($certFile->getRealPath()));
+            $data['vucem_cert_vigencia'] = $this->extractCertExpiry($certFile->getRealPath());
+            $data['seal_expiry_notified'] = false;
         }
 
         // Si se envía contraseña vacía y se pide eliminar, limpiar
@@ -304,6 +306,8 @@ class ApplicantController extends Controller
         }
         if ($request->has('clear_vucem_cert') && $request->input('clear_vucem_cert')) {
             $data['vucem_cert_file'] = null;
+            $data['vucem_cert_vigencia'] = null;
+            $data['seal_expiry_notified'] = false;
         }
 
         // Consentimiento de privacidad
@@ -340,6 +344,22 @@ class ApplicantController extends Controller
 
         return redirect()->route('applicants.index')
             ->with('success', 'Solicitante eliminado exitosamente.');
+    }
+
+    /**
+     * Extrae la fecha de vencimiento del certificado .cer (X.509).
+     * Devuelve la fecha en formato Y-m-d o null si no se puede leer.
+     */
+    private function extractCertExpiry(string $certPath): ?string
+    {
+        try {
+            // phpcfdi/credentials maneja DER y PEM automáticamente.
+            $certificate = \PhpCfdi\Credentials\Certificate::openFile($certPath);
+            return $certificate->validToDateTime()->format('Y-m-d');
+        } catch (\Throwable $e) {
+            Log::warning('extractCertExpiry: no se pudo leer el certificado — ' . $e->getMessage());
+            return null;
+        }
     }
 
     /**

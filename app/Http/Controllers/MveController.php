@@ -16,6 +16,7 @@ use App\Services\MveSignService;
 use App\Services\EFirmaService;
 use App\Services\DigitalizarDocumentoService;
 use App\Services\DocumentUploadService;
+use App\Mail\MveSubmitted;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -497,7 +498,7 @@ class MveController extends Controller
         $mveId = $request->input('mve_id') ? (int)$request->input('mve_id') : null;
         $informacionCove = $mveId
             ? MvInformacionCove::where('datos_manifestacion_id', $mveId)->first()
-            : MvInformacionCove::where('applicant_id', $applicantId)->whereNull('datos_manifestacion_id')->first();
+            : MvInformacionCove::where('applicant_id', $applicantId)->latest('id')->first();
         
         // Preparar datos para actualizar - Multi-COVE: sub-datos incluidos en informacion_cove
         $datosActualizar = [
@@ -619,7 +620,7 @@ class MveController extends Controller
         $mveId = $request->input('mve_id') ? (int)$request->input('mve_id') : null;
         $documentos = $mveId
             ? MvDocumentos::where('datos_manifestacion_id', $mveId)->first()
-            : MvDocumentos::where('applicant_id', $applicantId)->whereNull('datos_manifestacion_id')->first();
+            : MvDocumentos::where('applicant_id', $applicantId)->latest('id')->first();
         
         if ($documentos) {
             $documentos->update([
@@ -842,7 +843,7 @@ class MveController extends Controller
         try {
             $mvDocumentos = $mveId
                 ? MvDocumentos::where('datos_manifestacion_id', $mveId)->first()
-                : MvDocumentos::where('applicant_id', $applicantId)->whereNull('datos_manifestacion_id')->first();
+                : MvDocumentos::where('applicant_id', $applicantId)->latest('id')->first();
 
             if ($mvDocumentos) {
                 // Obtener array actual de documentos
@@ -897,15 +898,16 @@ class MveController extends Controller
                         $statusEditables = ['borrador', 'guardado', 'rechazado'];
             $mveId = $request->input('mve_id') ? (int)$request->input('mve_id') : null;
 
-            if ($mveId) {
-                MvDocumentos::where('datos_manifestacion_id', $mveId)->delete();
-                MvInformacionCove::where('datos_manifestacion_id', $mveId)->delete();
-                MvDatosManifestacion::where('id', $mveId)->where('applicant_id', $applicantId)->delete();
-            } else {
-                MvDatosManifestacion::where('applicant_id', $applicantId)->whereIn('status', $statusEditables)->delete();
-                MvInformacionCove::where('applicant_id', $applicantId)->whereIn('status', $statusEditables)->delete();
-                MvDocumentos::where('applicant_id', $applicantId)->delete();
+            if (!$mveId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Se requiere el identificador de la MVE para eliminar el borrador.'
+                ], 400);
             }
+
+            MvDocumentos::where('datos_manifestacion_id', $mveId)->delete();
+            MvInformacionCove::where('datos_manifestacion_id', $mveId)->delete();
+            MvDatosManifestacion::where('id', $mveId)->where('applicant_id', $applicantId)->delete();
             
             return response()->json([
                 'success' => true,
@@ -944,9 +946,15 @@ class MveController extends Controller
                 $informacionCove = MvInformacionCove::where('datos_manifestacion_id', $mveId)->exists();
                 $documentosRecord = MvDocumentos::where('datos_manifestacion_id', $mveId)->whereNotNull('documentos')->first();
             } else {
-                $datosManifestacion = MvDatosManifestacion::where('applicant_id', $applicantId)->exists();
-                $informacionCove = MvInformacionCove::where('applicant_id', $applicantId)->exists();
-                $documentosRecord = MvDocumentos::where('applicant_id', $applicantId)->whereNotNull('documentos')->first();
+                // Sin mve_id: tomar siempre el registro más reciente del solicitante
+                $ultimaMve = MvDatosManifestacion::where('applicant_id', $applicantId)->latest('id')->first();
+                $datosManifestacion = (bool) $ultimaMve;
+                $informacionCove = $ultimaMve
+                    ? MvInformacionCove::where('datos_manifestacion_id', $ultimaMve->id)->exists()
+                    : false;
+                $documentosRecord = $ultimaMve
+                    ? MvDocumentos::where('datos_manifestacion_id', $ultimaMve->id)->whereNotNull('documentos')->first()
+                    : null;
             }
             $documentos = $documentosRecord?->documentos ?? [];
             $hasDocuments = collect($documentos)->filter(function ($documento) {
@@ -1004,18 +1012,13 @@ class MveController extends Controller
 
             $datosManifestacion = $mveId
                 ? MvDatosManifestacion::where('id', $mveId)->where('applicant_id', $applicantId)->first()
-                : MvDatosManifestacion::where('applicant_id', $applicantId)->first();
+                : MvDatosManifestacion::where('applicant_id', $applicantId)->latest('id')->first();
 
             if ($datosManifestacion) {
                 $datosManifestacion->update(['status' => 'guardado', 'updated_at' => now()]);
-            }
-
-            if ($mveId) {
-                MvInformacionCove::where('datos_manifestacion_id', $mveId)->update(['status' => 'guardado', 'updated_at' => now()]);
-                MvDocumentos::where('datos_manifestacion_id', $mveId)->update(['updated_at' => now()]);
-            } else {
-                MvInformacionCove::where('applicant_id', $applicantId)->update(['status' => 'guardado', 'updated_at' => now()]);
-                MvDocumentos::where('applicant_id', $applicantId)->update(['updated_at' => now()]);
+                // Siempre usar el ID real de la MVE para actualizar sus registros hijos
+                MvInformacionCove::where('datos_manifestacion_id', $datosManifestacion->id)->update(['status' => 'guardado', 'updated_at' => now()]);
+                MvDocumentos::where('datos_manifestacion_id', $datosManifestacion->id)->update(['updated_at' => now()]);
             }
             
             return response()->json([
@@ -1058,9 +1061,14 @@ class MveController extends Controller
                 $informacionCove = MvInformacionCove::where('datos_manifestacion_id', $mveId)->first();
                 $documentosRecord = MvDocumentos::where('datos_manifestacion_id', $mveId)->whereNotNull('documentos')->first();
             } else {
-                $datosManifestacion = MvDatosManifestacion::where('applicant_id', $applicantId)->first();
-                $informacionCove = MvInformacionCove::where('applicant_id', $applicantId)->first();
-                $documentosRecord = MvDocumentos::where('applicant_id', $applicantId)->whereNotNull('documentos')->first();
+                // Sin mve_id: tomar siempre el más reciente para evitar mezcla de datos entre MVEs
+                $datosManifestacion = MvDatosManifestacion::where('applicant_id', $applicantId)->latest('id')->first();
+                $informacionCove = $datosManifestacion
+                    ? MvInformacionCove::where('datos_manifestacion_id', $datosManifestacion->id)->first()
+                    : null;
+                $documentosRecord = $datosManifestacion
+                    ? MvDocumentos::where('datos_manifestacion_id', $datosManifestacion->id)->whereNotNull('documentos')->first()
+                    : null;
             }
             $documentos = $documentosRecord?->documentos ?? [];
             $cadenaOriginal = app(ManifestacionValorService::class)->buildCadenaOriginal(
@@ -1226,8 +1234,12 @@ class MveController extends Controller
     /**
      * Extraer campos relevantes del cove_data para pre-llenar el formulario.
      */
-    private function extractCoveFormFields(array $cove): array
+    private function extractCoveFormFields(array|string $cove): array
     {
+        if (is_string($cove)) {
+            $cove = json_decode($cove, true) ?? [];
+        }
+
         $emisor = '';
         if (isset($cove['emisor'])) {
             $id = $cove['emisor']['identificacion'] ?? '';
@@ -1250,8 +1262,14 @@ class MveController extends Controller
             $factura = $f['numeroFactura'] ?? '';
         }
 
+        // Fecha: VUCEM devuelve "YYYY-MM-DD-HH:MM" o "YYYY-MM-DD", extraemos solo los primeros 10 caracteres
+        $fecha = $cove['fechaExpedicion'] ?? '';
+        if ($fecha && preg_match('/^(\d{4}-\d{2}-\d{2})/', $fecha, $m)) {
+            $fecha = $m[1];
+        }
+
         return [
-            'fecha_expedicion' => $cove['fechaExpedicion'] ?? '',
+            'fecha_expedicion' => $fecha,
             'emisor_original'  => $emisor,
             'destinatario'     => $destinatario,
             'numero_factura'   => $factura,
@@ -1586,13 +1604,52 @@ class MveController extends Controller
                         MvDocumentos::where('applicant_id', $applicantId)->update(['status' => 'enviado']);
                     }
 
+                    // Enviar correo de acuse al usuario y en copia al administrador
+                    if (!empty($resultado['acuse_id'])) {
+                        try {
+                            $acuse = MvAcuse::with('applicant')->find($resultado['acuse_id']);
+                            if ($acuse) {
+                                $submittedBy = auth()->user();
+                                $folioReal = null;
+
+                                // Consultar el folio real (MNVA...) en VUCEM usando el número de operación
+                                try {
+                                    $consultaService = new \App\Services\MveConsultaService();
+                                    $consultaResult = $consultaService->consultarManifestacion(
+                                        $acuse->folio_manifestacion,
+                                        strtoupper($applicant->applicant_rfc),
+                                        $claveWebservice
+                                    );
+                                    if ($consultaResult['success'] && !empty($consultaResult['numero_mv'])) {
+                                        $folioReal = $consultaResult['numero_mv'];
+                                        $consultaService->actualizarAcuseConConsulta($acuse, $consultaResult);
+                                        $acuse->refresh();
+                                    }
+                                } catch (\Throwable $ex) {
+                                    Log::warning('[MVE] No se pudo obtener folio real de VUCEM: ' . $ex->getMessage());
+                                }
+
+                                // CC al admin que creó el solicitante (si es diferente al que firmó)
+                                $adminCc = null;
+                                if ($applicant->created_by_user_id && $applicant->created_by_user_id !== $submittedBy->id) {
+                                    $admin = \App\Models\User::find($applicant->created_by_user_id);
+                                    $adminCc = $admin?->email;
+                                }
+
+                                (new MveSubmitted($submittedBy, $acuse, $adminCc, $folioReal))->send();
+                            }
+                        } catch (\Throwable $e) {
+                            Log::warning('[MVE] No se pudo enviar correo de acuse: ' . $e->getMessage());
+                        }
+                    }
+
                     return response()->json([
                         'success' => true,
                         'message' => $resultado['message'],
                         'folio' => $resultado['folio'] ?? null,
                         'acuse_id' => $resultado['acuse_id'] ?? null,
                         'modo' => $resultado['modo'] ?? 'produccion',
-                        'redirect_url' => isset($resultado['acuse_id']) ? route('mve.acuse', $datosManifestacion->id) : null
+                        'redirect_url' => route('mve.completadas')
                     ]);
                 } else {
                                         // Si VUCEM rechazo, actualizar status
@@ -1674,16 +1731,17 @@ class MveController extends Controller
                 ], 400);
             }
             
-            // Eliminar registros de esta MVE
-            if ($mveId) {
-                MvDocumentos::where('datos_manifestacion_id', $mveId)->delete();
-                MvInformacionCove::where('datos_manifestacion_id', $mveId)->delete();
-                MvDatosManifestacion::where('id', $mveId)->where('applicant_id', $applicantId)->delete();
-            } else {
-                MvDocumentos::where('applicant_id', $applicantId)->delete();
-                MvInformacionCove::where('applicant_id', $applicantId)->delete();
-                MvDatosManifestacion::where('applicant_id', $applicantId)->delete();
+            // Eliminar registros de esta MVE — requiere mve_id para no afectar otras MVEs
+            if (!$mveId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Se requiere el identificador de la MVE para descartarla.'
+                ], 400);
             }
+
+            MvDocumentos::where('datos_manifestacion_id', $mveId)->delete();
+            MvInformacionCove::where('datos_manifestacion_id', $mveId)->delete();
+            MvDatosManifestacion::where('id', $mveId)->where('applicant_id', $applicantId)->delete();
             
             Log::info('MVE - ManifestaciÃ³n descartada', [
                 'applicant_id' => $applicantId,
@@ -1788,18 +1846,7 @@ class MveController extends Controller
      */
     public function showAcuse($manifestacionId)
     {
-        $manifestacion = MvDatosManifestacion::with('applicant')
-            ->findOrFail($manifestacionId);
-        
-        // Verificar que el solicitante pertenece al usuario actual
-        if (!auth()->user()->canAccessApplicant($manifestacion->applicant)) {
-            abort(403, 'No tienes permiso para acceder a esta manifestaciÃ³n.');
-        }
-        
-        // Obtener el acuse
-        $acuse = MvAcuse::where('datos_manifestacion_id', $manifestacionId)->firstOrFail();
-        
-        return view('mve.acuse', compact('manifestacion', 'acuse'));
+        return redirect()->route('mve.completadas');
     }
     
     /**

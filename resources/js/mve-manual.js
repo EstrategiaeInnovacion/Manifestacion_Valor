@@ -22,6 +22,7 @@ let editingCoveNumber = null; // COVE actualmente en edición
 // ============================================
 let step1Saved = false; // true cuando se guarda Datos de Manifestación
 let step2Saved = false; // true cuando se guarda Información COVE (con al menos 1 COVE)
+let step3Saved = false; // true cuando se guarda Valor en Aduana
 let currentMveId = null; // ID de la MvDatosManifestacion activa (null = nueva MVE)
 
 /**
@@ -31,27 +32,26 @@ let currentMveId = null; // ID de la MvDatosManifestacion activa (null = nueva M
 function updateNextButtonState() {
     const btnStep1 = document.getElementById('btnSiguienteStep1');
     const btnStep2 = document.getElementById('btnSiguienteStep2');
+    const btnStep3 = document.getElementById('btnSiguienteStep3');
 
     if (btnStep1) {
-        if (step1Saved) {
-            btnStep1.disabled = false;
-            btnStep1.classList.remove('opacity-50', 'cursor-not-allowed');
-        } else {
-            btnStep1.disabled = true;
-            btnStep1.classList.add('opacity-50', 'cursor-not-allowed');
-        }
+        btnStep1.disabled = !step1Saved;
+        btnStep1.classList.toggle('opacity-50', !step1Saved);
+        btnStep1.classList.toggle('cursor-not-allowed', !step1Saved);
     }
 
     if (btnStep2) {
-        // Requiere dos condiciones: MVE guardada (paso 1) y COVE guardado (paso 2)
-        const canProceedStep2 = step1Saved && step2Saved;
-        if (canProceedStep2) {
-            btnStep2.disabled = false;
-            btnStep2.classList.remove('opacity-50', 'cursor-not-allowed');
-        } else {
-            btnStep2.disabled = true;
-            btnStep2.classList.add('opacity-50', 'cursor-not-allowed');
-        }
+        const can = step1Saved && step2Saved;
+        btnStep2.disabled = !can;
+        btnStep2.classList.toggle('opacity-50', !can);
+        btnStep2.classList.toggle('cursor-not-allowed', !can);
+    }
+
+    if (btnStep3) {
+        const can = step1Saved && step2Saved && step3Saved;
+        btnStep3.disabled = !can;
+        btnStep3.classList.toggle('opacity-50', !can);
+        btnStep3.classList.toggle('cursor-not-allowed', !can);
     }
 }
 
@@ -155,6 +155,10 @@ window.goToStep = function(stepNumber) {
         alert('Primero debes guardar el Paso 2: Información COVE.');
         return;
     }
+    if (stepNumber >= 4 && !step3Saved) {
+        alert('Primero debes guardar el Paso 3: Valor en Aduana.');
+        return;
+    }
 
     // Auto-guardar datos al salir del paso 2 (Información COVE)
     if (currentStep === 2 && stepNumber !== 2) {
@@ -209,10 +213,13 @@ window.nextStep = async function() {
     if (currentStep === 2) {
         const coveRows = document.querySelectorAll('#informacionCoveTableBody tr[data-cove]');
         if (coveRows.length > 0) {
-            // Guardar datos de trabajo al covesDataMap antes de enviar
             saveWorkingDataToCoveMap();
             await saveInformacionCove();
         }
+    }
+    // Auto-guardar al backend al avanzar desde el paso 3
+    if (currentStep === 3) {
+        await saveValorAduana();
     }
     goToStep(currentStep + 1);
 };
@@ -589,7 +596,7 @@ window.loadSavedDataCallback = function() {
             // Normalizar clave antigua a formato VUCEM
             const tipoFiguraClave = normalizeLegacyKey(persona.tipo_figura);
             const tipoFiguraDesc = getOptionText('tipoFiguraConsulta', tipoFiguraClave);
-            window.addRfcToTable(persona.rfc, persona.razon_social, tipoFiguraDesc, tipoFiguraClave);
+            window.addRfcToTable(persona.rfc, tipoFiguraDesc, tipoFiguraClave);
         });
     }
 
@@ -600,7 +607,7 @@ window.loadSavedDataCallback = function() {
         const alreadyExists = Array.from(existingRows).some(row => row.getAttribute('data-rfc') === rfcAgente);
         if (!alreadyExists) {
             const tipoFiguraDesc = getOptionText('tipoFiguraConsulta', 'TIPFIG.AGE');
-            window.addRfcToTable(rfcAgente, '', tipoFiguraDesc, 'TIPFIG.AGE');
+            window.addRfcToTable(rfcAgente, tipoFiguraDesc, 'TIPFIG.AGE');
             console.log('RFC agente aduanal auto-agregado desde Archivo M:', rfcAgente);
         }
     }
@@ -752,6 +759,9 @@ window.loadSavedDataCallback = function() {
     }
     if (initialStep > 2) {
         step2Saved = true; // Paso 2 ya fue guardado en sesión anterior
+    }
+    if (initialStep > 3) {
+        step3Saved = true; // Paso 3 ya fue guardado en sesión anterior
     }
     updateNextButtonState();
 
@@ -1435,7 +1445,6 @@ window.searchRfcConsulta = async function() {
         const data = await response.json();
 
         if (data.found) {
-            document.getElementById('razonSocialConsulta').value = data.data.razon_social;
             document.getElementById('tipoFiguraConsulta').value = data.data.tipo_figura;
             currentSearchedRfc = data.data;
             showRfcFoundModal();
@@ -1449,12 +1458,11 @@ window.searchRfcConsulta = async function() {
 
 window.addRfcConsulta = async function() {
     const rfcValue = document.getElementById('rfcConsultaInput').value.trim().toUpperCase();
-    const razonSocial = document.getElementById('razonSocialConsulta').value.trim().toUpperCase();
     const tipoFiguraSelect = document.getElementById('tipoFiguraConsulta');
     const tipoFigura = tipoFiguraSelect.value;
     const tipoFiguraTexto = tipoFiguraSelect.options[tipoFiguraSelect.selectedIndex].text;
 
-    if (!rfcValue || !razonSocial || !tipoFigura) {
+    if (!rfcValue || !tipoFigura) {
         showNotification('Por favor complete todos los campos', 'warning');
         return;
     }
@@ -1467,14 +1475,12 @@ window.addRfcConsulta = async function() {
     // Modo edición: actualizar la fila existente en lugar de agregar nueva
     if (editingRfcRow) {
         editingRfcRow.setAttribute('data-rfc', rfcValue);
-        editingRfcRow.setAttribute('data-razon-social', razonSocial);
         editingRfcRow.setAttribute('data-tipo-figura', tipoFigura);
         editingRfcRow.innerHTML = `
             <td class="table-checkbox">
                 <input type="checkbox" class="table-checkbox-input rfc-checkbox" onchange="toggleDeleteButton()">
             </td>
             <td class="font-semibold text-[#003399]">${rfcValue}</td>
-            <td>${razonSocial}</td>
             <td>${tipoFiguraTexto}</td>
             <td class="text-center">
                 <button type="button" onclick="editRfcConsulta('${rfcValue}')" class="text-blue-600 hover:text-blue-800 p-1" title="Editar">
@@ -1488,7 +1494,7 @@ window.addRfcConsulta = async function() {
         return;
     }
 
-    await saveAndAddRfcConsulta(rfcValue, razonSocial, tipoFigura, tipoFiguraTexto);
+    await saveAndAddRfcConsulta(rfcValue, tipoFigura, tipoFiguraTexto);
 };
 
 window.showRfcNotFoundModal = function() {
@@ -1509,12 +1515,11 @@ window.closeRfcFoundModal = function() {
 
 window.confirmAddRfcConsulta = async function() {
     const rfcValue = document.getElementById('rfcConsultaInput').value.trim().toUpperCase();
-    const razonSocial = document.getElementById('razonSocialConsulta').value.trim().toUpperCase();
     const tipoFiguraSelect = document.getElementById('tipoFiguraConsulta');
     const tipoFigura = tipoFiguraSelect.value;
     const tipoFiguraTexto = tipoFiguraSelect.options[tipoFiguraSelect.selectedIndex].text;
 
-    if (!rfcValue || !razonSocial || !tipoFigura) {
+    if (!rfcValue || !tipoFigura) {
         showNotification('Por favor complete todos los campos', 'warning');
         return;
     }
@@ -1522,21 +1527,21 @@ window.confirmAddRfcConsulta = async function() {
     closeRfcFoundModal();
 
     if (currentSearchedRfc) {
-        addRfcToTable(rfcValue, razonSocial, tipoFiguraTexto, tipoFigura);
+        addRfcToTable(rfcValue, tipoFiguraTexto, tipoFigura);
         clearRfcConsultaFields();
         currentSearchedRfc = null;
         return;
     }
 
-    await saveAndAddRfcConsulta(rfcValue, razonSocial, tipoFigura, tipoFiguraTexto);
+    await saveAndAddRfcConsulta(rfcValue, tipoFigura, tipoFiguraTexto);
 };
 
-async function saveAndAddRfcConsulta(rfc, razonSocial, tipoFigura, tipoFiguraTexto) {
+async function saveAndAddRfcConsulta(rfc, tipoFigura, tipoFiguraTexto) {
     try {
         const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
         const storeUrl = document.querySelector('[data-store-url]').getAttribute('data-store-url');
         const applicantRfc = document.querySelector('[data-applicant-rfc]').getAttribute('data-applicant-rfc');
-        
+
         const response = await fetch(storeUrl, {
             method: 'POST',
             headers: {
@@ -1546,7 +1551,6 @@ async function saveAndAddRfcConsulta(rfc, razonSocial, tipoFigura, tipoFiguraTex
             body: JSON.stringify({
                 applicant_rfc: applicantRfc,
                 rfc_consulta: rfc,
-                razon_social: razonSocial,
                 tipo_figura: tipoFigura
             })
         });
@@ -1554,7 +1558,7 @@ async function saveAndAddRfcConsulta(rfc, razonSocial, tipoFigura, tipoFiguraTex
         const data = await response.json();
 
         if (data.success || (data.message && data.message.includes('ya está registrado'))) {
-            addRfcToTable(rfc, razonSocial, tipoFiguraTexto, tipoFigura);
+            addRfcToTable(rfc, tipoFiguraTexto, tipoFigura);
             clearRfcConsultaFields();
         } else if (data.errors) {
             let errorMessages = [];
@@ -1570,32 +1574,29 @@ async function saveAndAddRfcConsulta(rfc, razonSocial, tipoFigura, tipoFiguraTex
     }
 }
 
-window.addRfcToTable = function(rfc, razonSocial, tipoFigura, tipoFiguraClave = null) {
+window.addRfcToTable = function(rfc, tipoFigura, tipoFiguraClave = null) {
     const tbody = document.getElementById('rfcConsultaTableBody');
-    
+
     if (!tbody) return;
-    
+
     const existingRow = tbody.querySelector(`tr[data-rfc="${rfc}"]`);
     if (existingRow) return;
-    
+
     const emptyRow = tbody.querySelector('.table-empty');
     if (emptyRow) {
         emptyRow.parentElement.remove();
     }
 
-    // Si no se proporciona la clave, intentar obtenerla del texto o usar el valor directamente
     const clave = tipoFiguraClave || tipoFigura;
 
     const newRow = document.createElement('tr');
     newRow.setAttribute('data-rfc', rfc);
-    newRow.setAttribute('data-razon-social', razonSocial);
     newRow.setAttribute('data-tipo-figura', clave);
     newRow.innerHTML = `
         <td class="table-checkbox">
             <input type="checkbox" class="table-checkbox-input rfc-checkbox" onchange="toggleDeleteButton()">
         </td>
         <td class="font-semibold text-[#003399]">${rfc}</td>
-        <td>${razonSocial}</td>
         <td>${tipoFigura}</td>
         <td class="text-center">
             <button type="button" onclick="editRfcConsulta('${rfc}')" class="text-blue-600 hover:text-blue-800 p-1" title="Editar">
@@ -1710,20 +1711,18 @@ window.editRfcConsulta = function(rfc) {
 
     // Poblar los campos de entrada con los datos de la fila
     document.getElementById('rfcConsultaInput').value = rfc;
-    document.getElementById('razonSocialConsulta').value = row.getAttribute('data-razon-social') || '';
     const tipoFigura = row.getAttribute('data-tipo-figura') || '';
     document.getElementById('tipoFiguraConsulta').value = tipoFigura;
 
     // Scroll al formulario de entrada
     document.getElementById('rfcConsultaInput').scrollIntoView({ behavior: 'smooth', block: 'center' });
-    document.getElementById('razonSocialConsulta').focus();
+    document.getElementById('rfcConsultaInput').focus();
 
     showNotification('Editando RFC ' + rfc + '. Modifique los campos y presione Aceptar.', 'info');
 };
 
 window.clearRfcConsultaFields = function() {
     document.getElementById('rfcConsultaInput').value = '';
-    document.getElementById('razonSocialConsulta').value = '';
     document.getElementById('tipoFiguraConsulta').value = '';
     currentSearchedRfc = null;
     editingRfcRow = null;
@@ -1809,7 +1808,7 @@ window.buscarInfoCove = async function() {
     const btn = document.getElementById('btnBuscarCove');
     if (btn) {
         btn.disabled = true;
-        btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Buscando...';
+        btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i>';
         lucide.createIcons();
     }
 
@@ -1849,7 +1848,7 @@ window.buscarInfoCove = async function() {
     } finally {
         if (btn) {
             btn.disabled = false;
-            btn.innerHTML = '<i data-lucide="search" class="w-4 h-4"></i> Buscar';
+            btn.innerHTML = '<i data-lucide="search" class="w-4 h-4"></i>';
             lucide.createIcons();
         }
     }
@@ -1879,7 +1878,7 @@ window.addCoveToTableFromData = function(cove, metodoValor, factura, fechaExpedi
     
     row.innerHTML = `
         <td class="table-checkbox">
-            <input type="checkbox" class="table-checkbox-input cove-checkbox" onchange="updateDeleteCoveButton()">
+            <input type="checkbox" class="table-checkbox-input cove-checkbox" onchange="selectOneCove(this)">
         </td>
         <td class="font-mono text-sm text-purple-600 font-semibold">${cove}</td>
         <td class="text-sm text-slate-700">${metodoTexto}</td>
@@ -1974,7 +1973,7 @@ window.addCoveToTable = function() {
         if (incotermValor) editingCoveRow.setAttribute('data-incoterm', incotermValor);
         editingCoveRow.innerHTML = `
             <td class="table-checkbox">
-                <input type="checkbox" class="table-checkbox-input cove-checkbox" onchange="updateDeleteCoveButton()">
+                <input type="checkbox" class="table-checkbox-input cove-checkbox" onchange="selectOneCove(this)">
             </td>
             <td class="font-mono text-sm text-purple-600 font-semibold">${cove}</td>
             <td class="text-sm text-slate-700">${metodoTexto}</td>
@@ -2023,7 +2022,7 @@ window.addCoveToTable = function() {
     
     row.innerHTML = `
         <td class="table-checkbox">
-            <input type="checkbox" class="table-checkbox-input cove-checkbox" onchange="updateDeleteCoveButton()">
+            <input type="checkbox" class="table-checkbox-input cove-checkbox" onchange="selectOneCove(this)">
         </td>
         <td class="font-mono text-sm text-purple-600 font-semibold">${cove}</td>
         <td class="text-sm text-slate-700">${metodoTexto}</td>
@@ -2068,22 +2067,31 @@ window.toggleAllCove = function(checkbox) {
     updateDeleteCoveButton();
 };
 
+// Selección radio: al marcar una fila, desmarca todas las demás
+window.selectOneCove = function(cb) {
+    document.querySelectorAll('.cove-checkbox').forEach(box => {
+        if (box !== cb) box.checked = false;
+    });
+    // Desmarcar el selectAll del header
+    const selectAll = document.getElementById('selectAllCove');
+    if (selectAll) selectAll.checked = false;
+    updateDeleteCoveButton();
+
+    // Si el formulario de información ya está abierto, cambiar al COVE recién seleccionado
+    const form = document.getElementById('modificacionCoveForm');
+    if (form && !form.classList.contains('hidden') && cb.checked) {
+        openManifestacionModal();
+    }
+};
+
 window.updateDeleteCoveButton = function() {
     const checkedBoxes = document.querySelectorAll('.cove-checkbox:checked');
     const deleteBtn = document.getElementById('btnDeleteCove');
     const manifestacionBtn = document.getElementById('btnAddManifestacion');
-    
-    if (checkedBoxes.length > 0) {
-        deleteBtn.classList.remove('hidden');
-    } else {
-        deleteBtn.classList.add('hidden');
-    }
 
-    if (checkedBoxes.length === 1) {
-        manifestacionBtn.classList.remove('hidden');
-    } else {
-        manifestacionBtn.classList.add('hidden');
-    }
+    // Usar style.display para evitar conflicto con CSS custom que sobreescribe .hidden
+    deleteBtn.style.display = checkedBoxes.length > 0 ? '' : 'none';
+    manifestacionBtn.style.display = checkedBoxes.length === 1 ? '' : 'none';
 };
 
 window.deleteSelectedCove = async function() {
@@ -2126,8 +2134,9 @@ window.deleteSelectedCove = async function() {
         lucide.createIcons();
     }
 
-    document.getElementById('btnDeleteCove').classList.add('hidden');
-    
+    document.getElementById('btnDeleteCove').style.display = 'none';
+    document.getElementById('btnAddManifestacion').style.display = 'none';
+
     const selectAllCheckbox = document.getElementById('selectAllCove');
     if (selectAllCheckbox) {
         selectAllCheckbox.checked = false;
@@ -3596,12 +3605,9 @@ window.saveDatosManifestacion = async function() {
     rfcRows.forEach(row => {
         const rfc = row.getAttribute('data-rfc');
         if (rfc) {
-            // Leer las claves de los atributos data en lugar del texto de las celdas
-            const razonSocial = row.getAttribute('data-razon-social') || row.querySelectorAll('td')[2]?.textContent || '';
             const tipoFigura = row.getAttribute('data-tipo-figura') || ''; // CLAVE, no descripción
             personaConsulta.push({
                 rfc: rfc,
-                razon_social: razonSocial,
                 tipo_figura: tipoFigura
             });
         }
@@ -3700,7 +3706,11 @@ window.saveValorAduana = async function() {
         }
     };
 
-    await saveSection('valor-aduana', data, 'Valor en Aduana');
+    const success = await saveSection('valor-aduana', data, 'Valor en Aduana');
+    if (success) {
+        step3Saved = true;
+        updateNextButtonState();
+    }
 };
 
 window.saveDocumentos = async function() {
@@ -4255,30 +4265,18 @@ function generarContenidoVistaPrevia(data) {
                 <h3 class="text-sm font-bold text-slate-700 mb-3 border-b border-slate-200 pb-1">RFC's de consulta</h3>
                 <table class="w-full text-xs">
                     <tr class="bg-slate-100">
-                        <td class="border border-slate-300 p-2 font-semibold w-1/4">RFC</td>
-                        <td class="border border-slate-300 p-2 w-2/4">Nombre o Razón social</td>
+                        <td class="border border-slate-300 p-2 font-semibold w-1/2">RFC</td>
+                        <td class="border border-slate-300 p-2 w-1/2">Tipo de figura</td>
                     </tr>
                     ${personasConsulta.length > 0 ? personasConsulta.map(p => `
                         <tr>
                             <td class="border border-slate-300 p-2 font-medium">${p.rfc || 'N/A'}</td>
-                            <td class="border border-slate-300 p-2">${p.razon_social || 'N/A'}</td>
+                            <td class="border border-slate-300 p-2">${p.tipo_figura || 'N/A'}</td>
                         </tr>
                     `).join('') : `
                         <tr>
                             <td class="border border-slate-300 p-2">N/A</td>
                             <td class="border border-slate-300 p-2">N/A</td>
-                        </tr>
-                    `}
-                    <tr class="bg-slate-100">
-                        <td class="border border-slate-300 p-2 font-semibold" colspan="2">Tipo de figura</td>
-                    </tr>
-                    ${personasConsulta.length > 0 ? personasConsulta.map(p => `
-                        <tr>
-                            <td class="border border-slate-300 p-2" colspan="2">${p.tipo_figura || 'N/A'}</td>
-                        </tr>
-                    `).join('') : `
-                        <tr>
-                            <td class="border border-slate-300 p-2" colspan="2">N/A</td>
                         </tr>
                     `}
                 </table>

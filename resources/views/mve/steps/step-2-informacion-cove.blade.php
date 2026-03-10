@@ -19,7 +19,16 @@
                             Acuse de Valor (COVE)
                             <span class="text-red-500">*</span>
                         </label>
-                        <input type="text" id="coveInput" class="form-input" placeholder="Ingrese el COVE" maxlength="20" oninput="validateCoveInput(this)">
+                        <div class="flex gap-1 items-stretch">
+                            <input type="text" id="coveInput" class="form-input flex-1" placeholder="Ingrese el COVE" maxlength="20" oninput="validateCoveInput(this)">
+                            @if($applicant->hasVucemCredentials())
+                            <button type="button" id="btnBuscarCove" onclick="buscarInfoCove()"
+                                    title="Consultar COVE en VUCEM"
+                                    class="flex-shrink-0 flex items-center justify-center px-2.5 rounded-lg border border-slate-300 bg-white text-slate-400 hover:bg-blue-50 hover:border-[#003399] hover:text-[#003399] transition-colors">
+                                <i data-lucide="search" class="w-4 h-4"></i>
+                            </button>
+                            @endif
+                        </div>
                     </div>
 
                     <div class="form-group flex-1">
@@ -74,11 +83,11 @@
                     <button type="button" onclick="addCoveToTable()" class="btn-add">
                         AGREGAR
                     </button>
-                    <button type="button" id="btnDeleteCove" onclick="deleteSelectedCove()" class="btn-delete hidden">
+                    <button type="button" id="btnDeleteCove" onclick="deleteSelectedCove()" class="btn-delete" style="display:none">
                         <i data-lucide="trash-2" class="w-5 h-5"></i>
                         ELIMINAR SELECCIONADOS
                     </button>
-                    <button type="button" id="btnAddManifestacion" onclick="openManifestacionModal()" class="btn-primary hidden">
+                    <button type="button" id="btnAddManifestacion" onclick="openManifestacionModal()" class="btn-primary" style="display:none">
                         <i data-lucide="file-plus" class="w-5 h-5"></i>
                         AÑADIR INFORMACIÓN DE MVE
                     </button>

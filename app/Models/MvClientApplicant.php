@@ -21,6 +21,8 @@ class MvClientApplicant extends Model
         'applicant_email',
         'vucem_key_file',
         'vucem_cert_file',
+        'vucem_cert_vigencia',
+        'seal_expiry_notified',
         'vucem_password',
         'vucem_webservice_key',
         'privacy_consent',
@@ -41,6 +43,8 @@ class MvClientApplicant extends Model
         'vucem_cert_file' => 'encrypted',
         'vucem_password' => 'encrypted',
         'vucem_webservice_key' => 'encrypted',
+        'vucem_cert_vigencia' => 'date',
+        'seal_expiry_notified' => 'boolean',
         'privacy_consent' => 'boolean',
         'privacy_consent_at' => 'datetime',
     ];

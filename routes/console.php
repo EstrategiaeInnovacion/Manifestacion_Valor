@@ -11,5 +11,8 @@ Artisan::command('inspire', function () {
 // Verificar licencias expiradas cada minuto
 Schedule::command('licenses:check-expired')->everyMinute();
 
+// Verificar sellos VUCEM próximos a vencer — notificación 30 días antes (una vez al día)
+Schedule::command('seals:check-expiry')->dailyAt('08:00');
+
 // Registrar el comando de diagnóstico si no hay Kernel manual
 // (Los comandos en app/Console/Commands se auto-descubren por Laravel)

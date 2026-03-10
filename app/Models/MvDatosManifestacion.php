@@ -11,9 +11,10 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 class MvDatosManifestacion extends Model
 {
     protected $table = 'mv_datos_manifestacion';
-    
+
     protected $fillable = [
         'applicant_id',
+        'folio_interno',
         'status',
         'rfc_importador',
         'metodo_valoracion',
@@ -24,25 +25,42 @@ class MvDatosManifestacion extends Model
         'persona_consulta',
     ];
 
-    // Relación con el solicitante
+    /**
+     * Generar folio_interno unico automaticamente al crear un nuevo registro.
+     * Formato: MVE-YYYY-NNNNN (e.g. MVE-2026-00042)
+     */
+    protected static function boot(): void
+    {
+        parent::boot();
+
+        static::creating(function (self $model) {
+            if (empty($model->folio_interno)) {
+                $year = date('Y');
+                $count = self::whereYear('created_at', $year)->count() + 1;
+                $model->folio_interno = 'MVE-' . $year . '-' . str_pad($count, 5, '0', STR_PAD_LEFT);
+            }
+        });
+    }
+
+    // Relacion con el solicitante
     public function applicant(): BelongsTo
     {
         return $this->belongsTo(MvClientApplicant::class, 'applicant_id');
     }
 
-    // Relación con la información COVE
+    // Relacion con la informacion COVE
     public function informacionCove(): HasOne
     {
         return $this->hasOne(MvInformacionCove::class, 'datos_manifestacion_id');
     }
 
-    // Relación con los documentos
+    // Relacion con los documentos
     public function documentos(): HasOne
     {
         return $this->hasOne(MvDocumentos::class, 'datos_manifestacion_id');
     }
 
-    // Encriptación automática para RFC Importador
+    // Encriptacion automatica para RFC Importador
     protected function rfcImportador(): Attribute
     {
         return Attribute::make(
@@ -51,7 +69,7 @@ class MvDatosManifestacion extends Model
         );
     }
 
-    // Encriptación automática para Método de Valoración
+    // Encriptacion automatica para Metodo de Valoracion
     protected function metodoValoracion(): Attribute
     {
         return Attribute::make(
@@ -60,7 +78,7 @@ class MvDatosManifestacion extends Model
         );
     }
 
-    // Encriptación automática para Existe Vinculación
+    // Encriptacion automatica para Existe Vinculacion
     protected function existeVinculacion(): Attribute
     {
         return Attribute::make(
@@ -69,7 +87,7 @@ class MvDatosManifestacion extends Model
         );
     }
 
-    // Encriptación automática para Pedimento
+    // Encriptacion automatica para Pedimento
     protected function pedimento(): Attribute
     {
         return Attribute::make(
@@ -78,7 +96,7 @@ class MvDatosManifestacion extends Model
         );
     }
 
-    // Encriptación automática para Patente
+    // Encriptacion automatica para Patente
     protected function patente(): Attribute
     {
         return Attribute::make(
@@ -87,7 +105,7 @@ class MvDatosManifestacion extends Model
         );
     }
 
-    // Encriptación automática para Aduana
+    // Encriptacion automatica para Aduana
     protected function aduana(): Attribute
     {
         return Attribute::make(
@@ -96,7 +114,7 @@ class MvDatosManifestacion extends Model
         );
     }
 
-    // Encriptación automática para Persona Consulta (JSON)
+    // Encriptacion automatica para Persona Consulta (JSON)
     protected function personaConsulta(): Attribute
     {
         return Attribute::make(

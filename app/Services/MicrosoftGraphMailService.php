@@ -59,7 +59,10 @@ class MicrosoftGraphMailService
      * @param string|null $replyTo     Dirección a la que se responderá (Reply-To)
      * @param string|null $replyToName Nombre del Reply-To
      */
-    public function sendMail(string $to, string $subject, string $htmlBody, array $attachments = [], ?string $replyTo = null, ?string $replyToName = null): bool
+    /**
+     * @param string|array|null $cc  Un correo o array de correos para CC
+     */
+    public function sendMail(string $to, string $subject, string $htmlBody, array $attachments = [], ?string $replyTo = null, ?string $replyToName = null, string|array|null $cc = null): bool
     {
         try {
             $token = $this->getAccessToken();
@@ -91,6 +94,17 @@ class MicrosoftGraphMailService
                         ]),
                     ],
                 ];
+            }
+
+            if (!empty($cc)) {
+                $ccEmails = is_array($cc) ? $cc : [$cc];
+                $ccEmails = array_filter($ccEmails); // eliminar vacíos
+                if (!empty($ccEmails)) {
+                    $message['message']['ccRecipients'] = array_map(
+                        fn($email) => ['emailAddress' => ['address' => $email]],
+                        $ccEmails
+                    );
+                }
             }
 
             if (!empty($attachments)) {

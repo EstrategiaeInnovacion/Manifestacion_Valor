@@ -204,13 +204,11 @@
                                                 <span class="text-sm font-bold text-green-700">Enviado a VUCEM</span>
                                             </span>
                                             
-                                            @if($mveData['datos_manifestacion'])
-                                                <a href="{{ route('mve.acuse', $mveData['datos_manifestacion']->id) }}" 
-                                                   class="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[#003399] to-[#0047cc] hover:from-[#001a4d] hover:to-[#003399] text-white font-bold rounded-lg shadow-md hover:shadow-lg transition-all duration-200">
-                                                    <i data-lucide="file-text" class="w-4 h-4"></i>
-                                                    <span>Ver Acuse</span>
-                                                </a>
-                                            @endif
+                                            <a href="{{ route('mve.completadas') }}"
+                                               class="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[#003399] to-[#0047cc] hover:from-[#001a4d] hover:to-[#003399] text-white font-bold rounded-lg shadow-md hover:shadow-lg transition-all duration-200">
+                                                <i data-lucide="check-circle" class="w-4 h-4"></i>
+                                                <span>Ver Completadas</span>
+                                            </a>
                                             
                                         @elseif($status === 'rechazado')
                                             {{-- Estado: Rechazado por VUCEM --}}
@@ -957,30 +955,18 @@
                         <div class="overflow-x-auto w-full">
                         <table class="w-full text-xs">
                             <tr class="bg-slate-100">
-                                <td class="border border-slate-300 p-2 font-semibold w-1/4">RFC</td>
-                                <td class="border border-slate-300 p-2 w-2/4">Nombre o Razón social</td>
+                                <td class="border border-slate-300 p-2 font-semibold w-1/2">RFC</td>
+                                <td class="border border-slate-300 p-2 w-1/2">Tipo de figura</td>
                             </tr>
                             ${personasConsulta.length > 0 ? personasConsulta.map(p => `
                                 <tr>
                                     <td class="border border-slate-300 p-2 font-medium">${p.rfc || 'N/A'}</td>
-                                    <td class="border border-slate-300 p-2">${p.razon_social || 'N/A'}</td>
+                                    <td class="border border-slate-300 p-2">${p.tipo_figura || 'N/A'}</td>
                                 </tr>
                             `).join('') : `
                                 <tr>
                                     <td class="border border-slate-300 p-2">N/A</td>
                                     <td class="border border-slate-300 p-2">N/A</td>
-                                </tr>
-                            `}
-                            <tr class="bg-slate-100">
-                                <td class="border border-slate-300 p-2 font-semibold" colspan="2">Tipo de figura</td>
-                            </tr>
-                            ${personasConsulta.length > 0 ? personasConsulta.map(p => `
-                                <tr>
-                                    <td class="border border-slate-300 p-2" colspan="2">${p.tipo_figura || 'N/A'}</td>
-                                </tr>
-                            `).join('') : `
-                                <tr>
-                                    <td class="border border-slate-300 p-2" colspan="2">N/A</td>
                                 </tr>
                             `}
                         </table>

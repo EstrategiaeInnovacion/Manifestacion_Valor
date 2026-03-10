@@ -386,7 +386,7 @@ class VucemCatalogs
         '172' => 'Contratos',
         '171' => 'Documento con el que se acredite la propiedad de la mercancía',
         '179' => 'Comprobante de domicilio',
-        '180' => 'Documento que ampare el avalúo de las mercancías',
+        '184' => 'Documento que ampare el avalúo de las mercancías',
         '189' => 'Actas',
         '192' => 'Escritos',
         '360' => 'Documento complementario',
@@ -429,10 +429,7 @@ class VucemCatalogs
         
         // Otros documentos del catálogo anterior
         '047' => 'Pago de Derechos',
-        '112' => 'Acta Constitutiva',
-        '368' => 'Otros (Documento Universal)',
         '441' => 'Oficios emitidos por autoridad',
-        '479' => 'Lista de Empaque',
     ];
 
     /**
@@ -440,33 +437,7 @@ class VucemCatalogs
      * Según Artículo 81 del Reglamento de la Ley Aduanera
      */
     public static $tiposDocumentoMve = [
-        // I. Factura comercial
-        '170' => 'I. Factura comercial (CFDI)',
-        
-        // II. Conocimiento de embarque, lista de empaque, guía aérea o demás documentos de transporte
-        '438' => 'II. Conocimiento de embarque, guía aérea o documento de transporte',
-        '479' => 'II. Lista de Empaque',
-        
-        // III. El que compruebe el origen cuando corresponda, y la procedencia de las mercancías
-        '433' => 'III. Documento que determina procedencia y origen de mercancías',
-        '445' => 'III. Relación de certificados de origen',
-        
-        // IV. En el que conste la garantía (artículo 36-A de la Ley)
-        '176' => 'IV. Documentación relacionada con garantía (art. 36-A L.A.)',
-        
-        // V. En el que conste el pago de las Mercancías (transferencia, carta de crédito)
-        '360' => 'V. Comprobante de pago de mercancías (transferencia/carta de crédito)',
-        
-        // VI. El relativo a los gastos de transporte, seguros y gastos conexos
-        '172' => 'VI. Gastos de transporte, seguros y gastos conexos',
-        
-        // VII. Contratos relacionados con la transacción de la Mercancía
-        '171' => 'VII. Contratos relacionados con la transacción de mercancía',
-        
-        // VIII. Los que soporten los conceptos incrementables (Artículo 65 de la Ley)
-        '180' => 'VIII. Documento que soporte conceptos incrementables (art. 65)',
-        
-        // IX. Cualquier otra información y documentación necesaria
-        '368' => 'IX. Otros - Documentación adicional para valor en aduana',
+        // Único tipo aceptado por VUCEM para documentos del expediente MVE
+        '360' => 'Documento complementario',
     ];
 }

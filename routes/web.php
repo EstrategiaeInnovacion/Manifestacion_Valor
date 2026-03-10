@@ -179,6 +179,10 @@ Route::middleware(['auth', 'license'])->group(function () {
         // 2. Procesar el archivo, firmarlo y enviarlo a VUCEM
         Route::post('/digitalizacion', [DigitalizacionController::class , 'store'])
             ->name('digitalizacion.store');
+
+        // 3. Consultar folio eDocument por número de operación pendiente
+        Route::post('/digitalizacion/{id}/consultar-operacion', [DigitalizacionController::class , 'consultarOperacion'])
+            ->name('digitalizacion.consultar-operacion');
     });
 
 require __DIR__ . '/auth.php';

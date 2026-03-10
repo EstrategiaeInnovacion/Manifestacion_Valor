@@ -390,7 +390,7 @@ class MveSignService
         $folioReal = $numeroManifestacion ?: $numeroOperacion;
 
         if ($folioReal) {
-            MvAcuse::create([
+            $acuse = MvAcuse::create([
                 'applicant_id' => $applicant->id,
                 'datos_manifestacion_id' => $datosManifestacion->id,
                 'folio_manifestacion' => $folioReal, // Usar numeroManifestacion como folio principal
@@ -405,8 +405,8 @@ class MveSignService
             ]);
 
             $datosManifestacion->update(['status' => 'enviado']);
-            MvInformacionCove::where('applicant_id', $applicant->id)->update(['status' => 'enviado']);
-            MvDocumentos::where('applicant_id', $applicant->id)->update(['status' => 'enviado']);
+            MvInformacionCove::where('datos_manifestacion_id', $datosManifestacion->id)->update(['status' => 'enviado']);
+            MvDocumentos::where('datos_manifestacion_id', $datosManifestacion->id)->update(['status' => 'enviado']);
 
             Log::info('[MVE] Manifestación enviada exitosamente', [
                 'folio_real' => $folioReal,
@@ -420,12 +420,13 @@ class MveSignService
                 'folio' => $folioReal,
                 'numero_manifestacion' => $numeroManifestacion,
                 'numero_operacion' => $numeroOperacion,
+                'acuse_id' => $acuse->id,
                 'message' => 'Manifestación enviada con éxito. Folio: ' . $folioReal
             ];
         }
 
         $datosManifestacion->update(['status' => 'rechazado']);
-        MvInformacionCove::where('applicant_id', $applicant->id)->update(['status' => 'rechazado']);
+        MvInformacionCove::where('datos_manifestacion_id', $datosManifestacion->id)->update(['status' => 'rechazado']);
 
         Log::error('[MVE] Error procesando respuesta VUCEM', [
             'mensaje' => $mensaje,

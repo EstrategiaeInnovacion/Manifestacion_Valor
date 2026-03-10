@@ -93,11 +93,16 @@
                 <form action="{{ route('digitalizacion.store') }}" method="POST" enctype="multipart/form-data">
                     @csrf
                     
+                    {{-- Datos de credenciales para JS --}}
+                    <script>
+                        const applicantCredentials = @json($credentialFlags);
+                    </script>
+
                     <div class="grid grid-cols-1 lg:grid-cols-3">
-                        
+
                         {{-- COLUMNA IZQUIERDA: CONFIGURACIÓN Y CREDENCIALES --}}
                         <div class="lg:col-span-2 p-8 border-b lg:border-b-0 lg:border-r border-slate-100">
-                            
+
                             {{-- SECCIÓN 1: DATOS GENERALES --}}
                             <div class="mb-8">
                                 <h3 class="text-lg font-bold text-[#001a4d] mb-1 flex items-center">
@@ -111,7 +116,8 @@
                                     <div class="col-span-1 md:col-span-2">
                                         <x-input-label for="applicant_id" class="text-slate-700 font-bold" :value="__('Firmar como (RFC Dueño)')" />
                                         <div class="relative mt-1">
-                                            <select id="applicant_id" name="applicant_id" class="block w-full pl-3 pr-10 py-3 text-base border-slate-300 focus:outline-none focus:ring-[#003399] focus:border-[#003399] sm:text-sm rounded-lg shadow-sm bg-slate-50">
+                                            <select id="applicant_id" name="applicant_id" onchange="updateCredentialUI(this.value)"
+                                                    class="block w-full pl-3 pr-10 py-3 text-base border-slate-300 focus:outline-none focus:ring-[#003399] focus:border-[#003399] sm:text-sm rounded-lg shadow-sm bg-slate-50">
                                                 <option value="" disabled selected>-- Selecciona un RFC --</option>
                                                 @foreach($solicitantes as $solicitante)
                                                     <option value="{{ $solicitante->id }}" {{ old('applicant_id') == $solicitante->id ? 'selected' : '' }}>
@@ -128,10 +134,10 @@
                                             <x-input-label for="rfc_consulta" class="text-slate-700 font-bold" :value="__('RFC Agente Aduanal (Consulta)')" />
                                             <span class="text-xs font-semibold text-amber-600 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">Opcional</span>
                                         </div>
-                                        <x-text-input id="rfc_consulta" class="block mt-1 w-full uppercase" 
-                                                      type="text" 
-                                                      name="rfc_consulta" 
-                                                      placeholder="Ej: CDS041216MS3" 
+                                        <x-text-input id="rfc_consulta" class="block mt-1 w-full uppercase"
+                                                      type="text"
+                                                      name="rfc_consulta"
+                                                      placeholder="Ej: CDS041216MS3"
                                                       :value="old('rfc_consulta')" />
                                     </div>
                                 </div>
@@ -145,47 +151,56 @@
                                     <svg class="w-5 h-5 mr-2 text-[#003399]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11.536 19.464a3 3 0 01-.894.553l-4.485 1.58 1.58-4.485a3 3 0 01.553-.894l4.707-4.707a6 6 0 00-1.743-4.243 6 6 0 1111.314 0z"></path></svg>
                                     2. Archivos e.Firma (FIEL)
                                 </h3>
-                                <p class="text-sm text-slate-500 mb-6 pl-7">Sube los archivos .cer y .key vigentes del RFC seleccionado.</p>
 
-                                <div class="pl-7 space-y-5">
-                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-                                        {{-- CER --}}
-                                        <div>
-                                            <label class="block text-sm font-bold text-slate-700 mb-1">Certificado (.cer)</label>
-                                            <input type="file" name="certificado_file" accept=".cer" class="block w-full text-sm text-slate-500
-                                                file:mr-4 file:py-2.5 file:px-4
-                                                file:rounded-lg file:border-0
-                                                file:text-sm file:font-bold
-                                                file:bg-blue-50 file:text-[#003399]
-                                                hover:file:bg-blue-100
-                                                cursor-pointer border border-slate-300 rounded-lg p-1 bg-white
-                                            "/>
+                                {{-- Panel: credenciales ya configuradas --}}
+                                <div id="fiel-saved-panel" class="hidden mt-4 pl-7">
+                                    <div class="flex items-start gap-3 p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
+                                        <div class="flex-shrink-0 mt-0.5 w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
                                         </div>
-                                        {{-- KEY --}}
-                                        <div>
-                                            <label class="block text-sm font-bold text-slate-700 mb-1">Llave Privada (.key)</label>
-                                            <input type="file" name="private_key_file" accept=".key" class="block w-full text-sm text-slate-500
-                                                file:mr-4 file:py-2.5 file:px-4
-                                                file:rounded-lg file:border-0
-                                                file:text-sm file:font-bold
-                                                file:bg-blue-50 file:text-[#003399]
-                                                hover:file:bg-blue-100
-                                                cursor-pointer border border-slate-300 rounded-lg p-1 bg-white
-                                            "/>
+                                        <div class="flex-1">
+                                            <p class="text-sm font-bold text-emerald-800">Credenciales e.Firma configuradas</p>
+                                            <p class="text-xs text-emerald-700 mt-0.5">El certificado, llave privada y contraseñas de este RFC ya están guardados. Se usarán automáticamente.</p>
+                                            <button type="button" onclick="showFielUpload()" class="mt-2 text-xs font-semibold text-emerald-700 underline underline-offset-2 hover:text-emerald-900">
+                                                Usar archivos diferentes
+                                            </button>
                                         </div>
                                     </div>
+                                </div>
 
+                                {{-- Panel: carga manual (siempre visible si no hay credenciales guardadas) --}}
+                                <div id="fiel-upload-panel" class="mt-4 pl-7 space-y-5">
+                                    <p class="text-sm text-slate-500">Sube los archivos .cer y .key vigentes del RFC seleccionado.</p>
                                     <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-                                        {{-- PASS WS --}}
+                                        <div>
+                                            <label class="block text-sm font-bold text-slate-700 mb-1">Certificado (.cer)</label>
+                                            <input id="certificado_file" type="file" name="certificado_file" accept=".cer" class="block w-full text-sm text-slate-500
+                                                file:mr-4 file:py-2.5 file:px-4
+                                                file:rounded-lg file:border-0
+                                                file:text-sm file:font-bold
+                                                file:bg-blue-50 file:text-[#003399]
+                                                hover:file:bg-blue-100
+                                                cursor-pointer border border-slate-300 rounded-lg p-1 bg-white"/>
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-bold text-slate-700 mb-1">Llave Privada (.key)</label>
+                                            <input id="private_key_file" type="file" name="private_key_file" accept=".key" class="block w-full text-sm text-slate-500
+                                                file:mr-4 file:py-2.5 file:px-4
+                                                file:rounded-lg file:border-0
+                                                file:text-sm file:font-bold
+                                                file:bg-blue-50 file:text-[#003399]
+                                                hover:file:bg-blue-100
+                                                cursor-pointer border border-slate-300 rounded-lg p-1 bg-white"/>
+                                        </div>
+                                    </div>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                                         <div>
                                             <x-input-label for="vucem_password" class="text-slate-700 font-bold" :value="__('Contraseña Web Service')" />
-                                            <x-text-input id="vucem_password" class="block mt-1 w-full" 
-                                                          type="password" 
-                                                          name="vucem_password" 
-                                                          required
+                                            <x-text-input id="vucem_password" class="block mt-1 w-full"
+                                                          type="password"
+                                                          name="vucem_password"
                                                           placeholder="Contraseña del portal VUCEM" />
                                         </div>
-                                        {{-- PASS FIEL --}}
                                         <div>
                                             <div class="flex justify-between items-center">
                                                 <x-input-label for="password_fiel" class="text-slate-700 font-bold" :value="__('Contraseña FIEL')" />
@@ -261,6 +276,60 @@
                     </div>
                 </form>
             </div>
+        {{-- TABLA DE EDOCUMENTS RECIENTES --}}
+        @if($edocuments->count() > 0)
+        <div class="mt-10">
+            <h3 class="text-xl font-black text-[#001a4d] mb-4">eDocuments Recientes</h3>
+            <div class="bg-white rounded-2xl shadow border border-slate-200 overflow-hidden">
+                <table class="min-w-full divide-y divide-slate-200 text-sm">
+                    <thead class="bg-slate-50">
+                        <tr>
+                            <th class="px-4 py-3 text-left font-bold text-slate-600 uppercase tracking-wider text-xs">RFC</th>
+                            <th class="px-4 py-3 text-left font-bold text-slate-600 uppercase tracking-wider text-xs">Folio eDocument</th>
+                            <th class="px-4 py-3 text-left font-bold text-slate-600 uppercase tracking-wider text-xs">Documento</th>
+                            <th class="px-4 py-3 text-left font-bold text-slate-600 uppercase tracking-wider text-xs">Fecha</th>
+                            <th class="px-4 py-3 text-left font-bold text-slate-600 uppercase tracking-wider text-xs">Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        @foreach($edocuments as $edoc)
+                        @php $isPending = str_starts_with($edoc->folio_edocument, 'PENDIENTE'); @endphp
+                        <tr class="{{ $isPending ? 'bg-amber-50' : '' }}">
+                            <td class="px-4 py-3 font-mono text-xs text-slate-700">
+                                {{ $edoc->applicant->applicant_rfc ?? '—' }}
+                            </td>
+                            <td class="px-4 py-3" id="folio-{{ $edoc->id }}">
+                                @if($isPending)
+                                    <span class="inline-flex items-center gap-1 text-amber-700 font-semibold text-xs bg-amber-100 px-2 py-1 rounded-full">
+                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                        Pendiente (Op: {{ $edoc->numero_operacion }})
+                                    </span>
+                                @else
+                                    <span class="font-mono font-bold text-[#003399]">{{ $edoc->folio_edocument }}</span>
+                                @endif
+                            </td>
+                            <td class="px-4 py-3 text-slate-600 text-xs truncate max-w-[160px]">{{ $edoc->nombre_documento ?? '—' }}</td>
+                            <td class="px-4 py-3 text-slate-500 text-xs">{{ $edoc->created_at->format('d/m/Y H:i') }}</td>
+                            <td class="px-4 py-3">
+                                @if($isPending && $edoc->numero_operacion)
+                                    <button onclick="consultarFolio({{ $edoc->id }}, this)"
+                                            data-url="{{ route('digitalizacion.consultar-operacion', $edoc->id) }}"
+                                            class="inline-flex items-center gap-1 px-3 py-1.5 bg-[#003399] text-white text-xs font-bold rounded-lg hover:bg-[#002266] transition-colors">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                                        Consultar folio
+                                    </button>
+                                @else
+                                    <span class="text-emerald-600 font-semibold text-xs">✓ Obtenido</span>
+                                @endif
+                            </td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        @endif
+
         </main>
     </div>
 
@@ -282,9 +351,61 @@
             }
         });
 
-        // Efectos Drag & Drop visuales
         fileInput.addEventListener('dragenter', () => dropZone.classList.add('border-[#003399]', 'bg-blue-50'));
         fileInput.addEventListener('dragleave', () => dropZone.classList.remove('border-[#003399]', 'bg-blue-50'));
         fileInput.addEventListener('drop', () => dropZone.classList.add('border-[#003399]', 'bg-blue-50'));
+
+        // Muestra los inputs manuales aunque haya credenciales guardadas
+        function showFielUpload() {
+            document.getElementById('fiel-saved-panel').classList.add('hidden');
+            document.getElementById('fiel-upload-panel').classList.remove('hidden');
+        }
+
+        // Actualiza la UI de credenciales según el RFC seleccionado
+        function updateCredentialUI(applicantId) {
+            const creds = applicantCredentials[applicantId] || {};
+            const allSaved = creds.has_cert && creds.has_key && creds.has_ws_key && creds.has_fiel_pass;
+
+            document.getElementById('fiel-saved-panel').classList.toggle('hidden', !allSaved);
+            document.getElementById('fiel-upload-panel').classList.toggle('hidden', allSaved);
+        }
+
+        // Restaurar estado si hay valor previo (old input tras error de validación)
+        document.addEventListener('DOMContentLoaded', function() {
+            const sel = document.getElementById('applicant_id');
+            if (sel && sel.value) updateCredentialUI(sel.value);
+        });
+
+        async function consultarFolio(id, btn) {
+            const url = btn.dataset.url;
+            btn.disabled = true;
+            btn.innerHTML = '<svg class="w-3.5 h-3.5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg> Consultando...';
+
+            try {
+                const resp = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Accept': 'application/json',
+                    }
+                });
+                const data = await resp.json();
+
+                if (data.success) {
+                    const cell = document.getElementById('folio-' + id);
+                    cell.innerHTML = '<span class="font-mono font-bold text-[#003399]">' + data.folio + '</span>';
+                    btn.closest('tr').classList.remove('bg-amber-50');
+                    btn.closest('td').innerHTML = '<span class="text-emerald-600 font-semibold text-xs">✓ Obtenido</span>';
+                } else {
+                    btn.disabled = false;
+                    btn.innerHTML = '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg> Consultar folio';
+                    alert('VUCEM: ' + data.message);
+                }
+            } catch (e) {
+                btn.disabled = false;
+                btn.innerHTML = '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg> Consultar folio';
+                alert('Error de conexión: ' + e.message);
+            }
+        }
     </script>
 </x-app-layout>

@@ -138,6 +138,36 @@
                         </span>
                     </div>
 
+                    @if($applicant->vucem_cert_vigencia)
+                    @php
+                        $vigencia = $applicant->vucem_cert_vigencia;
+                        $hoy = \Carbon\Carbon::today();
+                        $diasRestantes = (int) $hoy->diffInDays($vigencia, false);
+                        if ($diasRestantes < 0) {
+                            $vigBadgeClass = 'text-red-700 bg-red-50 border border-red-200';
+                            $vigIcon = 'alert-octagon';
+                            $vigLabel = 'Vencido el ' . $vigencia->format('d/m/Y');
+                        } elseif ($diasRestantes <= 30) {
+                            $vigBadgeClass = 'text-amber-700 bg-amber-50 border border-amber-200';
+                            $vigIcon = 'alert-triangle';
+                            $vigLabel = 'Vence el ' . $vigencia->format('d/m/Y') . ' (' . $diasRestantes . ' días)';
+                        } else {
+                            $vigBadgeClass = 'text-green-700 bg-green-50 border border-green-200';
+                            $vigIcon = 'calendar-check';
+                            $vigLabel = 'Vigente hasta ' . $vigencia->format('d/m/Y') . ' (' . $diasRestantes . ' días)';
+                        }
+                    @endphp
+                    <div class="detail-item">
+                        <span class="detail-label">Vigencia del Certificado</span>
+                        <span class="detail-value">
+                            <span class="inline-flex items-center gap-1.5 {{ $vigBadgeClass }} px-2.5 py-1 rounded-lg text-xs font-semibold">
+                                <i data-lucide="{{ $vigIcon }}" class="w-3.5 h-3.5"></i>
+                                {{ $vigLabel }}
+                            </span>
+                        </span>
+                    </div>
+                    @endif
+
                     <div class="detail-item">
                         <span class="detail-label">Contraseña del Sello</span>
                         <span class="detail-value">
