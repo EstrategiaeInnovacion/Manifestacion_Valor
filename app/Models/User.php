@@ -7,6 +7,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class User extends Authenticatable
 {
@@ -61,11 +62,12 @@ class User extends Authenticatable
     }
 
     /**
-     * Relación: Solicitantes asignados a este usuario.
+     * Relación: Solicitantes asignados a este usuario (muchos-a-muchos).
      */
-    public function assignedApplicants(): HasMany
+    public function assignedApplicants(): BelongsToMany
     {
-        return $this->hasMany(MvClientApplicant::class, 'assigned_user_id');
+        return $this->belongsToMany(MvClientApplicant::class, 'mv_applicant_user_assignments', 'user_id', 'applicant_id')
+                    ->withTimestamps();
     }
 
     /**
@@ -240,7 +242,7 @@ class User extends Authenticatable
         }
         
         // Usuario: puede ver solicitantes asignados o por user_email
-        return $applicant->assigned_user_id === $this->id
+        return $applicant->assignedUsers->contains('id', $this->id)
             || $applicant->user_email === $this->email;
     }
 }

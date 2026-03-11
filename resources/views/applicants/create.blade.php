@@ -113,23 +113,30 @@
                             </div>
                         </div>
 
-                        {{-- Asignación de Usuario --}}
+                        {{-- Asignación de Usuarios (múltiple) --}}
                         @if(isset($usersForAssignment) && $usersForAssignment->count() > 0)
                         <div class="form-row">
                             <div class="form-group">
-                                <label for="assigned_user_id" class="form-label">
+                                <label class="form-label">
                                     <i data-lucide="user-plus" class="w-4 h-4 inline-block mr-1"></i>
-                                    Asignar a Usuario
+                                    Asignar a Usuarios
                                 </label>
-                                <select id="assigned_user_id" name="assigned_user_id" class="form-input">
-                                    <option value="">-- Sin asignar --</option>
+                                <div class="border border-slate-200 rounded-lg divide-y divide-slate-100 max-h-48 overflow-y-auto">
                                     @foreach($usersForAssignment as $userOption)
-                                        <option value="{{ $userOption->id }}" {{ old('assigned_user_id') == $userOption->id ? 'selected' : '' }}>
-                                            {{ $userOption->full_name }} ({{ $userOption->email }})
-                                        </option>
+                                        <label class="flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 cursor-pointer">
+                                            <input type="checkbox"
+                                                   name="assigned_user_ids[]"
+                                                   value="{{ $userOption->id }}"
+                                                   {{ in_array($userOption->id, old('assigned_user_ids', [])) ? 'checked' : '' }}
+                                                   class="w-4 h-4 text-blue-600 border-slate-300 rounded">
+                                            <span class="text-sm text-slate-700">
+                                                <span class="font-semibold">{{ $userOption->full_name }}</span>
+                                                <span class="text-slate-400">({{ $userOption->email }})</span>
+                                            </span>
+                                        </label>
                                     @endforeach
-                                </select>
-                                <p class="text-xs text-slate-500 mt-1">El usuario asignado podrá ver y operar con este solicitante</p>
+                                </div>
+                                <p class="text-xs text-slate-500 mt-1">Los usuarios seleccionados podrán ver y operar con este solicitante</p>
                             </div>
                         </div>
                         @endif

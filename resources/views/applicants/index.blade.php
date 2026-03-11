@@ -114,10 +114,14 @@
                                     <td class="font-semibold text-[#001a4d]">{{ $applicant->business_name }}</td>
                                     @if(in_array(auth()->user()->role, ['SuperAdmin', 'Admin']))
                                     <td>
-                                        @if($applicant->assignedUser)
-                                            <span class="inline-flex items-center gap-1 text-blue-700 bg-blue-50 px-2 py-1 rounded-lg text-xs font-semibold">
-                                                <i data-lucide="user" class="w-3.5 h-3.5"></i> {{ $applicant->assignedUser->full_name }}
-                                            </span>
+                                        @if($applicant->assignedUsers->count())
+                                            <div class="flex flex-wrap gap-1">
+                                                @foreach($applicant->assignedUsers as $au)
+                                                    <span class="inline-flex items-center gap-1 text-blue-700 bg-blue-50 px-2 py-1 rounded-lg text-xs font-semibold">
+                                                        <i data-lucide="user" class="w-3.5 h-3.5"></i> {{ $au->full_name }}
+                                                    </span>
+                                                @endforeach
+                                            </div>
                                         @else
                                             <span class="text-slate-400 text-xs">Sin asignar</span>
                                         @endif

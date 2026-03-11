@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class MvClientApplicant extends Model
 {
@@ -14,7 +15,6 @@ class MvClientApplicant extends Model
 
     protected $fillable = [
         'user_email',
-        'assigned_user_id',
         'created_by_user_id',
         'applicant_rfc',
         'business_name',
@@ -86,11 +86,12 @@ class MvClientApplicant extends Model
     }
 
     /**
-     * Relación: Usuario al que está asignado este solicitante.
+     * Relación: Usuarios a los que está asignado este solicitante (muchos-a-muchos).
      */
-    public function assignedUser(): BelongsTo
+    public function assignedUsers(): BelongsToMany
     {
-        return $this->belongsTo(User::class, 'assigned_user_id');
+        return $this->belongsToMany(User::class, 'mv_applicant_user_assignments', 'applicant_id', 'user_id')
+                    ->withTimestamps();
     }
 
     /**

@@ -81,7 +81,7 @@ class EDocumentConsultaController extends Controller
             // Usuario: solo puede ver solicitantes asignados o por user_email
             $solicitante = MvClientApplicant::where('id', $applicant)
                 ->where(function($q) use ($user) {
-                    $q->where('assigned_user_id', $user->id)
+                    $q->whereHas('assignedUsers', fn($sub) => $sub->where('user_id', $user->id))
                         ->orWhere('user_email', $user->email);
                 })
                 ->first();

@@ -21,7 +21,7 @@ class ApplicantController extends Controller
             // Cada administrador solo ve los solicitantes que él mismo creó.
             // No existe visibilidad cruzada entre roles ni entre usuarios de la misma empresa,
             // ya que los solicitantes contienen información sensible (credenciales VUCEM, RFC, etc.).
-            $applicants = MvClientApplicant::with(['user', 'assignedUser', 'createdByUser'])
+            $applicants = MvClientApplicant::with(['user', 'assignedUsers', 'createdByUser'])
                 ->where(function ($query) use ($user) {
                     // Solicitantes creados por este usuario
                     $query->where('created_by_user_id', $user->id)
@@ -37,9 +37,12 @@ class ApplicantController extends Controller
             return view('applicants.index', compact('applicants'));
         }
 
-        // Usuario regular: solo ve el solicitante que tiene asignado
-        $applicants = MvClientApplicant::with(['user', 'assignedUser', 'createdByUser'])
-            ->where('assigned_user_id', $user->id)
+        // Usuario regular: solo ve los solicitantes que le han sido asignados
+        $applicants = MvClientApplicant::with(['user', 'assignedUsers', 'createdByUser'])
+            ->where(function ($q) use ($user) {
+                $q->whereHas('assignedUsers', fn($sub) => $sub->where('user_id', $user->id))
+                  ->orWhere('user_email', $user->email);
+            })
             ->latest()
             ->get();
 
@@ -129,9 +132,10 @@ class ApplicantController extends Controller
             'privacy_consent' => ['sometimes', 'accepted'],
         ];
 
-        // Solo validar assigned_user_id si hay usuarios válidos
+        // Solo validar assigned_user_ids si hay usuarios válidos
         if (!empty($validUserIds)) {
-            $validationRules['assigned_user_id'] = ['nullable', 'integer', 'in:' . implode(',', $validUserIds)];
+            $validationRules['assigned_user_ids'] = ['nullable', 'array'];
+            $validationRules['assigned_user_ids.*'] = ['integer', 'in:' . implode(',', $validUserIds)];
         }
 
         $validated = $request->validate($validationRules);
@@ -139,7 +143,6 @@ class ApplicantController extends Controller
         $data = [
             'user_email' => $ownerEmail,
             'created_by_user_id' => $user->id,
-            'assigned_user_id' => $validated['assigned_user_id'] ?? null,
             'applicant_rfc' => $validated['applicant_rfc'],
             'business_name' => $validated['business_name'],
             'applicant_email' => $validated['applicant_email'],
@@ -174,6 +177,12 @@ class ApplicantController extends Controller
         }
 
         $applicant = MvClientApplicant::create($data);
+
+        // Sincronizar usuarios asignados (muchos-a-muchos)
+        $assignedIds = array_filter($validated['assigned_user_ids'] ?? []);
+        if (!empty($assignedIds)) {
+            $applicant->assignedUsers()->sync($assignedIds);
+        }
 
         // Enviar correo de notificación al usuario
         try {
@@ -256,7 +265,8 @@ class ApplicantController extends Controller
             'applicant_rfc' => ['required', 'string', 'max:13', 'unique:mv_client_applicants,applicant_rfc,' . $applicant->id],
             'business_name' => ['required', 'string', 'max:255'],
             'applicant_email' => ['required', 'email', 'max:255'],
-            'assigned_user_id' => ['nullable', 'integer', 'in:' . implode(',', array_merge([0], $validUserIds))],
+            'assigned_user_ids'   => ['nullable', 'array'],
+            'assigned_user_ids.*' => ['integer', 'in:' . implode(',', array_merge([0], $validUserIds))],
             'vucem_key_file' => ['nullable', 'file', 'max:10240'],
             'vucem_cert_file' => ['nullable', 'file', 'max:10240'],
             'vucem_password' => ['nullable', 'string', 'max:255'],
@@ -268,7 +278,6 @@ class ApplicantController extends Controller
             'applicant_rfc' => $validated['applicant_rfc'],
             'business_name' => $validated['business_name'],
             'applicant_email' => $validated['applicant_email'],
-            'assigned_user_id' => $validated['assigned_user_id'] ?: null,
         ];
 
         // Procesar archivos VUCEM si se proporcionaron (reemplazan los existentes)
@@ -317,6 +326,10 @@ class ApplicantController extends Controller
         }
 
         $applicant->update($data);
+
+        // Sincronizar usuarios asignados (muchos-a-muchos)
+        $assignedIds = array_filter(array_map('intval', $validated['assigned_user_ids'] ?? []));
+        $applicant->assignedUsers()->sync($assignedIds);
 
         return redirect()->route('applicants.index')
             ->with('success', 'Solicitante actualizado exitosamente.');
