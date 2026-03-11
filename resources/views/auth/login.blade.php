@@ -61,19 +61,21 @@
                                     <a class="text-xs font-bold text-[#003399] hover:underline" href="{{ route('password.request') }}">¿Olvidaste tu contraseña?</a>
                                 @endif
                             </div>
-                            <input id="password" 
-                                   type="password" 
-                                   name="password" 
-                                   required 
-                                   class="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-[#003399] focus:border-transparent transition-all outline-none placeholder:text-slate-300"
-                                   placeholder="••••••••">
-                            <x-input-error :messages="$errors->get('password')" class="mt-2" />
-                        </div>
-
-                        <div class="flex items-center px-1">
-                            <input id="remember_me" type="checkbox" name="remember" class="w-4 h-4 rounded border-slate-300 text-[#003399] focus:ring-[#003399]">
-                            <span class="ms-3 text-sm font-medium text-slate-500 italic">Mantener sesión iniciada</span>
-                        </div>
+                            <div class="relative">
+                                <input id="password"
+                                       type="password"
+                                       name="password"
+                                       required
+                                       class="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-[#003399] focus:border-transparent transition-all outline-none placeholder:text-slate-300 pr-14"
+                                       placeholder="••••••••">
+                                <button type="button"
+                                        onclick="const i=document.getElementById('password');i.type=i.type==='password'?'text':'password';this.querySelector('i').setAttribute('data-lucide',i.type==='password'?'eye':'eye-off');lucide.createIcons();"
+                                        class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-[#003399] transition-colors"
+                                        tabindex="-1"
+                                        aria-label="Mostrar/ocultar contraseña">
+                                    <i data-lucide="eye" class="w-5 h-5"></i>
+                                </button>
+                            </div>
 
                         <div class="pt-2">
                             <button type="submit" class="w-full bg-[#001a4d] hover:bg-[#003399] text-white font-black py-5 px-8 rounded-2xl transition shadow-xl flex items-center justify-center gap-3 group text-lg">

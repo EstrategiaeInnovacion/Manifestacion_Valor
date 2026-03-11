@@ -89,6 +89,7 @@ class UserManagementController extends Controller
             'email' => $request->email,
             'role' => $request->role,
             'password' => Hash::make($randomPassword),
+            'email_verified_at' => now(),
             'created_by' => $authUser->id,
         ];
 

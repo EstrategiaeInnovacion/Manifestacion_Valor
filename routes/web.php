@@ -43,10 +43,9 @@ Route::get('/dashboard', function () {
               });
         })->pluck('id');
     } else {
-        $applicantIds = MvClientApplicant::where(function($q) use ($user) {
-            $q->where('assigned_user_id', $user->id)
-              ->orWhere('user_email', $user->email);
-        })->pluck('id');
+        $applicantIds = MvClientApplicant::whereHas('assignedUsers', fn($q) => $q->where('user_id', $user->id))
+            ->orWhere('user_email', $user->email)
+            ->pluck('id');
     }
 
     $mvePendientesCount = MvDatosManifestacion::whereIn('applicant_id', $applicantIds)
@@ -72,10 +71,9 @@ Route::middleware(['auth', 'license'])->group(function () {
                   });
             })->pluck('id');
         } else {
-            $applicantIds = MvClientApplicant::where(function($q) use ($user) {
-                $q->where('assigned_user_id', $user->id)
-                  ->orWhere('user_email', $user->email);
-            })->pluck('id');
+            $applicantIds = MvClientApplicant::whereHas('assignedUsers', fn($q) => $q->where('user_id', $user->id))
+                ->orWhere('user_email', $user->email)
+                ->pluck('id');
         }
         $count = MvDatosManifestacion::whereIn('applicant_id', $applicantIds)
             ->whereIn('status', ['borrador', 'guardado', 'rechazado'])
