@@ -388,18 +388,19 @@ class MveController extends Controller
      */
     public function pendientes()
     {
-        // Obtener todos los solicitantes del usuario según su rol
-        $applicantIds = $this->getAccessibleApplicants()->pluck('id');
+        $user = auth()->user();
+        $estadosPendientes = ['borrador', 'guardado', 'rechazado'];
 
-        // Estados que requieren acción del usuario (borrador, guardado, rechazado)
-                $estadosPendientes = ['borrador', 'guardado', 'rechazado'];
+        $query = MvDatosManifestacion::with(['applicant', 'informacionCove', 'documentos', 'createdByUser'])
+            ->whereIn('applicant_id', $this->getAccessibleApplicants()->pluck('id'))
+            ->whereIn('status', $estadosPendientes);
 
-        // Cada MvDatosManifestacion es una MVE independiente; cargamos COVE y docs via relacion
-        $mvesPendientes = MvDatosManifestacion::with(['applicant', 'informacionCove', 'documentos'])
-            ->whereIn('applicant_id', $applicantIds)
-            ->whereIn('status', $estadosPendientes)
-            ->orderByDesc('updated_at')
-            ->get();
+        // Usuario sólo ve sus propias MVE
+        if ($user->role === 'Usuario') {
+            $query->where('created_by_user_id', $user->id);
+        }
+
+        $mvesPendientes = $query->orderByDesc('updated_at')->get();
 
         return view('mve.pendientes', compact('mvesPendientes'));
     }
@@ -409,15 +410,19 @@ class MveController extends Controller
      */
     public function completadas()
     {
-        // Obtener todos los solicitantes del usuario según su rol
+        $user = auth()->user();
         $applicantIds = $this->getAccessibleApplicants()->pluck('id');
-        
-        // Obtener manifestaciones enviadas (con acuse)
-        $mveCompletadas = MvAcuse::with(['applicant', 'datosManifestacion'])
-            ->whereIn('applicant_id', $applicantIds)
-            ->orderByDesc('fecha_envio')
-            ->get();
-            
+
+        $query = MvAcuse::with(['applicant', 'datosManifestacion.createdByUser'])
+            ->whereIn('applicant_id', $applicantIds);
+
+        // Usuario sólo ve sus propias MVE
+        if ($user->role === 'Usuario') {
+            $query->whereHas('datosManifestacion', fn($q) => $q->where('created_by_user_id', $user->id));
+        }
+
+        $mveCompletadas = $query->orderByDesc('fecha_envio')->get();
+
         return view('mve.completadas', compact('mveCompletadas'));
     }
 
@@ -458,6 +463,7 @@ class MveController extends Controller
             $datosManifestacion->update($datosActualizar);
         } else {
             $datosActualizar['applicant_id'] = $applicantId;
+            $datosActualizar['created_by_user_id'] = auth()->id();
             $datosManifestacion = MvDatosManifestacion::create($datosActualizar);
         }
         

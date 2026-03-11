@@ -105,10 +105,26 @@
                                         <i data-lucide="check-circle" class="w-6 h-6 text-green-600"></i>
                                     </div>
                                     <div>
-                                        <h3 class="font-bold text-lg text-[#001a4d]">
-                                            {{ $acuse->applicant->business_name ?? 'Sin nombre' }}
-                                        </h3>
-                                        <p class="text-slate-500 text-sm">RFC: {{ $acuse->applicant->applicant_rfc ?? 'N/A' }}</p>
+                                        <div class="flex flex-wrap items-center gap-2 mb-0.5">
+                                            <h3 class="font-bold text-lg text-[#001a4d]">
+                                                {{ $acuse->applicant->business_name ?? 'Sin nombre' }}
+                                            </h3>
+                                            @if($acuse->datosManifestacion?->folio_interno)
+                                                <span class="inline-flex items-center gap-1 px-2.5 py-1 bg-slate-100 text-slate-600 rounded-lg text-xs font-bold">
+                                                    <i data-lucide="hash" class="w-3 h-3"></i>
+                                                    {{ $acuse->datosManifestacion->folio_interno }}
+                                                </span>
+                                            @endif
+                                        </div>
+                                        <div class="flex flex-wrap items-center gap-3 mb-1">
+                                            <p class="text-slate-500 text-sm">RFC: {{ $acuse->applicant->applicant_rfc ?? 'N/A' }}</p>
+                                            @if(in_array(auth()->user()->role, ['SuperAdmin', 'Admin']) && $acuse->datosManifestacion?->createdByUser)
+                                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-indigo-50 border border-indigo-200 rounded-lg text-xs font-semibold text-indigo-700">
+                                                    <i data-lucide="user" class="w-3 h-3"></i>
+                                                    {{ $acuse->datosManifestacion->createdByUser->full_name }}
+                                                </span>
+                                            @endif
+                                        </div>
                                         
                                         {{-- Folio y Número de MV --}}
                                         <div class="mt-2 flex flex-wrap items-center gap-2">

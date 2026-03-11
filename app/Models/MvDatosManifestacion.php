@@ -14,6 +14,7 @@ class MvDatosManifestacion extends Model
 
     protected $fillable = [
         'applicant_id',
+        'created_by_user_id',
         'folio_interno',
         'status',
         'rfc_importador',
@@ -46,6 +47,12 @@ class MvDatosManifestacion extends Model
     public function applicant(): BelongsTo
     {
         return $this->belongsTo(MvClientApplicant::class, 'applicant_id');
+    }
+
+    // Relacion con el usuario que creó la manifestación
+    public function createdByUser(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\User::class, 'created_by_user_id');
     }
 
     // Relacion con la informacion COVE

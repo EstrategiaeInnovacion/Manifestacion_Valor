@@ -89,6 +89,7 @@
                         'documentos' => $mve->documentos,
                         'updated_at' => $mve->updated_at,
                         'created_at' => $mve->created_at,
+                        'created_by_user' => $mve->createdByUser,
                     ];
                 }
             @endphp
@@ -117,12 +118,28 @@
                                             <i data-lucide="building-2" class="w-7 h-7 text-white"></i>
                                         </div>
                                         <div class="flex-1 min-w-0">
-                                            <h3 class="text-lg font-black text-[#001a4d] mb-1">
-                                                {{ $mveData['applicant']->business_name }}
-                                            </h3>
-                                            <p class="text-sm text-slate-500 mb-3">
-                                                <span class="font-semibold">RFC:</span> {{ $mveData['applicant']->applicant_rfc }}
-                                            </p>
+                                            <div class="flex flex-wrap items-center gap-2 mb-1">
+                                                <h3 class="text-lg font-black text-[#001a4d]">
+                                                    {{ $mveData['applicant']->business_name }}
+                                                </h3>
+                                                @if($mveData['datos_manifestacion']->folio_interno)
+                                                    <span class="inline-flex items-center gap-1 px-2.5 py-1 bg-slate-100 text-slate-600 rounded-lg text-xs font-bold">
+                                                        <i data-lucide="hash" class="w-3 h-3"></i>
+                                                        {{ $mveData['datos_manifestacion']->folio_interno }}
+                                                    </span>
+                                                @endif
+                                            </div>
+                                            <div class="flex flex-wrap items-center gap-3 mb-3">
+                                                <p class="text-sm text-slate-500">
+                                                    <span class="font-semibold">RFC:</span> {{ $mveData['applicant']->applicant_rfc }}
+                                                </p>
+                                                @if(in_array(auth()->user()->role, ['SuperAdmin', 'Admin']) && $mveData['datos_manifestacion']->createdByUser)
+                                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-indigo-50 border border-indigo-200 rounded-lg text-xs font-semibold text-indigo-700">
+                                                        <i data-lucide="user" class="w-3 h-3"></i>
+                                                        {{ $mveData['datos_manifestacion']->createdByUser->full_name }}
+                                                    </span>
+                                                @endif
+                                            </div>
                                             
                                             {{-- Secciones Guardadas --}}
                                             <div class="flex flex-wrap gap-2 mb-3">
