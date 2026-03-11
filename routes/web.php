@@ -31,23 +31,58 @@ Route::get('/privacidad', function() {
 })->name('legal.privacidad');
 
 Route::get('/dashboard', function () {
-    // Contar cuántos solicitantes tienen al menos una sección guardada en borrador
-    $applicantIds = MvClientApplicant::where('user_email', auth()->user()->email)->pluck('id');
+    $user = auth()->user();
 
-    $pendientesIds = collect();
-    $pendientesIds = $pendientesIds->merge(MvDatosManifestacion::whereIn('applicant_id', $applicantIds)->where('status', 'borrador')->pluck('applicant_id'));
-    $pendientesIds = $pendientesIds->merge(MvInformacionCove::whereIn('applicant_id', $applicantIds)->where('status', 'borrador')->pluck('applicant_id'));
-    $pendientesIds = $pendientesIds->merge(MvDocumentos::whereIn('applicant_id', $applicantIds)->where('status', 'borrador')->pluck('applicant_id'));
+    if ($user->role === 'SuperAdmin') {
+        $applicantIds = MvClientApplicant::pluck('id');
+    } elseif ($user->role === 'Admin') {
+        $applicantIds = MvClientApplicant::where(function($q) use ($user) {
+            $q->where('created_by_user_id', $user->id)
+              ->orWhere(function($sub) use ($user) {
+                  $sub->whereNull('created_by_user_id')->where('user_email', $user->email);
+              });
+        })->pluck('id');
+    } else {
+        $applicantIds = MvClientApplicant::where(function($q) use ($user) {
+            $q->where('assigned_user_id', $user->id)
+              ->orWhere('user_email', $user->email);
+        })->pluck('id');
+    }
 
-    $mvePendientesCount = $pendientesIds->unique()->count();
+    $mvePendientesCount = MvDatosManifestacion::whereIn('applicant_id', $applicantIds)
+        ->whereIn('status', ['borrador', 'guardado', 'rechazado'])
+        ->count();
 
-    // Contar manifestaciones completadas (enviadas a VUCEM)
     $mveCompletadasCount = MvAcuse::whereIn('applicant_id', $applicantIds)->count();
 
     return view('dashboard', compact('mvePendientesCount', 'mveCompletadasCount'));
 })->middleware(['auth', 'verified', 'license'])->name('dashboard');
 
 Route::middleware(['auth', 'license'])->group(function () {
+    // Conteo de pendientes para polling en tiempo real
+    Route::get('/mve/pending-count', function () {
+        $user = auth()->user();
+        if ($user->role === 'SuperAdmin') {
+            $applicantIds = MvClientApplicant::pluck('id');
+        } elseif ($user->role === 'Admin') {
+            $applicantIds = MvClientApplicant::where(function($q) use ($user) {
+                $q->where('created_by_user_id', $user->id)
+                  ->orWhere(function($sub) use ($user) {
+                      $sub->whereNull('created_by_user_id')->where('user_email', $user->email);
+                  });
+            })->pluck('id');
+        } else {
+            $applicantIds = MvClientApplicant::where(function($q) use ($user) {
+                $q->where('assigned_user_id', $user->id)
+                  ->orWhere('user_email', $user->email);
+            })->pluck('id');
+        }
+        $count = MvDatosManifestacion::whereIn('applicant_id', $applicantIds)
+            ->whereIn('status', ['borrador', 'guardado', 'rechazado'])
+            ->count();
+        return response()->json(['count' => $count]);
+    })->name('mve.pending-count');
+
     // Soporte técnico
     Route::post('/support/send', [SupportController::class, 'send'])->name('support.send');
 

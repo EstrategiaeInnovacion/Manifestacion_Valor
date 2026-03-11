@@ -177,3 +177,29 @@ document.addEventListener('keydown', function(e) {
         closeSupportModal();
     }
 });
+
+// ========== POLLING PENDIENTES EN TIEMPO REAL ==========
+(function initPendientesPolling() {
+    const badge = document.getElementById('mvePendientesBadge');
+    if (!badge) return;
+
+    async function refreshPendientesCount() {
+        try {
+            const response = await fetch('/mve/pending-count', {
+                headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+            });
+            if (!response.ok) return;
+            const data = await response.json();
+            const count = data.count ?? 0;
+            badge.textContent = count;
+            if (count > 0) {
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+        } catch (_) { /* silencioso en caso de red */ }
+    }
+
+    // Actualizar cada 30 segundos
+    setInterval(refreshPendientesCount, 30000);
+})();

@@ -338,9 +338,7 @@
                             </div>
                             <h4 class="text-xl font-bold text-[#001a4d] mb-2">Pendientes</h4>
                             <p class="text-sm text-slate-500">Continuar borrador</p>
-                            @if($mvePendientesCount > 0)
-                                <div class="mve-badge">{{ $mvePendientesCount }}</div>
-                            @endif
+                            <div id="mvePendientesBadge" class="mve-badge{{ $mvePendientesCount > 0 ? '' : ' hidden' }}">{{ $mvePendientesCount }}</div>
                         </button>
                         
                         <button type="button" onclick="selectMveCompletadas()" class="mve-option-card mve-option-completadas">
@@ -349,9 +347,6 @@
                             </div>
                             <h4 class="text-xl font-bold text-[#001a4d] mb-2">Completadas</h4>
                             <p class="text-sm text-slate-500">Historial</p>
-                            @if($mveCompletadasCount > 0)
-                                <div class="mve-badge mve-badge-success">{{ $mveCompletadasCount }}</div>
-                            @endif
                         </button>
                     </div>
                 </div>

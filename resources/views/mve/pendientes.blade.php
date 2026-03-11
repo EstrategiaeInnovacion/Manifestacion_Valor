@@ -751,6 +751,7 @@
                             </div>
                         </div>
                         
+                        ${incrementables.length > 0 ? `
                         <!-- Incrementables -->
                         <div class="border-b-2 border-slate-300 pb-4 mb-4">
                             <h4 class="text-xs font-bold text-slate-700 mb-1 border-b border-slate-200 pb-1">Incrementables conforme al artículo 65 de la ley</h4>
@@ -761,27 +762,28 @@
                                     <td class="border border-slate-300 p-2 font-semibold">Importe</td>
                                     <td class="border border-slate-300 p-2 font-semibold">Tipo de moneda</td>
                                 </tr>
-                                ${incrementables.length > 0 ? incrementables.map(inc => `
+                                ${incrementables.map(inc => `
                                     <tr>
                                         <td class="border border-slate-300 p-2">${inc.fechaErogacion || ''}</td>
                                         <td class="border border-slate-300 p-2">${inc.importe ? '$' + parseFloat(inc.importe).toLocaleString('es-MX', {minimumFractionDigits: 2}) : ''}</td>
                                         <td class="border border-slate-300 p-2">${inc.tipoMonedaText || inc.tipoMoneda || ''}</td>
                                     </tr>
-                                `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="3">N/A</td></tr>`}
+                                `).join('')}
                                 <tr class="bg-slate-100">
                                     <td class="border border-slate-300 p-2 font-semibold">Tipo de cambio</td>
                                     <td class="border border-slate-300 p-2 font-semibold" colspan="2">¿Está a cargo del importador?</td>
                                 </tr>
-                                ${incrementables.length > 0 ? incrementables.map(inc => `
+                                ${incrementables.map(inc => `
                                     <tr>
                                         <td class="border border-slate-300 p-2">${inc.tipoCambio || ''}</td>
                                         <td class="border border-slate-300 p-2" colspan="2">${inc.aCargoImportador !== undefined ? (inc.aCargoImportador ? 'Sí' : 'No') : ''}</td>
                                     </tr>
-                                `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="3">N/A</td></tr>`}
+                                `).join('')}
                             </table>
                             </div>
-                        </div>
+                        </div>` : ''}
                         
+                        ${decrementables.length > 0 ? `
                         <!-- Decrementables -->
                         <div class="border-b-2 border-slate-300 pb-4 mb-4">
                             <h4 class="text-xs font-bold text-slate-700 mb-1 border-b border-slate-200 pb-1">Decrementables (Art. 66)</h4>
@@ -792,23 +794,24 @@
                                     <td class="border border-slate-300 p-2 font-semibold">Importe</td>
                                     <td class="border border-slate-300 p-2 font-semibold">Tipo de moneda</td>
                                 </tr>
-                                ${decrementables.length > 0 ? decrementables.map(dec => `
+                                ${decrementables.map(dec => `
                                     <tr>
                                         <td class="border border-slate-300 p-2">${dec.fechaErogacion || ''}</td>
                                         <td class="border border-slate-300 p-2">${dec.importe ? '$' + parseFloat(dec.importe).toLocaleString('es-MX', {minimumFractionDigits: 2}) : ''}</td>
                                         <td class="border border-slate-300 p-2">${dec.tipoMonedaText || dec.tipoMoneda || ''}</td>
                                     </tr>
-                                `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="3">N/A</td></tr>`}
+                                `).join('')}
                                 <tr class="bg-slate-100">
                                     <td class="border border-slate-300 p-2 font-semibold" colspan="3">Tipo de cambio</td>
                                 </tr>
-                                ${decrementables.length > 0 ? decrementables.map(dec => `
+                                ${decrementables.map(dec => `
                                     <tr><td class="border border-slate-300 p-2" colspan="3">${dec.tipoCambio || ''}</td></tr>
-                                `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="3">N/A</td></tr>`}
+                                `).join('')}
                             </table>
                             </div>
-                        </div>
+                        </div>` : ''}
                         
+                        ${precioPagado.length > 0 ? `
                         <!-- Precio pagado -->
                         <div class="border-b-2 border-slate-300 pb-4 mb-4">
                             <h4 class="text-xs font-bold text-slate-700 mb-2 border-b border-slate-200 pb-1">Precio pagado</h4>
@@ -820,28 +823,29 @@
                                     <td class="border border-slate-300 p-2 font-semibold">Forma de pago</td>
                                     <td class="border border-slate-300 p-2 font-semibold">Especifique</td>
                                 </tr>
-                                ${precioPagado.length > 0 ? precioPagado.map(p => `
+                                ${precioPagado.map(p => `
                                     <tr>
                                         <td class="border border-slate-300 p-2">${p.fecha || ''}</td>
                                         <td class="border border-slate-300 p-2">${p.importe ? '$' + parseFloat(p.importe).toLocaleString('es-MX', {minimumFractionDigits: 2}) : ''}</td>
                                         <td class="border border-slate-300 p-2">${p.formaPagoText || p.formaPago || ''}</td>
                                         <td class="border border-slate-300 p-2">${p.especifique || ''}</td>
                                     </tr>
-                                `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="4">N/A</td></tr>`}
+                                `).join('')}
                                 <tr class="bg-slate-100">
                                     <td class="border border-slate-300 p-2 font-semibold">Tipo de moneda</td>
                                     <td class="border border-slate-300 p-2 font-semibold" colspan="3">Tipo de cambio</td>
                                 </tr>
-                                ${precioPagado.length > 0 ? precioPagado.map(p => `
+                                ${precioPagado.map(p => `
                                     <tr>
                                         <td class="border border-slate-300 p-2">${p.tipoMonedaText || p.tipoMoneda || ''}</td>
                                         <td class="border border-slate-300 p-2" colspan="3">${p.tipoCambio || ''}</td>
                                     </tr>
-                                `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="4">N/A</td></tr>`}
+                                `).join('')}
                             </table>
                             </div>
-                        </div>
+                        </div>` : ''}
                         
+                        ${precioPorPagar.length > 0 ? `
                         <!-- Precio por pagar -->
                         <div class="border-b-2 border-slate-300 pb-4 mb-4">
                             <h4 class="text-xs font-bold text-slate-700 mb-2 border-b border-slate-200 pb-1">Precio por pagar</h4>
@@ -853,34 +857,35 @@
                                     <td class="border border-slate-300 p-2 font-semibold">Forma de pago</td>
                                     <td class="border border-slate-300 p-2 font-semibold">Especifique</td>
                                 </tr>
-                                ${precioPorPagar.length > 0 ? precioPorPagar.map(p => `
+                                ${precioPorPagar.map(p => `
                                     <tr>
                                         <td class="border border-slate-300 p-2">${p.fecha || ''}</td>
                                         <td class="border border-slate-300 p-2">${p.importe ? '$' + parseFloat(p.importe).toLocaleString('es-MX', {minimumFractionDigits: 2}) : ''}</td>
                                         <td class="border border-slate-300 p-2">${p.formaPagoText || p.formaPago || ''}</td>
                                         <td class="border border-slate-300 p-2">${p.especifique || ''}</td>
                                     </tr>
-                                `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="4">N/A</td></tr>`}
+                                `).join('')}
                                 <tr class="bg-slate-100">
                                     <td class="border border-slate-300 p-2 font-semibold">Tipo de moneda</td>
                                     <td class="border border-slate-300 p-2 font-semibold" colspan="3">Tipo de cambio</td>
                                 </tr>
-                                ${precioPorPagar.length > 0 ? precioPorPagar.map(p => `
+                                ${precioPorPagar.map(p => `
                                     <tr>
                                         <td class="border border-slate-300 p-2">${p.tipoMonedaText || p.tipoMoneda || ''}</td>
                                         <td class="border border-slate-300 p-2" colspan="3">${p.tipoCambio || ''}</td>
                                     </tr>
-                                `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="4">N/A</td></tr>`}
+                                `).join('')}
                                 <tr class="bg-slate-100">
                                     <td class="border border-slate-300 p-2 font-semibold" colspan="4">Momento(s) o situación(es) cuando se realizará el pago</td>
                                 </tr>
-                                ${precioPorPagar.length > 0 ? precioPorPagar.map(p => `
+                                ${precioPorPagar.map(p => `
                                     <tr><td class="border border-slate-300 p-2" colspan="4">${p.momentoSituacion || ''}</td></tr>
-                                `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="4">N/A</td></tr>`}
+                                `).join('')}
                             </table>
                             </div>
-                        </div>
+                        </div>` : ''}
                         
+                        ${compensoPago.length > 0 ? `
                         <!-- Compenso pago -->
                         <div class="pb-2">
                             <h4 class="text-xs font-bold text-slate-700 mb-2 border-b border-slate-200 pb-1">Compenso pago</h4>
@@ -891,28 +896,28 @@
                                     <td class="border border-slate-300 p-2 font-semibold">Forma de pago</td>
                                     <td class="border border-slate-300 p-2 font-semibold">Especifique</td>
                                 </tr>
-                                ${compensoPago.length > 0 ? compensoPago.map(c => `
+                                ${compensoPago.map(c => `
                                     <tr>
                                         <td class="border border-slate-300 p-2">${c.fecha || ''}</td>
                                         <td class="border border-slate-300 p-2">${c.formaPagoText || c.formaPago || ''}</td>
                                         <td class="border border-slate-300 p-2">${c.especifique || ''}</td>
                                     </tr>
-                                `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="3">N/A</td></tr>`}
+                                `).join('')}
                                 <tr class="bg-slate-100">
                                     <td class="border border-slate-300 p-2 font-semibold" colspan="3">Motivo por lo que se realizó</td>
                                 </tr>
-                                ${compensoPago.length > 0 ? compensoPago.map(c => `
+                                ${compensoPago.map(c => `
                                     <tr><td class="border border-slate-300 p-2" colspan="3">${c.motivo || ''}</td></tr>
-                                `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="3">N/A</td></tr>`}
+                                `).join('')}
                                 <tr class="bg-slate-100">
                                     <td class="border border-slate-300 p-2 font-semibold" colspan="3">Prestación de la mercancía</td>
                                 </tr>
-                                ${compensoPago.length > 0 ? compensoPago.map(c => `
+                                ${compensoPago.map(c => `
                                     <tr><td class="border border-slate-300 p-2" colspan="3">${c.prestacionMercancia || ''}</td></tr>
-                                `).join('') : `<tr><td class="border border-slate-300 p-2" colspan="3">N/A</td></tr>`}
+                                `).join('')}
                             </table>
                             </div>
-                        </div>
+                        </div>` : ''}
                     </div>
                 `;
             }

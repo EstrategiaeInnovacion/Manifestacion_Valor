@@ -303,7 +303,6 @@ class MveController extends Controller
             $validated = $request->validate([
                 'applicant_rfc' => 'required|string|max:13',
                 'rfc_consulta' => 'required|string|max:13',
-                'razon_social' => 'required|string|max:255',
                 'tipo_figura' => 'required|string'
             ]);
         } catch (\Illuminate\Validation\ValidationException $e) {
@@ -335,7 +334,6 @@ class MveController extends Controller
         MveRfcConsulta::create([
             'applicant_rfc' => $applicantRfc,
             'rfc_consulta' => $rfcConsulta,
-            'razon_social' => $request->razon_social,
             'tipo_figura' => $request->tipo_figura
         ]);
         
