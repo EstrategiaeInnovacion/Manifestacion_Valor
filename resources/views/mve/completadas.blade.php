@@ -1,6 +1,6 @@
 <x-app-layout>
     <x-slot name="title">MVE Completadas</x-slot>
-    @vite(['resources/css/users-list.css'])
+    @vite(['resources/css/users-list.css', 'resources/js/users-list.js'])
 
     <div class="min-h-screen bg-[#F8FAFC]">
         {{-- Navegación --}}

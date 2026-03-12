@@ -66,7 +66,7 @@ return [
     */
 
     'vucem' => [
-        'max_final_size_mb' => 3,      // Tamaño máximo final según VUCEM
+        'max_final_size_mb' => 4,      // Tamaño máximo final según VUCEM (VUCEM acepta hasta 4 MB)
         'required_version' => '1.4',    // Versión PDF requerida por VUCEM
         'required_dpi' => 300,          // DPI exactos requeridos por VUCEM
         'force_grayscale' => true,      // Forzar conversión a escala de grises

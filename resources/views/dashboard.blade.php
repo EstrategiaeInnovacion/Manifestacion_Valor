@@ -62,7 +62,7 @@
                 <div class="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center">
                     <div class="flex flex-col md:flex-row gap-8 w-full justify-between items-center">
                         <div class="flex items-center gap-3 mb-4">
-                            <span class="bg-[#001a4d] text-white text-[10px] font-bold px-2 py-1 tracking-[0.2em]">V2.1</span>
+                            <span class="bg-[#001a4d] text-white text-[10px] font-bold px-2 py-1 tracking-[0.2em]">V2.2</span>
                             <div class="h-px w-8 bg-slate-300"></div>
                             <span class="text-xs font-medium text-slate-400 uppercase tracking-widest">FILE</span>
                         </div>
@@ -152,6 +152,25 @@
                                 </p>
                                 <div class="mt-8 flex items-center text-indigo-600 font-bold text-sm">
                                     Configurar
+                                    <i data-lucide="move-right" class="w-4 h-4 ml-2 group-hover:translate-x-2 transition-transform"></i>
+                                </div>
+                            </div>
+                        </a>
+                    @endif
+
+                    {{-- TARJETA: ESTADÍSTICAS (Solo SuperAdmin) --}}
+                    @if(auth()->user()->role === 'SuperAdmin')
+                        <a href="{{ route('admin.estadisticas') }}" class="modern-card group border-t-4 border-t-teal-500">
+                            <div class="card-content">
+                                <div class="icon-box bg-teal-50 text-teal-600 group-hover:bg-teal-600 group-hover:text-white transition-all duration-500">
+                                    <i data-lucide="bar-chart-2" class="w-8 h-8"></i>
+                                </div>
+                                <h3 class="text-xl font-bold text-[#001a4d] mt-6">Estadísticas</h3>
+                                <p class="text-slate-500 text-sm mt-3 leading-relaxed">
+                                    Monitoreo de VUCEM y tickets de soporte por categoría.
+                                </p>
+                                <div class="mt-8 flex items-center text-teal-600 font-bold text-sm">
+                                    Ver Panel
                                     <i data-lucide="move-right" class="w-4 h-4 ml-2 group-hover:translate-x-2 transition-transform"></i>
                                 </div>
                             </div>
@@ -259,7 +278,7 @@
                     <div class="h-px flex-grow bg-slate-200"></div>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
                     {{-- TARJETA: SOPORTE --}}
                     <button type="button" onclick="openSupportModal()" class="modern-card group border-t-4 border-t-amber-500 text-left w-full">
                         <div class="card-content">
@@ -294,6 +313,23 @@
                             <div class="mt-8 flex items-center text-[#003399] font-bold text-sm">
                                 Ver Tickets
                                 <i data-lucide="arrow-right" class="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform"></i>
+                            </div>
+                        </div>
+                    </a>
+
+                    {{-- TARJETA: MANUAL DE USO --}}
+                    <a href="{{ route('manuals.index') }}" class="modern-card group border-t-4 border-t-violet-500">
+                        <div class="card-content">
+                            <div class="icon-box bg-violet-50 text-violet-600 group-hover:bg-violet-600 group-hover:text-white transition-all duration-500">
+                                <i data-lucide="book-open" class="w-8 h-8"></i>
+                            </div>
+                            <h3 class="text-xl font-bold text-[#001a4d] mt-6">Manual de Uso</h3>
+                            <p class="text-slate-500 text-sm mt-3 leading-relaxed">
+                                Consulta las guías y manuales oficiales del sistema FILE por versión.
+                            </p>
+                            <div class="mt-8 flex items-center text-violet-600 font-bold text-sm">
+                                Ver Manuales
+                                <i data-lucide="move-right" class="w-4 h-4 ml-2 group-hover:translate-x-2 transition-transform"></i>
                             </div>
                         </div>
                     </a>

@@ -10,6 +10,7 @@ use App\Http\Controllers\DigitalizacionController;
 use App\Http\Controllers\SupportController;
 use App\Http\Controllers\TicketController;
 use App\Http\Controllers\LicenseController;
+use App\Http\Controllers\AnnouncementController;
 use App\Models\MvClientApplicant;
 use App\Models\MvDatosManifestacion;
 use App\Models\MvInformacionCove;
@@ -125,7 +126,23 @@ Route::middleware(['auth', 'license'])->group(function () {
         Route::middleware('role:SuperAdmin')->group(function () {
             Route::get('/admin/settings', [App\Http\Controllers\AdminSettingsController::class, 'index'])->name('admin.settings');
             Route::patch('/admin/settings', [App\Http\Controllers\AdminSettingsController::class, 'update'])->name('admin.settings.update');
+            Route::get('/admin/estadisticas', [App\Http\Controllers\AdminStatsController::class, 'index'])->name('admin.estadisticas');
+
+            // Manuales de uso — subir y eliminar (solo SuperAdmin)
+            Route::post('/manuals', [App\Http\Controllers\UserManualController::class, 'store'])->name('manuals.store');
+            Route::delete('/manuals/{manual}', [App\Http\Controllers\UserManualController::class, 'destroy'])->name('manuals.destroy');
+
+            // Avisos generales — crear y eliminar (solo SuperAdmin)
+            Route::post('/announcements', [AnnouncementController::class, 'store'])->name('announcements.store');
+            Route::delete('/announcements/{announcement}', [AnnouncementController::class, 'destroy'])->name('announcements.destroy');
         });
+
+        // Manuales de uso — ver y abrir (todos los usuarios autenticados)
+        Route::get('/manuals', [App\Http\Controllers\UserManualController::class, 'index'])->name('manuals.index');
+        Route::get('/manuals/{manual}', [App\Http\Controllers\UserManualController::class, 'show'])->name('manuals.show');
+
+        // Avisos generales — marcar como leído (todos los usuarios autenticados)
+        Route::post('/announcements/{announcement}/read', [AnnouncementController::class, 'markRead'])->name('announcements.read');
 
         // Rutas de Manifestación de Valor
         Route::get('/mve/select-applicant', [MveController::class , 'selectApplicant'])->name('mve.select-applicant');
@@ -149,6 +166,7 @@ Route::middleware(['auth', 'license'])->group(function () {
         Route::post('/mve/save-valor-aduana/{applicant}', [MveController::class , 'saveValorAduana'])->name('mve.save-valor-aduana');
         Route::post('/mve/save-documentos/{applicant}', [MveController::class , 'saveDocumentos'])->name('mve.save-documentos');
         Route::post('/mve/digitalizar-documento/{applicant}', [MveController::class , 'digitalizarDocumento'])->name('mve.digitalizar-documento');
+        Route::post('/mve/consultar-operacion/{applicant}', [MveController::class , 'consultarOperacion'])->name('mve.consultar-operacion');
         Route::post('/mve/validar-pdf', [MveController::class , 'validarPdf'])->name('mve.validar-pdf');
         Route::post('/mve/parse-pedimento-edocuments', [MveController::class , 'parsePedimentoEdocuments'])->name('mve.parse-pedimento-edocuments');
         Route::post('/mve/validate-edocument', [MveController::class , 'validateEdocument'])->name('mve.validate-edocument');

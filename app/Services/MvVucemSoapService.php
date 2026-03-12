@@ -54,7 +54,7 @@ class MvVucemSoapService
 
         try {
             // 1. Preparar datos del applicant
-            $rfcImportador = strtoupper($datosManifestacion->rfc_importador ?? $applicant->applicant_rfc);
+            $rfcImportador = strtoupper($datosManifestacion->rfc_importador ?: $applicant->applicant_rfc);
             $mapping['rfcImportador'] = [
                 'campo_bd' => 'mv_datos_manifestacion.rfc_importador',
                 'valor_bd' => $rfcImportador,

@@ -45,7 +45,6 @@
                         <span class="text-red-500">*</span>
                     </label>
                     <input type="file" class="form-input" id="pdfFileInput" accept=".pdf">
-                    <p class="text-xs text-slate-400 mt-1">Solo archivos PDF (máx. 20MB). Se convertirá automáticamente al formato VUCEM si es necesario.</p>
                 </div>
 
                 {{-- Status de validación del PDF --}}
@@ -151,6 +150,33 @@
                     </button>
                 </div>
 
+                {{-- Panel de operación pendiente (se muestra cuando VUCEM aún procesa el eDocument) --}}
+                <div id="pendingOperationPanel" class="hidden mt-4 p-4 bg-amber-50 border border-amber-200 rounded-xl">
+                    <div class="flex items-start gap-3">
+                        <div class="flex-shrink-0 w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center mt-0.5">
+                            <i data-lucide="clock" class="w-4 h-4 text-amber-600"></i>
+                        </div>
+                        <div class="flex-1">
+                            <p class="text-sm font-bold text-amber-800">Documento en procesamiento por VUCEM</p>
+                            <p class="text-xs text-amber-700 mt-1">
+                                Número de operación: <span id="pendingOpNumber" class="font-mono font-bold"></span>
+                            </p>
+                            <p class="text-xs text-amber-600 mt-1" id="pendingRetryStatus">Consultando automáticamente...</p>
+                            <div class="flex items-center gap-3 mt-3">
+                                <button type="button" onclick="consultarOperacionPendiente()" id="btnConsultarOp"
+                                    class="text-xs font-semibold text-amber-700 border border-amber-300 bg-white px-3 py-1.5 rounded-lg hover:bg-amber-100 flex items-center gap-1">
+                                    <i data-lucide="refresh-cw" class="w-3 h-3"></i>
+                                    Consultar ahora
+                                </button>
+                                <button type="button" onclick="cancelarOperacionPendiente()"
+                                    class="text-xs text-slate-400 hover:text-slate-600">
+                                    Descartar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <hr class="my-6 border-slate-200">
 
                 {{-- Tabla de documentos digitalizados --}}
@@ -181,33 +207,6 @@
                         </table>
                     </div>
                 </div>
-
-                {{-- Agregar folio manualmente (fallback) --}}
-                <details class="mt-4">
-                    <summary class="text-xs text-slate-400 cursor-pointer hover:text-slate-600">
-                        ¿Ya tiene un folio eDocument? Agregar manualmente
-                    </summary>
-                    <div class="mt-3 p-4 bg-slate-50 rounded-lg border border-slate-200">
-                        <div class="form-row gap-4">
-                            <div class="form-group flex-1">
-                                <label class="form-label text-xs">Tipo de Documento</label>
-                                <input type="text" class="form-input" id="documentType" placeholder="Ej. Factura">
-                            </div>
-                            <div class="form-group flex-1">
-                                <label class="form-label text-xs">Folio eDocument</label>
-                                <input type="text" class="form-input" id="edocumentFolio" list="edocumentSuggestions" placeholder="Folio">
-                            </div>
-                        </div>
-                        <datalist id="edocumentSuggestions">
-                            @foreach($edocumentSuggestions ?? [] as $folioSuggestion)
-                                <option value="{{ $folioSuggestion }}"></option>
-                            @endforeach
-                        </datalist>
-                        <button type="button" id="btnAddEdocument" class="btn-add mt-2" onclick="addEdocument()">
-                            Agregar folio manual
-                        </button>
-                    </div>
-                </details>
 
                 {{-- Botón Guardar Sección --}}
                 <div class="form-actions-save">

@@ -1242,6 +1242,12 @@
                             window.location.reload();
                         }
                     }, 2000);
+                } else if (result.connectivity_error && result.diagnostico) {
+                    // Error de red/timeout → mostrar diagnóstico inteligente
+                    mostrarDiagnosticoVucem(result.message, result.diagnostico, function() {
+                        btn.disabled = false;
+                        btnTexto.textContent = originalText;
+                    });
                 } else {
                     alert('Error: ' + result.message);
                     btn.disabled = false;

@@ -32,13 +32,13 @@ class VucemValidatorController extends Controller
 
         $checks = [];
 
-        // 1) Tamaño (máximo 3 MB según VUCEM)
+        // 1) Tamaño (máximo 4 MB según VUCEM)
         $sizeBytes = filesize($fullPath);
         $sizeMb = round($sizeBytes / (1024 * 1024), 2);
-        $sizeOk = $sizeBytes <= 3 * 1024 * 1024;
+        $sizeOk = $sizeBytes <= 4 * 1024 * 1024;
 
         $checks['size'] = [
-            'label' => 'Tamaño < 3 MB',
+            'label' => 'Tamaño ≤ 4 MB',
             'ok'    => $sizeOk,
             'value' => $sizeMb . ' MB',
         ];

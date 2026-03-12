@@ -119,7 +119,7 @@ class DocumentUploadService
         $isValid = true;
 
         try {
-            // 1. Validar tamaño (máx 3MB)
+            // 1. Validar tamaño (máx 4MB)
             $sizeBytes = filesize($filePath);
             $sizeMb = round($sizeBytes / (1024 * 1024), 2);
             $maxSizeMb = config('pdftools.vucem.max_final_size_mb', 3);

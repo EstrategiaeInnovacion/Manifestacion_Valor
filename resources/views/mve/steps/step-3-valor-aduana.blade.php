@@ -19,7 +19,7 @@
                             Importe total del precio pagado (Sumatoria de los conceptos y deberán ser declarados en M N)
                             <span class="text-red-500">*</span>
                         </label>
-                        <input type="number" id="totalPrecioPagado" class="form-input" placeholder="0" value="0" step="0.01" min="0" max="999999999999999.999" oninput="validateMonetaryInput(this)">
+                        <input type="number" id="totalPrecioPagado" class="form-input" placeholder="0" value="0" step="0.01" min="0" max="999999999999999.999" oninput="validateMonetaryInput(this); recalcularValorAduana()">
                     </div>
 
                     <div class="form-group flex-1">
@@ -27,7 +27,7 @@
                             IMPORTE TOTAL DEL PRECIO POR PAGAR (SUMATORIA DE LOS CONCEPTOS Y DEBERÁN SER DECLARADOS EN M N)
                             <span class="text-red-500">*</span>
                         </label>
-                        <input type="number" id="totalPrecioPorPagar" class="form-input" placeholder="0" value="0" step="0.01" min="0" max="999999999999999.999" oninput="validateMonetaryInput(this)">
+                        <input type="number" id="totalPrecioPorPagar" class="form-input" placeholder="0" value="0" step="0.01" min="0" max="999999999999999.999" oninput="validateMonetaryInput(this); recalcularValorAduana()">
                     </div>
                 </div>
 
@@ -37,7 +37,7 @@
                             Importe total de incrementables (Sumatoria de los conceptos y deberán ser declarados en M N)
                             <span class="text-red-500">*</span>
                         </label>
-                        <input type="number" id="totalIncrementables" class="form-input" placeholder="0" value="0" step="0.01" min="0" max="999999999999999.999" oninput="validateMonetaryInput(this)">
+                        <input type="number" id="totalIncrementables" class="form-input" placeholder="0" value="0" step="0.01" min="0" max="999999999999999.999" oninput="validateMonetaryInput(this); recalcularValorAduana()">
                     </div>
 
                     <div class="form-group flex-1">
@@ -45,7 +45,7 @@
                             Importe total de decrementables (Sumatoria de los conceptos y deberán ser declarados en M N)
                             <span class="text-red-500">*</span>
                         </label>
-                        <input type="number" id="totalDecrementables" class="form-input" placeholder="0" value="0" step="0.01" min="0" max="999999999999999.999" oninput="validateMonetaryInput(this)">
+                        <input type="number" id="totalDecrementables" class="form-input" placeholder="0" value="0" step="0.01" min="0" max="999999999999999.999" oninput="validateMonetaryInput(this); recalcularValorAduana()">
                     </div>
                 </div>
 
@@ -54,7 +54,7 @@
                         TOTAL DEL VALOR EN ADUANA (SUMATORIA DE LOS CONCEPTOS Y DEBERÁN SER DECLARADOS EN M N)
                         <span class="text-red-500">*</span>
                     </label>
-                    <input type="number" id="totalValorAduana" class="form-input" placeholder="0" value="0" step="0.01" min="0" max="999999999999999.999" oninput="validateMonetaryInput(this)">
+                    <input type="number" id="totalValorAduana" class="form-input" placeholder="0" value="0" step="0.01" min="0" max="999999999999999.999" oninput="validateMonetaryInput(this); marcarValorAduanaManual(this)">
                 </div>
 
                 <div class="form-note">

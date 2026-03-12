@@ -2,42 +2,38 @@
     <x-slot name="title">Mi Perfil</x-slot>
     @vite(['resources/css/profile.css', 'resources/js/profile.js'])
 
-    <div class="min-h-screen bg-[#F8FAFC]">
-        
+    <div class="min-h-screen" style="background:#f0f4f8;">
+
+        {{-- Navegación --}}
         <nav class="bg-white border-b border-slate-200 sticky top-0 z-50">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div class="flex justify-between h-20">
+            <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between h-16">
                     <div class="flex items-center gap-4">
                         <a href="{{ route('dashboard') }}">
-                            <img src="{{ asset('Gemini_Generated_Image_bmz5e9bmz5e9bmz5-removebg-preview.png') }}" alt="Logo E&I" class="h-10 w-auto">
+                            <img src="{{ asset('Gemini_Generated_Image_bmz5e9bmz5e9bmz5-removebg-preview.png') }}" alt="Logo E&I" class="h-9 w-auto">
                         </a>
-                        <div class="hidden md:block h-8 w-px bg-slate-200"></div>
-                        <span class="hidden md:block text-sm font-bold text-[#001a4d] uppercase tracking-wider">Mi Perfil</span>
-                    </div>
-
-                    <div class="flex items-center gap-6">
-                        <div class="text-right hidden sm:block">
-                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Usuario Conectado</p>
-                            <p class="text-sm font-black text-[#003399]">{{ auth()->user()->full_name }}</p>
+                        <div class="hidden md:flex items-center gap-2 text-xs text-slate-400 font-medium">
+                            <span>/</span>
+                            <a href="{{ route('dashboard') }}" class="hover:text-[#003399] transition-colors">Dashboard</a>
+                            <span>/</span>
+                            <span class="font-bold text-[#001a4d]">Mi Perfil</span>
                         </div>
-                        
+                    </div>
+                    <div class="flex items-center gap-4">
                         <div class="user-dropdown">
-                            <div id="avatarButton" class="avatar-button h-10 w-10 bg-ei-gradient rounded-full flex items-center justify-center text-white font-bold shadow-lg">
+                            <div id="avatarButton" class="avatar-button h-9 w-9 bg-ei-gradient rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg">
                                 {{ substr(auth()->user()->full_name, 0, 1) }}
                             </div>
-
                             <div id="dropdownMenu" class="dropdown-menu">
                                 <div class="dropdown-header">
                                     <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Mi Cuenta</p>
                                     <p class="text-sm font-bold text-[#001a4d] mt-1">{{ auth()->user()->full_name }}</p>
                                     <p class="text-xs text-slate-500 mt-0.5">{{ auth()->user()->email }}</p>
                                 </div>
-                                
                                 <a href="{{ route('dashboard') }}" class="dropdown-item">
                                     <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
                                     <span class="font-semibold text-sm">Dashboard</span>
                                 </a>
-                                
                                 <form method="POST" action="{{ route('logout') }}" id="logoutForm">
                                     @csrf
                                     <button type="submit" class="dropdown-item logout w-full">
@@ -52,120 +48,153 @@
             </div>
         </nav>
 
-        <main class="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
-            
-            <div class="mb-8">
-                <h2 class="text-4xl font-black text-[#001a4d] tracking-tight">
-                    Mi <span class="text-[#003399]">Perfil</span>
-                </h2>
-                <p class="text-slate-500 mt-2">Gestiona tu información personal y configuración de seguridad.</p>
-            </div>
-
-            <div class="space-y-8">
-                {{-- Información de Licencia (Admin y Usuario) --}}
-                @if(auth()->user()->role !== 'SuperAdmin')
-                    @php
-                        $license = auth()->user()->getEffectiveLicense();
-                    @endphp
-                    <div class="profile-card">
-                        <div class="flex items-center gap-3 mb-6">
-                            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-[#001a4d] to-[#003399] flex items-center justify-center">
-                                <i data-lucide="key-round" class="w-5 h-5 text-white"></i>
-                            </div>
-                            <div>
-                                <h3 class="text-lg font-black text-[#001a4d]">Licencia</h3>
-                                <p class="text-xs text-slate-400">Información de tu licencia de acceso al sistema.</p>
-                            </div>
+        {{-- HERO BANNER --}}
+        <div class="profile-hero">
+            <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+                <a href="{{ route('dashboard') }}" class="inline-flex items-center gap-1.5 text-blue-300 hover:text-white text-xs font-semibold mb-6 transition-colors">
+                    <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i>
+                    Regresar al Dashboard
+                </a>
+                <div class="flex flex-col sm:flex-row items-start sm:items-center gap-5">
+                    <div class="profile-avatar-xl">
+                        {{ substr(auth()->user()->full_name, 0, 1) }}
+                    </div>
+                    <div class="flex-1">
+                        <div class="flex items-center gap-2 flex-wrap mb-2">
+                            <span class="profile-role-badge">{{ auth()->user()->role }}</span>
                         </div>
+                        <h1 class="text-2xl sm:text-3xl font-black text-white tracking-tight leading-tight">{{ auth()->user()->full_name }}</h1>
+                        <p class="text-blue-300 text-sm mt-1">{{ auth()->user()->email }}</p>
+                    </div>
+                    <div class="hidden sm:block text-right">
+                        <p class="text-[10px] font-bold text-blue-400 uppercase tracking-widest">Miembro desde</p>
+                        <p class="text-white font-black mt-1">{{ auth()->user()->created_at->format('d M Y') }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
 
+        {{-- CONTENIDO PRINCIPAL --}}
+        <main class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 -mt-5 pb-16 relative z-10">
+            <div class="space-y-5">
+
+                {{-- Licencia --}}
+                @if(auth()->user()->role !== 'SuperAdmin')
+                @php
+                    $license = auth()->user()->getEffectiveLicense();
+                @endphp
+                <div class="profile-section-card" id="section-license">
+                    <div class="section-card-header">
+                        <div class="section-icon-wrap" style="background:#fef3c7;">
+                            <i data-lucide="key-round" class="w-5 h-5" style="color:#d97706;"></i>
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="section-card-title">Licencia de Acceso</h3>
+                            <p class="section-card-desc">Información de tu licencia activa en el sistema.</p>
+                        </div>
                         @if($license && $license->isActive())
-                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                <div class="bg-slate-50 rounded-xl p-4 text-center">
-                                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Clave de Licencia</p>
-                                    <p class="text-sm font-mono font-bold text-[#003399] mt-1.5">{{ $license->license_key }}</p>
-                                </div>
-                                <div class="bg-slate-50 rounded-xl p-4 text-center">
-                                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Fecha de Vencimiento</p>
-                                    <p class="text-sm font-bold text-[#001a4d] mt-1.5">{{ $license->expires_at->format('d/m/Y H:i') }}</p>
-                                </div>
-                                <div class="bg-slate-50 rounded-xl p-4 text-center">
-                                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Tiempo Restante</p>
-                                    @php
-                                        $diff = now()->diff($license->expires_at);
-                                        $totalDays = $diff->days;
-                                    @endphp
-                                    <p class="text-sm font-bold mt-1.5 {{ $totalDays <= 7 ? 'text-amber-600' : 'text-emerald-600' }}">
-                                        @if($totalDays > 0)
-                                            {{ $totalDays }} días, {{ $diff->h }}h {{ $diff->i }}m
-                                        @else
-                                            {{ $diff->h }}h {{ $diff->i }}m
-                                        @endif
-                                    </p>
-                                </div>
-                            </div>
-                        @else
-                            <div class="bg-red-50 border border-red-200 rounded-xl p-5 flex items-center gap-4">
-                                <div class="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
-                                    <i data-lucide="alert-triangle" class="w-5 h-5 text-red-500"></i>
-                                </div>
-                                <div>
-                                    <p class="text-sm font-bold text-red-700">Sin licencia activa</p>
-                                    <p class="text-xs text-red-500 mt-0.5">Contacta a tu administrador para obtener o renovar tu licencia de acceso.</p>
-                                </div>
-                            </div>
+                            <span class="license-active-badge">
+                                <span class="license-dot"></span>
+                                Activa
+                            </span>
                         @endif
                     </div>
+                    @if($license && $license->isActive())
+                        @php
+                            $diff = now()->diff($license->expires_at);
+                            $totalDays = (int) now()->diffInDays($license->expires_at);
+                            $maxDays = max(1, (int) $license->created_at->diffInDays($license->expires_at));
+                            $pct = min(100, max(2, round(($totalDays / $maxDays) * 100)));
+                            $isWarn = $totalDays <= 7;
+                        @endphp
+                        <div class="license-grid">
+                            <div class="license-stat">
+                                <p class="license-stat-label">Clave de Licencia</p>
+                                <p class="license-stat-value font-mono" style="color:#003399;">{{ $license->license_key }}</p>
+                            </div>
+                            <div class="license-stat">
+                                <p class="license-stat-label">Fecha de Vencimiento</p>
+                                <p class="license-stat-value">{{ $license->expires_at->format('d/m/Y H:i') }}</p>
+                            </div>
+                            <div class="license-stat">
+                                <p class="license-stat-label">Tiempo Restante</p>
+                                <p class="license-stat-value {{ $isWarn ? 'text-amber-600' : 'text-emerald-600' }}">
+                                    @if($totalDays > 0)
+                                        {{ $totalDays }} días, {{ $diff->h }}h {{ $diff->i }}m
+                                    @else
+                                        {{ $diff->h }}h {{ $diff->i }}m
+                                    @endif
+                                </p>
+                            </div>
+                        </div>
+                        <div class="license-progress-wrap">
+                            <div class="license-progress-meta">
+                                <span>Vigencia restante</span>
+                                <span class="{{ $isWarn ? 'text-amber-600' : 'text-emerald-600' }} font-bold">{{ $pct }}%</span>
+                            </div>
+                            <div class="license-progress-bg">
+                                <div class="license-progress-fill {{ $isWarn ? 'progress-warn' : 'progress-ok' }}" style="width:{{ $pct }}%"></div>
+                            </div>
+                        </div>
+                    @else
+                        <div class="license-inactive-box">
+                            <i data-lucide="alert-triangle" class="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5"></i>
+                            <div>
+                                <p class="font-bold text-red-700 text-sm">Sin licencia activa</p>
+                                <p class="text-xs text-red-500 mt-0.5">Contacta a tu administrador para obtener o renovar tu licencia de acceso.</p>
+                            </div>
+                        </div>
+                    @endif
+                </div>
                 @endif
 
-                <div class="profile-card">
-                    @include('profile.partials.update-profile-information-form')
-                </div>
+                {{-- Información del Perfil + Contraseña (2 cols en lg+) --}}
+                <div class="profile-two-col">
 
-                <div class="profile-card">
-                    @include('profile.partials.update-password-form')
-                </div>
-
-                
-                <div class="profile-card">
-                    <div class="flex items-center gap-3 mb-6">
-                        <div class="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center">
-                            <i data-lucide="settings-2" class="w-5 h-5 text-[#003399]"></i>
+                    {{-- Información del Perfil --}}
+                    <div class="profile-section-card" id="section-info">
+                        <div class="section-card-header">
+                            <div class="section-icon-wrap" style="background:#eff6ff;">
+                                <i data-lucide="user-round" class="w-5 h-5" style="color:#2563eb;"></i>
+                            </div>
+                            <div>
+                                <h3 class="section-card-title">Información del Perfil</h3>
+                                <p class="section-card-desc">Nombre y correo electrónico.</p>
+                            </div>
                         </div>
-                        <div>
-                            <h2 class="text-lg font-bold text-[#001a4d]">Preferencias del Sistema</h2>
-                            <p class="text-xs text-slate-400">Configuración de comportamiento del Archivo M</p>
-                        </div>
+                        @include('profile.partials.update-profile-information-form')
                     </div>
 
-                    <form method="POST" action="{{ route('profile.preferences') }}">
-                        @csrf
-                        @method('PATCH')
-
-                        @if (session('status') === 'preferences-updated')
-                            <div class="mb-4 px-4 py-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-700 font-medium">
-                                Preferencias guardadas correctamente.
+                    {{-- Contraseña --}}
+                    <div class="profile-section-card" id="section-password">
+                        <div class="section-card-header">
+                            <div class="section-icon-wrap" style="background:#f0fdf4;">
+                                <i data-lucide="lock-keyhole" class="w-5 h-5" style="color:#16a34a;"></i>
                             </div>
-                        @endif
-
-                        <div class="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-200">
-                            <div class="flex-1 pr-4">
-                                <p class="text-sm font-bold text-[#001a4d]">Cargar eDocs desde Archivo M</p>
-                                <p class="text-xs text-slate-500 mt-1">Si está activo, los documentos electrónicos (ED) del Archivo M se cargarán automáticamente en la sección de Documentos al importar un archivo M.</p>
+                            <div>
+                                <h3 class="section-card-title">Seguridad</h3>
+                                <p class="section-card-desc">Actualiza tu contraseña.</p>
                             </div>
-                            <label class="relative inline-flex items-center cursor-pointer flex-shrink-0">
-                                <input type="checkbox" name="load_edocs_from_m" value="1"
-                                    class="sr-only peer"
-                                    {{ auth()->user()->load_edocs_from_m ? 'checked' : '' }}
-                                    onchange="this.form.submit()">
-                                <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-[#003399] rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#003399]"></div>
-                            </label>
                         </div>
-                    </form>
+                        @include('profile.partials.update-password-form')
+                    </div>
+
                 </div>
 
-                <div class="profile-card">
+                {{-- Zona de Peligro --}}
+                <div class="profile-section-card danger-zone-card" id="section-danger">
+                    <div class="section-card-header danger-header">
+                        <div class="section-icon-wrap" style="background:#fef2f2;">
+                            <i data-lucide="triangle-alert" class="w-5 h-5" style="color:#dc2626;"></i>
+                        </div>
+                        <div>
+                            <h3 class="section-card-title" style="color:#dc2626;">Zona de Peligro</h3>
+                            <p class="section-card-desc">Acciones permanentes e irreversibles sobre tu cuenta.</p>
+                        </div>
+                    </div>
                     @include('profile.partials.delete-user-form')
                 </div>
+
             </div>
         </main>
     </div>

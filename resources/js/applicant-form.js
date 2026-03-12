@@ -2,7 +2,25 @@
 document.addEventListener('DOMContentLoaded', function() {
     // Inicializar iconos de Lucide
     lucide.createIcons();
-    
+
+    // Dropdown del avatar/perfil
+    const avatarButton = document.getElementById('avatarButton');
+    const dropdownMenu = document.getElementById('dropdownMenu');
+    if (avatarButton && dropdownMenu) {
+        avatarButton.addEventListener('click', function(e) {
+            e.stopPropagation();
+            dropdownMenu.classList.toggle('active');
+        });
+        document.addEventListener('click', function(e) {
+            if (!avatarButton.contains(e.target) && !dropdownMenu.contains(e.target)) {
+                dropdownMenu.classList.remove('active');
+            }
+        });
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') dropdownMenu.classList.remove('active');
+        });
+    }
+
     // Validación del RFC (formato mexicano)
     const rfcInput = document.getElementById('applicant_rfc');
     if (rfcInput) {

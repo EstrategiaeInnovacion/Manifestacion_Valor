@@ -1,12 +1,4 @@
 <section>
-    <header class="profile-header">
-        <h2 class="profile-title">
-            Información del Perfil
-        </h2>
-        <p class="profile-description">
-            Actualiza la información de tu cuenta y dirección de correo electrónico.
-        </p>
-    </header>
 
     <form id="send-verification" method="post" action="{{ route('verification.send') }}">
         @csrf

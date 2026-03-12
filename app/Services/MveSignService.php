@@ -7,11 +7,13 @@ use App\Models\MvClientApplicant;
 use App\Models\MvDatosManifestacion;
 use App\Models\MvInformacionCove;
 use App\Models\MvDocumentos;
+use App\Traits\VucemConnectivityHandler;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
 class MveSignService
 {
+    use VucemConnectivityHandler;
     private ManifestacionValorService $mveService;
     private EFirmaService $efirmaService;
 
@@ -328,7 +330,7 @@ class MveSignService
             curl_close($ch);
 
             if ($error) {
-                return ['success' => false, 'message' => "Error cURL: $error"];
+                return $this->handleCurlError($error, 'MV_ENVIO', [], $applicant->id);
             }
 
             Log::info('MVE - Respuesta VUCEM recibida', ['http_code' => $httpCode, 'response_length' => strlen($response)]);

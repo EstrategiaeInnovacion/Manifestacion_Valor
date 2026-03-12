@@ -1,7 +1,475 @@
-/* Profile page styles */
+/* ============================================
+   PROFILE PAGE — Redesigned Styles
+   ============================================ */
+
+/* --- Brand gradient --- */
 .bg-ei-gradient {
     background: linear-gradient(135deg, #001a4d 0%, #002b80 100%);
 }
+
+/* ============================================
+   HERO BANNER
+   ============================================ */
+.profile-hero {
+    background: linear-gradient(135deg, #000d2e 0%, #001a4d 40%, #002b80 80%, #003399 100%);
+    padding: 2.5rem 0 4.5rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.profile-hero::before {
+    content: '';
+    position: absolute;
+    top: -30%;
+    right: -5%;
+    width: 500px;
+    height: 500px;
+    background: radial-gradient(circle, rgba(0, 68, 204, 0.18) 0%, transparent 70%);
+    pointer-events: none;
+}
+
+.profile-hero::after {
+    content: '';
+    position: absolute;
+    bottom: -40%;
+    left: -5%;
+    width: 350px;
+    height: 350px;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.03) 0%, transparent 70%);
+    pointer-events: none;
+}
+
+.profile-avatar-xl {
+    width: 76px;
+    height: 76px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.12);
+    border: 2px solid rgba(255, 255, 255, 0.25);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.875rem;
+    font-weight: 900;
+    color: white;
+    flex-shrink: 0;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25), inset 0 1px 1px rgba(255,255,255,0.15);
+}
+
+.profile-role-badge {
+    display: inline-flex;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 0.65rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    padding: 0.25rem 0.75rem;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+/* ============================================
+   LAYOUT
+   ============================================ */
+.profile-two-col {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+}
+
+@media (min-width: 960px) {
+    .profile-two-col {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+/* ============================================
+   SECTION CARDS
+   ============================================ */
+.profile-section-card {
+    background: white;
+    border-radius: 1.25rem;
+    border: 1px solid #e8eef6;
+    box-shadow: 0 2px 16px -4px rgba(0, 26, 77, 0.06);
+    overflow: hidden;
+}
+
+.section-card-header {
+    display: flex;
+    align-items: center;
+    gap: 0.875rem;
+    padding: 1.25rem 1.75rem;
+    border-bottom: 1px solid #f1f5f9;
+    background: #fafbfd;
+}
+
+.section-icon-wrap {
+    width: 40px;
+    height: 40px;
+    border-radius: 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.section-card-title {
+    font-size: 0.9375rem;
+    font-weight: 800;
+    color: #001a4d;
+    line-height: 1.2;
+}
+
+.section-card-desc {
+    font-size: 0.72rem;
+    color: #94a3b8;
+    margin-top: 0.2rem;
+}
+
+/* Card body padding applied to included <section> */
+.profile-section-card section {
+    padding: 1.5rem 1.75rem 1.75rem;
+}
+
+/* Danger zone */
+.danger-zone-card {
+    border-color: #fecaca;
+}
+
+.danger-header {
+    background: #fffafa;
+    border-bottom-color: #fee2e2;
+}
+
+/* ============================================
+   LICENSE CARD
+   ============================================ */
+.license-active-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: #ecfdf5;
+    color: #059669;
+    font-size: 0.7rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 0.3rem 0.8rem;
+    border-radius: 999px;
+    border: 1px solid #a7f3d0;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.license-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #10b981;
+    display: inline-block;
+    animation: pulse-dot 2s infinite;
+}
+
+@keyframes pulse-dot {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.4; }
+}
+
+.license-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    padding: 1.5rem 1.75rem 1.25rem;
+}
+
+@media (max-width: 640px) {
+    .license-grid { grid-template-columns: 1fr; }
+}
+
+.license-stat {
+    background: #f8fafc;
+    border: 1px solid #f1f5f9;
+    border-radius: 0.875rem;
+    padding: 1rem 1.25rem;
+}
+
+.license-stat-label {
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+}
+
+.license-stat-value {
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: #001a4d;
+    margin-top: 0.4rem;
+    word-break: break-all;
+}
+
+.license-progress-wrap {
+    padding: 0 1.75rem 1.5rem;
+}
+
+.license-progress-meta {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.68rem;
+    font-weight: 600;
+    color: #94a3b8;
+    margin-bottom: 0.5rem;
+}
+
+.license-progress-bg {
+    height: 6px;
+    background: #f1f5f9;
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+.license-progress-fill {
+    height: 100%;
+    border-radius: 999px;
+    transition: width 0.8s ease;
+}
+
+.progress-ok   { background: linear-gradient(90deg, #059669, #34d399); }
+.progress-warn { background: linear-gradient(90deg, #d97706, #fbbf24); }
+
+.license-inactive-box {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 0.875rem;
+    padding: 1rem 1.25rem;
+    margin: 1.25rem 1.75rem 1.5rem;
+}
+
+/* ============================================
+   FORM ELEMENTS
+   ============================================ */
+.form-group {
+    margin-bottom: 1.1rem;
+}
+
+.form-label {
+    display: block;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #64748b;
+    margin-bottom: 0.45rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+.form-input {
+    width: 100%;
+    padding: 0.7rem 1rem;
+    background: #f8fafc;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 0.75rem;
+    transition: all 0.2s;
+    outline: none;
+    font-size: 0.875rem;
+    color: #1e293b;
+}
+
+.form-input:focus {
+    background: #fff;
+    border-color: #003399;
+    box-shadow: 0 0 0 3px rgba(0, 51, 153, 0.08);
+}
+
+/* ============================================
+   BUTTONS
+   ============================================ */
+.btn-primary {
+    background: linear-gradient(135deg, #001a4d 0%, #003399 100%);
+    color: white;
+    font-weight: 700;
+    padding: 0.7rem 1.5rem;
+    border-radius: 0.75rem;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 0.875rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px -4px rgba(0, 26, 77, 0.35);
+}
+
+.btn-danger {
+    background: linear-gradient(135deg, #b91c1c 0%, #ef4444 100%);
+    color: white;
+    font-weight: 700;
+    padding: 0.7rem 1.5rem;
+    border-radius: 0.75rem;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 0.875rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.btn-danger:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px -4px rgba(220, 38, 38, 0.4);
+}
+
+.btn-secondary {
+    background: #f1f5f9;
+    color: #475569;
+    font-weight: 600;
+    padding: 0.7rem 1.5rem;
+    border-radius: 0.75rem;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 0.875rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.btn-secondary:hover {
+    background: #e2e8f0;
+    color: #334155;
+}
+
+/* ============================================
+   MESSAGES
+   ============================================ */
+.success-message {
+    color: #059669;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.error-message {
+    color: #ef4444;
+    font-size: 0.78rem;
+    margin-top: 0.35rem;
+    font-weight: 500;
+}
+
+.verification-box {
+    background: #fef3c7;
+    border: 1px solid #fbbf24;
+    border-radius: 0.75rem;
+    padding: 0.875rem 1rem;
+    margin-top: 0.75rem;
+}
+
+.verification-link {
+    color: #d97706;
+    font-weight: 600;
+    text-decoration: underline;
+    cursor: pointer;
+    background: none;
+    border: none;
+    font-size: inherit;
+}
+
+.verification-link:hover { color: #b45309; }
+
+/* ============================================
+   DROPDOWN (nav)
+   ============================================ */
+.user-dropdown { position: relative; }
+
+.dropdown-menu {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    margin-top: 0.75rem;
+    background: white;
+    border-radius: 1.25rem;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+    border: 1px solid #eef2f6;
+    min-width: 240px;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 50;
+}
+
+.dropdown-menu.active {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.dropdown-menu::before {
+    content: '';
+    position: absolute;
+    top: -6px;
+    right: 20px;
+    width: 12px;
+    height: 12px;
+    background: white;
+    border-left: 1px solid #eef2f6;
+    border-top: 1px solid #eef2f6;
+    transform: rotate(45deg);
+}
+
+.dropdown-header {
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid #eef2f6;
+}
+
+.dropdown-item {
+    padding: 0.875rem 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: #475569;
+    transition: all 0.2s;
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.dropdown-item:hover {
+    background: #f8fafc;
+    color: #001a4d;
+}
+
+.dropdown-item:last-child {
+    border-radius: 0 0 1.25rem 1.25rem;
+}
+
+.dropdown-item.logout {
+    color: #ef4444;
+    border-top: 1px solid #eef2f6;
+}
+
+.dropdown-item.logout:hover {
+    background: #fef2f2;
+    color: #dc2626;
+}
+
+.avatar-button {
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.avatar-button:hover {
+    transform: scale(1.05);
+    box-shadow: 0 8px 20px -4px rgba(0, 26, 77, 0.25);
+}
+
 
 .profile-card {
     background: white;

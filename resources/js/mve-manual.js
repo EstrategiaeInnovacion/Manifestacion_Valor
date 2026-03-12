@@ -236,6 +236,11 @@ window.prevStep = async function() {
  * Desde paso 4: guardar documentos y luego ir a vista previa.
  */
 window.guardarYVistaPrevia = async function() {
+    const docRows = document.querySelectorAll('#edocumentsTableBody tr[data-edocument-row]');
+    if (docRows.length === 0) {
+        showNotification('Debe digitalizar al menos un documento antes de continuar a la vista previa.', 'error');
+        return;
+    }
     try {
         await saveDocumentos();
         goToStep(5);
@@ -735,6 +740,8 @@ window.loadSavedDataCallback = function() {
         if (data.valorAduana.total_valor_aduana && document.getElementById('totalValorAduana')) {
             document.getElementById('totalValorAduana').value = data.valorAduana.total_valor_aduana;
         }
+        // Al cargar datos guardados, resetear bandera para que el auto-cálculo funcione de nuevo
+        _valorAduanaManual = false;
     }
 
     // Sub-datos planos ya migrados a covesDataMap. No cargar en arrays globales.
@@ -1280,6 +1287,115 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
+// ─── Operación pendiente: tracking y auto-reintento ─────────────────────────
+let _pendingOperacion  = null;
+let _pendingDocData    = null;
+let _pendingRetryTimer = null;
+let _pendingRetryCount = 0;
+const PENDING_MAX_RETRIES    = 10;
+const PENDING_RETRY_INTERVAL = 20000; // 20 s
+
+function showPendingOperationPanel(numeroOperacion, docData) {
+    _pendingOperacion  = numeroOperacion;
+    _pendingDocData    = docData;
+    _pendingRetryCount = 0;
+
+    const panel   = document.getElementById('pendingOperationPanel');
+    const opNumEl = document.getElementById('pendingOpNumber');
+    const statusEl = document.getElementById('pendingRetryStatus');
+
+    if (opNumEl)  opNumEl.textContent  = numeroOperacion;
+    if (statusEl) statusEl.textContent = 'Consultando automáticamente cada 20 segundos...';
+    if (panel)    panel.classList.remove('hidden');
+
+    schedulePendingRetry();
+}
+
+function schedulePendingRetry() {
+    clearTimeout(_pendingRetryTimer);
+    _pendingRetryTimer = setTimeout(() => consultarOperacionPendiente(), PENDING_RETRY_INTERVAL);
+}
+
+window.cancelarOperacionPendiente = function() {
+    clearTimeout(_pendingRetryTimer);
+    _pendingOperacion = null;
+    const panel = document.getElementById('pendingOperationPanel');
+    if (panel) panel.classList.add('hidden');
+};
+
+window.consultarOperacionPendiente = async function() {
+    if (!_pendingOperacion) return;
+
+    const applicantId = document.querySelector('[data-applicant-id]').getAttribute('data-applicant-id');
+    const csrfToken   = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    const dataEl      = document.getElementById('mveManualData');
+    const hasStoredCreds = dataEl?.getAttribute('data-has-vucem-credentials') === 'true';
+    const hasStoredWs    = dataEl?.getAttribute('data-has-webservice-key') === 'true';
+    const statusEl = document.getElementById('pendingRetryStatus');
+
+    if (statusEl) statusEl.textContent = 'Consultando VUCEM...';
+    clearTimeout(_pendingRetryTimer);
+
+    const formData = new FormData();
+    formData.append('numero_operacion', _pendingOperacion);
+
+    if (currentMveId) formData.append('mve_id', currentMveId);
+
+    if (!hasStoredWs) {
+        const claveWS = document.getElementById('digitClaveWS')?.value;
+        if (claveWS) formData.append('clave_webservice', claveWS);
+    }
+    if (!hasStoredCreds) {
+        const certFile = document.getElementById('digitCertFile')?.files[0];
+        const keyFile  = document.getElementById('digitKeyFile')?.files[0];
+        const keyPass  = document.getElementById('digitKeyPassword')?.value;
+        if (certFile) formData.append('certificado', certFile);
+        if (keyFile)  formData.append('llave_privada', keyFile);
+        if (keyPass)  formData.append('contrasena_llave', keyPass);
+    }
+
+    try {
+        const response = await fetch(`/mve/consultar-operacion/${applicantId}`, {
+            method: 'POST',
+            headers: { 'X-CSRF-TOKEN': csrfToken },
+            body: formData
+        });
+        const result = await response.json();
+
+        if (result.success && result.eDocument) {
+            // ¡Folio obtenido!
+            window.cancelarOperacionPendiente();
+
+            const tipoDoc   = _pendingDocData?.tipo_documento   ?? result.tipo_documento   ?? '';
+            const nombreDoc = _pendingDocData?.nombre_documento  ?? result.nombre_documento ?? '';
+
+            addEdocumentToTable({
+                tipo_documento:   tipoDoc,
+                nombre_documento: nombreDoc,
+                folio_edocument:  result.eDocument,
+                created_at:       new Date().toISOString()
+            });
+            showNotification(`Folio eDocument obtenido: ${result.eDocument}`, 'success');
+            await saveDocumentos();
+        } else {
+            _pendingRetryCount++;
+            if (_pendingRetryCount >= PENDING_MAX_RETRIES) {
+                if (statusEl) statusEl.textContent =
+                    'Se agotaron los reintentos automáticos. Si obtiene el folio desde el portal VUCEM puede ingresarlo directamente en la tabla.';
+            } else {
+                if (statusEl) statusEl.textContent =
+                    `Intento ${_pendingRetryCount}/${PENDING_MAX_RETRIES} — próxima consulta en 20 s.`;
+                schedulePendingRetry();
+            }
+        }
+    } catch (err) {
+        console.error('[PENDIENTE] Error consultando operación:', err);
+        if (statusEl) statusEl.textContent = 'Error al consultar. Reintentando...';
+        schedulePendingRetry();
+    }
+};
+// ─────────────────────────────────────────────────────────────────────────────
+
 /**
  * Digitaliza el documento: firma y envía a VUCEM via AJAX.
  * Recibe el folio eDocument y lo agrega a la tabla.
@@ -1372,11 +1488,12 @@ window.digitalizarDocumento = async function() {
             closePdfPreview();
 
             if (result.pending) {
-                // VUCEM aún está procesando — el servidor ya guardó el tracking
-                const opMsg = result.numero_operacion 
-                    ? ` (Operación: ${result.numero_operacion})` 
-                    : '';
-                showNotification(`Documento enviado a VUCEM${opMsg}. Está siendo procesado. Consulte el folio eDocument en el portal VUCEM y agréguelo manualmente.`, 'warning');
+                // VUCEM aún está procesando — mostrar panel persistente con auto-reintentos
+                showPendingOperationPanel(result.numero_operacion, {
+                    tipo_documento:   tipoDocId,
+                    nombre_documento: nombreDoc
+                });
+                showNotification(`Documento enviado a VUCEM (Op: ${result.numero_operacion}). Consultando folio automáticamente cada 20 segundos...`, 'warning');
             } else {
                 // Agregar a la tabla con folio real
                 addEdocumentToTable({
@@ -1395,7 +1512,11 @@ window.digitalizarDocumento = async function() {
                 await saveDocumentos();
             }
         } else {
-            showNotification(result.message || 'Error al digitalizar documento.', 'error');
+            if (result.connectivity_error && result.diagnostico) {
+                mostrarDiagnosticoVucem(result.message, result.diagnostico);
+            } else {
+                showNotification(result.message || 'Error al digitalizar documento.', 'error');
+            }
         }
     } catch (error) {
         console.error('[DIGITALIZAR] Error:', error);
@@ -2441,6 +2562,27 @@ window.validateMonetaryInput = function(input) {
     
     input.setCustomValidity('');
 };
+
+// ── Auto-cálculo del Total del Valor en Aduana ───────────────────────────────
+// Se desactiva cuando el usuario edita manualmente el campo totalValorAduana.
+let _valorAduanaManual = false;
+
+window.marcarValorAduanaManual = function(input) {
+    // Si el usuario borra o escribe en el campo, se toma control manual
+    _valorAduanaManual = true;
+};
+
+window.recalcularValorAduana = function() {
+    if (_valorAduanaManual) return;
+    const pagado       = parseFloat(document.getElementById('totalPrecioPagado')?.value)  || 0;
+    const porPagar     = parseFloat(document.getElementById('totalPrecioPorPagar')?.value) || 0;
+    const incrementa   = parseFloat(document.getElementById('totalIncrementables')?.value) || 0;
+    const decrementa   = parseFloat(document.getElementById('totalDecrementables')?.value) || 0;
+    const total = pagado + porPagar + incrementa - decrementa;
+    const campo = document.getElementById('totalValorAduana');
+    if (campo) campo.value = total >= 0 ? parseFloat(total.toFixed(3)) : 0;
+};
+// ─────────────────────────────────────────────────────────────────────────────
 
 // Validar COVE en tiempo real
 window.validateCoveInput = function(input) {
@@ -3694,6 +3836,20 @@ window.saveInformacionCove = async function() {
             compenso_pago: (c.compenso_pago || []).length
         }))
     });
+
+    // Validar que cada COVE tenga al menos un tipo de pago registrado
+    for (const cove of informacionCove) {
+        const hasPago = (cove.precio_pagado?.length > 0) ||
+                        (cove.precio_por_pagar?.length > 0) ||
+                        (cove.compenso_pago?.length > 0);
+        if (!hasPago) {
+            showNotification(
+                `El COVE ${cove.numero_cove} debe tener al menos un tipo de pago registrado (Precio Pagado, Precio por Pagar o Compenso).`,
+                'error'
+            );
+            return;
+        }
+    }
 
     const success = await saveSection('informacion-cove', data, 'Información COVE');
     // Activar Siguiente del paso 2 solo si ambas condiciones se cumplen:

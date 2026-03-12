@@ -1,12 +1,4 @@
-<section class="space-y-6">
-    <header class="profile-header">
-        <h2 class="profile-title text-red-600">
-            Eliminar Cuenta
-        </h2>
-        <p class="profile-description">
-            Una vez que tu cuenta sea eliminada, todos sus recursos y datos serán borrados permanentemente. Antes de eliminar tu cuenta, descarga cualquier dato o información que desees conservar.
-        </p>
-    </header>
+<section class="space-y-4">
 
     <button type="button" class="btn-danger" x-data="" x-on:click.prevent="$dispatch('open-modal', 'confirm-user-deletion')">
         <i data-lucide="trash-2" class="w-4 h-4 inline-block mr-2"></i>

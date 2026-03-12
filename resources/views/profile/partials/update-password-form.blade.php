@@ -1,12 +1,4 @@
 <section>
-    <header class="profile-header">
-        <h2 class="profile-title">
-            Actualizar Contraseña
-        </h2>
-        <p class="profile-description">
-            Asegúrate de usar una contraseña larga y segura para mantener tu cuenta protegida.
-        </p>
-    </header>
 
     <form method="post" action="{{ route('password.update') }}" class="space-y-6">
         @csrf

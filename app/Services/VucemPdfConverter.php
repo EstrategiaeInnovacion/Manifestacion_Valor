@@ -13,7 +13,7 @@ use RuntimeException;
  * - Todas las imágenes a 300 DPI exactos
  * - Escala de grises
  * - Sin contraseña
- * - Máximo 3MB
+ * - Máximo 4MB
  */
 class VucemPdfConverter
 {
@@ -79,8 +79,10 @@ class VucemPdfConverter
             $pagePattern = $tempDir . DIRECTORY_SEPARATOR . 'page_%d.pdf';
             
             $result = $this->executeGhostscript([
-                '-sDEVICE=pdfimage8',
-                '-r300',
+                '-sDEVICE=pdfimage8',          // Dispositivo 8-bit escala de grises
+                '-sColorConversionStrategy=Gray', // Forzar conversión a escala de grises
+                '-dProcessColorModel=/DeviceGray', // Modelo de color gris
+                '-r300',                           // 300 DPI exactos
                 '-dCompatibilityLevel=1.4',
                 '-sOutputFile=' . $pagePattern,
                 $inputPath,
@@ -118,29 +120,33 @@ class VucemPdfConverter
      */
     protected function mergePdfs(array $pdfFiles, string $outputPath, string $tempDir): void
     {
-        // Si solo hay un archivo, re-procesarlo para asegurar PDF 1.4
+        // Parámetros base compartidos: escala de grises + PDF 1.4 + compresión /printer
+        $baseGsArgs = [
+            '-sDEVICE=pdfwrite',
+            '-dCompatibilityLevel=1.4',
+            '-sColorConversionStrategy=Gray',
+            '-dProcessColorModel=/DeviceGray',
+            '-dPDFSETTINGS=/printer',             // Alta calidad pero tamaño razonable
+            '-dDownsampleGrayImages=false',        // No reducir DPI de imágenes en gris
+            '-dGrayImageResolution=300',           // Mantener 300 DPI
+            '-dAutoFilterGrayImages=true',
+        ];
+
+        // Si solo hay un archivo, re-procesarlo para asegurar PDF 1.4 + escala de grises
         if (count($pdfFiles) === 1) {
-            $result = $this->executeGhostscript([
-                '-sDEVICE=pdfwrite',
-                '-dCompatibilityLevel=1.4',
-                '-dPDFSETTINGS=/prepress',
+            $this->executeGhostscript(array_merge($baseGsArgs, [
                 '-sOutputFile=' . $outputPath,
                 $pdfFiles[0],
-            ]);
+            ]));
 
             if (file_exists($outputPath) && filesize($outputPath) > 100) {
+                $this->recompressIfNeeded($outputPath, $tempDir, $baseGsArgs);
                 return;
             }
         }
 
         // Método 1: Combinar directamente con Ghostscript
-        $args = [
-            '-sDEVICE=pdfwrite',
-            '-dCompatibilityLevel=1.4',
-            '-dPDFSETTINGS=/prepress',
-            '-sOutputFile=' . $outputPath,
-        ];
-
+        $args = array_merge($baseGsArgs, ['-sOutputFile=' . $outputPath]);
         foreach ($pdfFiles as $pdf) {
             $args[] = $pdf;
         }
@@ -148,6 +154,7 @@ class VucemPdfConverter
         $result = $this->executeGhostscript($args);
 
         if (file_exists($outputPath) && filesize($outputPath) > 100) {
+            $this->recompressIfNeeded($outputPath, $tempDir, $baseGsArgs);
             return;
         }
 
@@ -159,16 +166,15 @@ class VucemPdfConverter
         }
         file_put_contents($listFile, $listContent);
 
-        $result = $this->executeGhostscript([
-            '-sDEVICE=pdfwrite',
-            '-dCompatibilityLevel=1.4',
+        $result = $this->executeGhostscript(array_merge($baseGsArgs, [
             '-sOutputFile=' . $outputPath,
             '@' . $listFile,
-        ]);
+        ]));
 
         @unlink($listFile);
 
         if (file_exists($outputPath) && filesize($outputPath) > 100) {
+            $this->recompressIfNeeded($outputPath, $tempDir, $baseGsArgs);
             return;
         }
 
@@ -178,13 +184,11 @@ class VucemPdfConverter
         for ($i = 1; $i < count($pdfFiles); $i++) {
             $nextOutput = $tempDir . DIRECTORY_SEPARATOR . 'merged_' . $i . '.pdf';
             
-            $this->executeGhostscript([
-                '-sDEVICE=pdfwrite',
-                '-dCompatibilityLevel=1.4',
+            $this->executeGhostscript(array_merge($baseGsArgs, [
                 '-sOutputFile=' . $nextOutput,
                 $currentOutput,
                 $pdfFiles[$i],
-            ]);
+            ]));
 
             if ($i > 1) {
                 @unlink($currentOutput);
@@ -194,18 +198,48 @@ class VucemPdfConverter
         }
 
         if (file_exists($currentOutput)) {
-            // Procesar una vez más para asegurar PDF 1.4
-            $this->executeGhostscript([
-                '-sDEVICE=pdfwrite',
-                '-dCompatibilityLevel=1.4',
+            $this->executeGhostscript(array_merge($baseGsArgs, [
                 '-sOutputFile=' . $outputPath,
                 $currentOutput,
-            ]);
+            ]));
             @unlink($currentOutput);
         }
 
         if (!file_exists($outputPath) || filesize($outputPath) < 100) {
             throw new RuntimeException('No se pudieron combinar los PDFs. Último error: ' . ($result['error'] ?? 'desconocido'));
+        }
+
+        $this->recompressIfNeeded($outputPath, $tempDir, $baseGsArgs);
+    }
+
+    /**
+     * Si el archivo supera 4 MB, recomprime con calidad /ebook para reducir tamaño.
+     * Mantiene 300 DPI y escala de grises.
+     */
+    protected function recompressIfNeeded(string $outputPath, string $tempDir, array $baseGsArgs): void
+    {
+        $maxBytes = 4 * 1024 * 1024; // 4 MB
+        if (!file_exists($outputPath) || filesize($outputPath) <= $maxBytes) {
+            return;
+        }
+
+        $recompressedPath = $tempDir . DIRECTORY_SEPARATOR . 'recompressed_' . uniqid() . '.pdf';
+
+        // Reemplazar /printer por /ebook para mayor compresión, manteniendo 300 DPI
+        $recompressArgs = array_map(fn($a) => $a === '-dPDFSETTINGS=/printer' ? '-dPDFSETTINGS=/ebook' : $a, $baseGsArgs);
+        $recompressArgs[] = '-dGrayImageResolution=300';  // Asegurar 300 DPI incluso con /ebook
+        $recompressArgs[] = '-dDownsampleGrayImages=false';
+
+        $this->executeGhostscript(array_merge($recompressArgs, [
+            '-sOutputFile=' . $recompressedPath,
+            $outputPath,
+        ]));
+
+        if (file_exists($recompressedPath) && filesize($recompressedPath) > 100
+            && filesize($recompressedPath) < filesize($outputPath)) {
+            rename($recompressedPath, $outputPath);
+        } else {
+            @unlink($recompressedPath);
         }
     }
 

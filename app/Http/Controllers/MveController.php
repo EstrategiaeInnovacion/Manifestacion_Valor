@@ -16,6 +16,7 @@ use App\Services\MveSignService;
 use App\Services\EFirmaService;
 use App\Services\DigitalizarDocumentoService;
 use App\Services\DocumentUploadService;
+use App\Services\VucemDiagnosticService;
 use App\Mail\MveSubmitted;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
@@ -171,9 +172,8 @@ class MveController extends Controller
             // Instanciar el servicio
             $mveService = new ManifestacionValorService();
             
-            // Parsear el archivo M (respetando preferencia del usuario sobre eDocs)
-            $loadEdocs = auth()->user()->load_edocs_from_m ?? true;
-            $datosExtraidos = $mveService->parseArchivoMForMV($content, $loadEdocs);
+            // Parsear el archivo M (sin cargar eDocs)
+            $datosExtraidos = $mveService->parseArchivoMForMV($content, false);
             
             // VALIDACIÃ“N CRÃTICA: Verificar que el RFC del archivo coincide con el del solicitante
             $rfcArchivoM = $datosExtraidos['datos_manifestacion']['rfc_importador'] ?? null;
@@ -449,7 +449,7 @@ class MveController extends Controller
             : null;
         
         $datosActualizar = [
-            'rfc_importador' => $request->rfc_importador ?? $applicant->applicant_rfc,
+            'rfc_importador' => ($request->rfc_importador ?: $applicant->applicant_rfc),
             'metodo_valoracion' => $request->metodo_valoracion,
             'existe_vinculacion' => $request->existe_vinculacion,
             'pedimento' => $request->pedimento,
@@ -773,10 +773,18 @@ class MveController extends Controller
                 );
 
                 if (!$resultado['success']) {
-                    return response()->json([
+                    $responseData = [
                         'success' => false,
                         'message' => $resultado['message'] ?? 'Error al digitalizar.',
-                    ], 422);
+                    ];
+
+                    if (!empty($resultado['connectivity_error'])) {
+                        $responseData['connectivity_error'] = true;
+                        $responseData['diagnostico'] = (new VucemDiagnosticService())
+                            ->getDiagnostico(auth()->id(), (int) $applicantId);
+                    }
+
+                    return response()->json($responseData, 422);
                 }
 
                 $eDocument = $resultado['eDocument'];
@@ -835,6 +843,116 @@ class MveController extends Controller
         } catch (\Exception $e) {
             Log::error('[DIGITALIZAR] Error: ' . $e->getMessage());
             return response()->json(['success' => false, 'message' => 'Error: ' . $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Consulta el folio eDocument de una operación pendiente en VUCEM.
+     * Usado cuando la primera digitalización devolvió numeroOperacion en lugar de eDocument.
+     */
+    public function consultarOperacion(Request $request, $applicantId)
+    {
+        $applicant = MvClientApplicant::findOrFail($applicantId);
+
+        if (!auth()->user()->canAccessApplicant($applicant)) {
+            return response()->json(['success' => false, 'message' => 'Sin permiso.'], 403);
+        }
+
+        $request->validate([
+            'numero_operacion' => 'required|string',
+            'clave_webservice' => 'nullable|string',
+            'certificado'      => 'nullable|file',
+            'llave_privada'    => 'nullable|file',
+            'contrasena_llave' => 'nullable|string',
+        ]);
+
+        $rfc             = $applicant->applicant_rfc;
+        $numeroOperacion = $request->input('numero_operacion');
+
+        $useStoredCreds = $applicant->hasVucemCredentials() && !$request->hasFile('certificado');
+        $useStoredWs    = $applicant->hasWebserviceKey()   && !$request->filled('clave_webservice');
+
+        $claveWebService = $useStoredWs
+            ? $applicant->vucem_webservice_key
+            : $request->input('clave_webservice');
+
+        if (empty($claveWebService)) {
+            return response()->json(['success' => false, 'message' => 'Se requiere la clave del Web Service VUCEM.'], 422);
+        }
+
+        $tempCertPath = tempnam(sys_get_temp_dir(), 'cert_');
+        $tempKeyPath  = tempnam(sys_get_temp_dir(), 'key_');
+
+        try {
+            if ($useStoredCreds) {
+                $certContent   = base64_decode($applicant->vucem_cert_file);
+                $keyContent    = base64_decode($applicant->vucem_key_file);
+                $passwordLlave = $applicant->vucem_password;
+
+                if (!$certContent || !$keyContent || !$passwordLlave) {
+                    return response()->json(['success' => false, 'message' => 'Credenciales almacenadas incompletas.'], 422);
+                }
+                file_put_contents($tempCertPath, $certContent);
+                file_put_contents($tempKeyPath, $keyContent);
+            } else {
+                if (!$request->hasFile('certificado') || !$request->hasFile('llave_privada') || !$request->filled('contrasena_llave')) {
+                    return response()->json(['success' => false, 'message' => 'Se requieren los archivos de firma electrónica.'], 422);
+                }
+                file_put_contents($tempCertPath, $request->file('certificado')->get());
+                file_put_contents($tempKeyPath,  $request->file('llave_privada')->get());
+                $passwordLlave = $request->input('contrasena_llave');
+            }
+
+            $digitalizarService = app(DigitalizarDocumentoService::class);
+            $resultado = $digitalizarService->consultarPorOperacion(
+                $rfc,
+                $claveWebService,
+                $numeroOperacion,
+                $tempCertPath,
+                $tempKeyPath,
+                $passwordLlave
+            );
+
+            if ($resultado && !empty($resultado['eDocument'])) {
+                $eDocument = $resultado['eDocument'];
+
+                // Actualizar registro pendiente con el folio real
+                $registrado = EdocumentRegistrado::where('numero_operacion', $numeroOperacion)
+                    ->where('applicant_id', $applicantId)
+                    ->first();
+
+                if ($registrado) {
+                    $registrado->folio_edocument        = $eDocument;
+                    $registrado->existe_en_vucem        = true;
+                    $registrado->fecha_ultima_consulta  = now();
+                    $registrado->response_message       = 'Folio obtenido por consulta de operación';
+                    $registrado->save();
+
+                    // Agregar a la tabla de documentos de la MVE
+                    $mveId = $request->input('mve_id') ? (int)$request->input('mve_id') : null;
+                    $this->agregarDocumentoAMve($applicantId, [
+                        'tipo_documento'   => $registrado->tipo_documento,
+                        'nombre_documento' => $registrado->nombre_documento,
+                        'folio_edocument'  => $eDocument,
+                        'numero_operacion' => $numeroOperacion,
+                        'created_at'       => now()->toDateTimeString(),
+                        'updated_at'       => now()->toDateTimeString(),
+                    ], $mveId);
+                }
+
+                return response()->json([
+                    'success'   => true,
+                    'eDocument' => $eDocument,
+                    'tipo_documento'   => $registrado?->tipo_documento ?? '',
+                    'nombre_documento' => $registrado?->nombre_documento ?? '',
+                ]);
+            }
+
+            return response()->json(['success' => false, 'message' => 'VUCEM aún está procesando. Intente de nuevo en unos segundos.']);
+
+        } finally {
+            if (file_exists($tempCertPath)) @unlink($tempCertPath);
+            if (file_exists($tempKeyPath))  @unlink($tempKeyPath);
         }
     }
 
@@ -1667,11 +1785,16 @@ class MveController extends Controller
                             MvDocumentos::where('applicant_id', $applicantId)->update(['status' => 'rechazado']);
                         }
                     }
-                    
-                    return response()->json([
-                        'success' => false,
-                        'message' => $resultado['message']
-                    ], 400);
+
+                    $responseData = ['success' => false, 'message' => $resultado['message']];
+
+                    if (!empty($resultado['connectivity_error'])) {
+                        $responseData['connectivity_error'] = true;
+                        $responseData['diagnostico'] = (new VucemDiagnosticService())
+                            ->getDiagnostico(auth()->id(), (int) $applicantId);
+                    }
+
+                    return response()->json($responseData, 400);
                 }
                 
             } catch (\Exception $e) {
