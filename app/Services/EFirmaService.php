@@ -54,9 +54,28 @@ class EFirmaService
             ];
 
         } catch (Exception $e) {
-            Log::error("[EFirmaService] Error crítico generando firma: " . $e->getMessage());
-            // Relanzar con mensaje amigable para el usuario
-            throw new Exception("Error al procesar la e.firma: " . $e->getMessage());
+            $rawMsg = $e->getMessage();
+            Log::error('[EFirmaService] Error crítico generando firma', [
+                'error'    => $rawMsg,
+                'rfc'      => $rfc,
+                'cert_exists' => file_exists($certificadoPath),
+                'key_exists'  => file_exists($llavePrivadaPath),
+                'pass_len'    => strlen($passwordLlave),
+            ]);
+
+            // Traducir el error de OpenSSL a un mensaje comprensible
+            if (str_contains($rawMsg, 'pkcs12 cipherfinal') || str_contains($rawMsg, 'Cannot open private key')) {
+                throw new Exception(
+                    'La contraseña de la llave privada (.key) es incorrecta, o el archivo .key no corresponde '
+                    . 'a esa contraseña. Verifique que está usando la contraseña correcta y el archivo correcto.'
+                );
+            }
+
+            if (str_contains($rawMsg, 'RFC') && str_contains($rawMsg, 'certificado')) {
+                throw new Exception('El certificado no corresponde al RFC ' . $rfc . '. Verifique los archivos de e.firma.');
+            }
+
+            throw new Exception('Error al procesar la e.firma: ' . $rawMsg);
         }
     }
 

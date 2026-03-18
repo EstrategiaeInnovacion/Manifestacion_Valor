@@ -738,7 +738,7 @@ class MveController extends Controller
                 if ($useStoredCreds) {
                     $certContent = base64_decode($applicant->vucem_cert_file);
                     $keyContent = base64_decode($applicant->vucem_key_file);
-                    $passwordLlave = $applicant->vucem_password;
+                    $passwordLlave = trim($applicant->vucem_password ?? '');
 
                     if (!$certContent || !$keyContent || !$passwordLlave) {
                         return response()->json(['success' => false, 'message' => 'Credenciales almacenadas incompletas.'], 422);
@@ -746,15 +746,25 @@ class MveController extends Controller
 
                     file_put_contents($tempCertPath, $certContent);
                     file_put_contents($tempKeyPath, $keyContent);
-                    Log::info('[DIGITALIZAR] Usando credenciales almacenadas', ['applicant' => $applicantId]);
+                    Log::info('[DIGITALIZAR] Usando credenciales almacenadas', [
+                        'applicant' => $applicantId,
+                        'key_size'  => strlen($keyContent),
+                        'cert_size' => strlen($certContent),
+                        'pass_len'  => strlen($passwordLlave),
+                    ]);
                 } else {
                     if (!$request->hasFile('certificado') || !$request->hasFile('llave_privada') || !$request->filled('contrasena_llave')) {
-                        return response()->json(['success' => false, 'message' => 'Se requieren los archivos de firma electrÃ³nica.'], 422);
+                        return response()->json(['success' => false, 'message' => 'Se requieren los archivos de firma electrónica.'], 422);
                     }
                     file_put_contents($tempCertPath, $request->file('certificado')->get());
                     file_put_contents($tempKeyPath, $request->file('llave_privada')->get());
-                    $passwordLlave = $request->input('contrasena_llave');
-                    Log::info('[DIGITALIZAR] Usando credenciales manuales', ['applicant' => $applicantId]);
+                    $passwordLlave = trim($request->input('contrasena_llave'));
+                    Log::info('[DIGITALIZAR] Usando credenciales manuales', [
+                        'applicant' => $applicantId,
+                        'key_size'  => $request->file('llave_privada')->getSize(),
+                        'cert_size' => $request->file('certificado')->getSize(),
+                        'pass_len'  => strlen($passwordLlave),
+                    ]);
                 }
 
                 // Llamar al servicio de digitalizaciÃ³n
@@ -1638,7 +1648,7 @@ class MveController extends Controller
                 // Usar credenciales almacenadas en la BD
                 $certContent = base64_decode($applicant->vucem_cert_file);
                 $keyContent = base64_decode($applicant->vucem_key_file);
-                $password = $applicant->vucem_password;
+                $password = trim($applicant->vucem_password ?? '');
                 
                 if (!$certContent || !$keyContent || !$password) {
                     return response()->json(['success' => false, 'message' => 'Credenciales almacenadas incompletas.'], 422);
@@ -1655,7 +1665,7 @@ class MveController extends Controller
                 // Usar archivos subidos manualmente
                 $certificadoPath = $request->file('certificado')->store('temp/efirma');
                 $llavePrivadaPath = $request->file('llave_privada')->store('temp/efirma');
-                $password = $request->input('password_llave');
+                $password = trim($request->input('password_llave'));
                 
                 $tempCertPath = Storage::path($certificadoPath);
                 $tempKeyPath = Storage::path($llavePrivadaPath);

@@ -163,11 +163,11 @@ class ApplicantController extends Controller
         }
 
         if (!empty($validated['vucem_password'])) {
-            $data['vucem_password'] = $validated['vucem_password'];
+            $data['vucem_password'] = trim($validated['vucem_password']);
         }
 
         if (!empty($validated['vucem_webservice_key'])) {
-            $data['vucem_webservice_key'] = $validated['vucem_webservice_key'];
+            $data['vucem_webservice_key'] = trim($validated['vucem_webservice_key']);
         }
 
         // Consentimiento de privacidad
@@ -299,14 +299,14 @@ class ApplicantController extends Controller
             $data['vucem_password'] = null;
         }
         elseif (!empty($validated['vucem_password'])) {
-            $data['vucem_password'] = $validated['vucem_password'];
+            $data['vucem_password'] = trim($validated['vucem_password']);
         }
 
         if ($request->has('clear_vucem_webservice') && $request->input('clear_vucem_webservice')) {
             $data['vucem_webservice_key'] = null;
         }
         elseif (!empty($validated['vucem_webservice_key'])) {
-            $data['vucem_webservice_key'] = $validated['vucem_webservice_key'];
+            $data['vucem_webservice_key'] = trim($validated['vucem_webservice_key']);
         }
 
         // Si solicita eliminar archivos
