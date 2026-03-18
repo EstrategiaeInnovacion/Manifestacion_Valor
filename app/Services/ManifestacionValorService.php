@@ -95,11 +95,19 @@ class ManifestacionValorService
         $covesList = $informacionCove->informacion_cove ?? [];
 
         // Compatibilidad: si el primer COVE no tiene sub-datos, intentar migrar desde campos planos
-        if (!empty($covesList) && empty($covesList[0]['pedimentos']) && !empty($informacionCove->pedimentos)) {
-            $covesList[0]['pedimentos'] = $informacionCove->pedimentos ?? [];
-            $covesList[0]['precios_pagados'] = $informacionCove->precios_pagados ?? $informacionCove->precio_pagado ?? [];
-            $covesList[0]['incrementables'] = $informacionCove->incrementables ?? [];
-            $covesList[0]['decrementables'] = $informacionCove->decrementables ?? [];
+        if (!empty($covesList)) {
+            if (empty($covesList[0]['pedimentos']) && !empty($informacionCove->pedimentos))
+                $covesList[0]['pedimentos'] = $informacionCove->pedimentos ?? [];
+            if (empty($covesList[0]['precios_pagados']))
+                $covesList[0]['precios_pagados'] = $informacionCove->precios_pagados ?? $informacionCove->precio_pagado ?? [];
+            if (empty($covesList[0]['precio_por_pagar']))
+                $covesList[0]['precio_por_pagar'] = $informacionCove->precio_por_pagar ?? [];
+            if (empty($covesList[0]['compenso_pago']))
+                $covesList[0]['compenso_pago'] = $informacionCove->compenso_pago ?? [];
+            if (empty($covesList[0]['incrementables']) && !empty($informacionCove->incrementables))
+                $covesList[0]['incrementables'] = $informacionCove->incrementables ?? [];
+            if (empty($covesList[0]['decrementables']) && !empty($informacionCove->decrementables))
+                $covesList[0]['decrementables'] = $informacionCove->decrementables ?? [];
         }
         
         if (count($covesList) > 0) {
@@ -129,6 +137,7 @@ class ManifestacionValorService
 
                 // C. Precio Por Pagar - SOLO incluir si tiene datos reales
                 $preciosPorPagar = $cove['precios_por_pagar'] ?? $cove['precio_por_pagar'] ?? [];
+                if (empty($preciosPorPagar)) $preciosPorPagar = $informacionCove->precio_por_pagar ?? [];
                 if (!empty($preciosPorPagar)) {
                     foreach ($preciosPorPagar as $precio) {
                         $addField($this->formatVucemDate($precio['fecha'] ?? $precio['fechaPago'] ?? ''));
@@ -145,6 +154,7 @@ class ManifestacionValorService
                 // D. Compensación - SOLO incluir si tiene datos reales
                 // ORDEN CORRECTO según VUCEM: fecha, motivo, prestacionMercancia, tipoPago
                 $compensosPago = $cove['compensos_pago'] ?? $cove['compenso_pago'] ?? [];
+                if (empty($compensosPago)) $compensosPago = $informacionCove->compenso_pago ?? [];
                 if (!empty($compensosPago)) {
                     foreach ($compensosPago as $compenso) {
                         $addField($this->formatVucemDate($compenso['fecha'] ?? ''));

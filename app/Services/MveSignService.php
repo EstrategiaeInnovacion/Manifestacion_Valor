@@ -164,6 +164,8 @@ class MveSignService
         $covesList = $informacionCove->informacion_cove ?? [];
         $pedimentosList = $informacionCove->pedimentos ?? [];
         $preciosPagadosList = $informacionCove->precios_pagados ?? $informacionCove->precio_pagado ?? [];
+        $precioPorPagarList = $informacionCove->precio_por_pagar ?? [];
+        $compensoPagoList = $informacionCove->compenso_pago ?? [];
         $incrementablesList = $informacionCove->incrementables ?? [];
         $decrementablesList = $informacionCove->decrementables ?? []; // Agregado por si acaso
 
@@ -172,6 +174,10 @@ class MveSignService
                 $covesList[0]['pedimentos'] = $pedimentosList;
             if (empty($covesList[0]['precios_pagados']) && !empty($preciosPagadosList))
                 $covesList[0]['precios_pagados'] = $preciosPagadosList;
+            if (empty($covesList[0]['precio_por_pagar']) && !empty($precioPorPagarList))
+                $covesList[0]['precio_por_pagar'] = $precioPorPagarList;
+            if (empty($covesList[0]['compenso_pago']) && !empty($compensoPagoList))
+                $covesList[0]['compenso_pago'] = $compensoPagoList;
             if (empty($covesList[0]['incrementables']) && !empty($incrementablesList))
                 $covesList[0]['incrementables'] = $incrementablesList;
             if (empty($covesList[0]['decrementables']) && !empty($decrementablesList))
@@ -184,6 +190,16 @@ class MveSignService
             $xml .= '<incoterm>' . ($cove['incoterm'] ?? '') . '</incoterm>';
             $vinculacion = ($cove['vinculacion'] ?? $datosManifestacion->existe_vinculacion ?? 0) ? '1' : '0';
             $xml .= '<existeVinculacion>' . $vinculacion . '</existeVinculacion>';
+
+            Log::info('MVE - Datos COVE para transmisión', [
+                'cove'             => $cove['numero_cove'] ?? $cove['cove'] ?? '',
+                'pedimentos'       => count($cove['pedimentos'] ?? []),
+                'precios_pagados'  => count($cove['precios_pagados'] ?? $cove['precio_pagado'] ?? []),
+                'precio_por_pagar' => count($cove['precio_por_pagar'] ?? $cove['precios_por_pagar'] ?? []),
+                'compenso_pago'    => count($cove['compenso_pago'] ?? $cove['compensos_pago'] ?? []),
+                'incrementables'   => count($cove['incrementables'] ?? []),
+                'decrementables'   => count($cove['decrementables'] ?? []),
+            ]);
 
             // Pedimentos
             foreach (($cove['pedimentos'] ?? []) as $ped) {
@@ -215,6 +231,8 @@ class MveSignService
 
             // Precio Por Pagar - SOLO incluir si tiene datos reales
             $preciosPorPagar = $cove['precios_por_pagar'] ?? $cove['precio_por_pagar'] ?? [];
+            if (empty($preciosPorPagar) && !empty($precioPorPagarList))
+                $preciosPorPagar = $precioPorPagarList;
             if (!empty($preciosPorPagar)) {
                 foreach ($preciosPorPagar as $ppp) {
                     $xml .= '<precioPorPagar>';
@@ -235,6 +253,8 @@ class MveSignService
             // Compensación - SOLO incluir si tiene datos reales
             // ORDEN CORRECTO según XSD: fecha, motivo, prestacionMercancia, tipoPago
             $compensosPago = $cove['compensos_pago'] ?? $cove['compenso_pago'] ?? [];
+            if (empty($compensosPago) && !empty($compensoPagoList))
+                $compensosPago = $compensoPagoList;
             if (!empty($compensosPago)) {
                 foreach ($compensosPago as $cp) {
                     $xml .= '<compensoPago>';
