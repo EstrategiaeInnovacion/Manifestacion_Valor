@@ -155,15 +155,15 @@ class ManifestacionValorService
                 }
 
                 // D. Compensación - SOLO incluir si tiene datos reales
-                // ORDEN CORRECTO según VUCEM: fecha, motivo, prestacionMercancia, tipoPago
+                // ORDEN CORRECTO según XSD: tipoPago, fecha, motivo, prestacionMercancia, [especifique]
                 $compensosPago = $cove['compensos_pago'] ?? $cove['compenso_pago'] ?? [];
                 if (empty($compensosPago)) $compensosPago = $informacionCove->compenso_pago ?? [];
                 if (!empty($compensosPago)) {
                     foreach ($compensosPago as $compenso) {
+                        $addField($compenso['formaPago'] ?? $compenso['tipoPago'] ?? '');
                         $addField($this->formatVucemDate($compenso['fecha'] ?? ''));
                         $addField($compenso['motivo'] ?? '');
                         $addField($compenso['prestacionMercancia'] ?? '');
-                        $addField($compenso['formaPago'] ?? $compenso['tipoPago'] ?? '');
                         if (!empty($compenso['especifique'])) $addField($compenso['especifique']);
                     }
                 }

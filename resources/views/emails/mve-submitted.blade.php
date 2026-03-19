@@ -82,16 +82,46 @@
                                 </tr>
                             </table>
 
-                            {{-- NOTA XML ADJUNTO --}}
-                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background: #f0fdf4; border-left: 4px solid #22c55e; border-radius: 0 8px 8px 0; margin-bottom: 0;">
-                                <tr>
-                                    <td style="padding: 14px 18px;">
-                                        <p style="color: #166534; font-size: 13px; margin: 0; font-weight: 600;">
-                                            📎 Se adjunta el acuse XML de VUCEM como comprobante del envío.
-                                        </p>
-                                    </td>
-                                </tr>
-                            </table>
+                            {{-- NOTA XML / INSTRUCCIÓN --}}
+                            @if($tieneAcuseXml && $tieneDeclaracionXml)
+                                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background: #f0fdf4; border-left: 4px solid #22c55e; border-radius: 0 8px 8px 0; margin-bottom: 0;">
+                                    <tr>
+                                        <td style="padding: 14px 18px;">
+                                            <p style="color: #166534; font-size: 13px; margin: 0 0 6px 0; font-weight: 600;">📎 Se adjuntan dos archivos XML:</p>
+                                            <ul style="color: #166534; font-size: 13px; margin: 0; padding-left: 18px; line-height: 1.8;">
+                                                <li><strong>acuse_mve_*.xml</strong> &mdash; Acuse firmado por VUCEM (equivalente al acuse PDF).</li>
+                                                <li><strong>declaracion_mve_*.xml</strong> &mdash; Datos completos de lo declarado.</li>
+                                            </ul>
+                                        </td>
+                                    </tr>
+                                </table>
+                            @elseif($tieneAcuseXml)
+                                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background: #f0fdf4; border-left: 4px solid #22c55e; border-radius: 0 8px 8px 0; margin-bottom: 0;">
+                                    <tr>
+                                        <td style="padding: 14px 18px;">
+                                            <p style="color: #166534; font-size: 13px; margin: 0; font-weight: 600;">📎 Se adjunta el acuse XML firmado por VUCEM.</p>
+                                        </td>
+                                    </tr>
+                                </table>
+                            @else
+                                {{-- Sin XMLs: mostrar folio y enlace a consultas --}}
+                                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background: #fffbeb; border-left: 4px solid #f59e0b; border-radius: 0 8px 8px 0; margin-bottom: 0;">
+                                    <tr>
+                                        <td style="padding: 16px 18px;">
+                                            <p style="color: #92400e; font-size: 13px; margin: 0 0 10px 0; font-weight: 600;">
+                                                ℹ️ La MVE fue registrada exitosamente en VUCEM con el folio <strong>{{ $folioMostrar }}</strong>.
+                                            </p>
+                                            <p style="color: #78350f; font-size: 13px; margin: 0 0 12px 0; line-height: 1.6;">
+                                                Para obtener el XML del acuse firmado y la declaración completa, consulte la MVE desde el sistema. El XML estará disponible una vez que VUCEM procese su solicitud.
+                                            </p>
+                                            <a href="{{ $urlConsultas }}"
+                                               style="display: inline-block; background: #003399; color: #ffffff; font-size: 13px; font-weight: 700; padding: 10px 22px; border-radius: 8px; text-decoration: none;">
+                                                Consultar y descargar XML &rarr;
+                                            </a>
+                                        </td>
+                                    </tr>
+                                </table>
+                            @endif
 
                         </td>
                     </tr>

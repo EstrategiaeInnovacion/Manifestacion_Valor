@@ -451,11 +451,14 @@ class MveController extends Controller
                     ->where('applicant_id', $applicantId)
                     ->first();
             } else {
-                // Reutilizar borrador existente para evitar duplicados de folio_interno
-                $datosManifestacion = MvDatosManifestacion::where('applicant_id', $applicantId)
-                    ->where('status', 'borrador')
-                    ->latest('id')
-                    ->first();
+                // Reutilizar borrador sólo si la sesión indica que ese borrador es el activo para este solicitante
+                $sessionMveId = session('mve_draft_' . $applicantId);
+                $datosManifestacion = $sessionMveId
+                    ? MvDatosManifestacion::where('id', $sessionMveId)
+                        ->where('applicant_id', $applicantId)
+                        ->where('status', 'borrador')
+                        ->first()
+                    : null;
             }
 
             $datosActualizar = [
@@ -476,6 +479,9 @@ class MveController extends Controller
                 $datosActualizar['created_by_user_id'] = auth()->id();
                 $datosManifestacion = MvDatosManifestacion::create($datosActualizar);
             }
+
+            // Registrar en sesión el borrador activo para evitar contaminación entre MVEs
+            session(['mve_draft_' . $applicantId => $datosManifestacion->id]);
 
             return response()->json([
                 'success' => true,
@@ -523,13 +529,27 @@ class MveController extends Controller
         $mveId = $request->input('mve_id') ? (int)$request->input('mve_id') : null;
         $informacionCove = $mveId
             ? MvInformacionCove::where('datos_manifestacion_id', $mveId)->first()
-            : MvInformacionCove::where('applicant_id', $applicantId)->latest('id')->first();
+            : null;
         
         // Preparar datos para actualizar - Multi-COVE: sub-datos incluidos en informacion_cove
         $datosActualizar = [
             'status' => 'borrador',
         ];
         
+        // Validar que cada COVE tenga al menos un pedimento registrado
+        if ($request->has('informacion_cove') && !empty($request->informacion_cove)) {
+            foreach ($request->informacion_cove as $cove) {
+                $pedimentos = $cove['pedimentos'] ?? [];
+                if (empty($pedimentos)) {
+                    $numeroCove = $cove['numero_cove'] ?? 'desconocido';
+                    return response()->json([
+                        'success' => false,
+                        'message' => "El COVE {$numeroCove} no tiene ningún pedimento registrado. Debe agregar al menos un pedimento antes de continuar."
+                    ], 422);
+                }
+            }
+        }
+
         // informacion_cove contiene los COVEs con sus sub-datos (pedimentos, incrementables, etc.)
         if ($request->has('informacion_cove') && !empty($request->informacion_cove)) {
             $datosActualizar['informacion_cove'] = $request->informacion_cove;
@@ -645,7 +665,7 @@ class MveController extends Controller
         $mveId = $request->input('mve_id') ? (int)$request->input('mve_id') : null;
         $documentos = $mveId
             ? MvDocumentos::where('datos_manifestacion_id', $mveId)->first()
-            : MvDocumentos::where('applicant_id', $applicantId)->latest('id')->first();
+            : null;
         
         if ($documentos) {
             $documentos->update([
@@ -1295,93 +1315,92 @@ class MveController extends Controller
 
         $folio = strtoupper(trim($request->input('folio')));
 
-        // 1. Buscar en caché local
+        $vucemError = null;
+
+        // 1. Si el solicitante tiene credenciales, consultar VUCEM siempre (datos frescos)
+        if ($applicant->hasVucemCredentials() && $applicant->hasWebserviceKey()) {
+            try {
+                $claveWebService = $applicant->vucem_webservice_key;
+                $certContent = base64_decode($applicant->vucem_cert_file);
+                $keyContent = base64_decode($applicant->vucem_key_file);
+                $passwordLlave = $applicant->vucem_password;
+
+                if ($certContent && $keyContent && $passwordLlave) {
+                    $tempCert = tempnam(sys_get_temp_dir(), 'cert_');
+                    $tempKey = tempnam(sys_get_temp_dir(), 'key_');
+                    file_put_contents($tempCert, $certContent);
+                    file_put_contents($tempKey, $keyContent);
+
+                    try {
+                        $consultarService = app(\App\Services\ConsultarEdocumentService::class);
+                        $result = $consultarService->consultarEdocument(
+                            $folio,
+                            $applicant->applicant_rfc,
+                            $claveWebService,
+                            $tempCert,
+                            $tempKey,
+                            $passwordLlave
+                        );
+                    } finally {
+                        if (file_exists($tempCert)) @unlink($tempCert);
+                        if (file_exists($tempKey)) @unlink($tempKey);
+                    }
+
+                    if ($result['success'] && !empty($result['cove_data'])) {
+                        // Actualizar caché con datos frescos de VUCEM
+                        EdocumentRegistrado::updateOrCreate(
+                            ['folio_edocument' => $folio],
+                            [
+                                'existe_en_vucem' => true,
+                                'fecha_ultima_consulta' => now(),
+                                'response_code' => '200',
+                                'response_message' => $result['message'] ?? 'OK',
+                                'cove_data' => $result['cove_data'],
+                            ]
+                        );
+
+                        return response()->json([
+                            'success' => true,
+                            'source' => 'vucem',
+                            'data' => $this->extractCoveFormFields($result['cove_data']),
+                        ]);
+                    }
+
+                    $vucemError = $result['message'] ?? 'Error desconocido';
+                } else {
+                    $vucemError = 'Credenciales almacenadas incompletas. Actualízalas en el módulo de Solicitantes.';
+                }
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::warning('[COVE_BUSCAR] Fallo VUCEM, usando caché si existe: ' . $e->getMessage());
+                $vucemError = $e->getMessage();
+            }
+        }
+
+        // 2. Fallback: caché local (cuando no hay credenciales o VUCEM falló)
         $registro = EdocumentRegistrado::where('folio_edocument', $folio)
             ->whereNotNull('cove_data')
             ->first();
 
         if ($registro && !empty($registro->cove_data)) {
-            $cove = $registro->cove_data;
             return response()->json([
                 'success' => true,
                 'source' => 'cache',
-                'data' => $this->extractCoveFormFields($cove),
+                'data' => $this->extractCoveFormFields($registro->cove_data),
             ]);
         }
 
-        // 2. Si no hay caché, intentar consulta VUCEM con credenciales almacenadas
-        if (!$applicant->hasVucemCredentials() || !$applicant->hasWebserviceKey()) {
+        // 3. Sin resultado disponible
+        if ($vucemError) {
             return response()->json([
                 'success' => false,
-                'message' => 'COVE no encontrado en caché. Usa la sección "Consulta COVE" para obtenerlo primero, o verifica que el solicitante tenga credenciales VUCEM configuradas.'
-            ], 404);
+                'message' => 'No se pudo obtener información del COVE: ' . $vucemError
+            ], 422);
         }
 
-        try {
-            $claveWebService = $applicant->vucem_webservice_key;
-            $certContent = base64_decode($applicant->vucem_cert_file);
-            $keyContent = base64_decode($applicant->vucem_key_file);
-            $passwordLlave = $applicant->vucem_password;
-
-            if (!$certContent || !$keyContent || !$passwordLlave) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Credenciales almacenadas incompletas. Actualízalas en el módulo de Solicitantes.'
-                ], 422);
-            }
-
-            $tempCert = tempnam(sys_get_temp_dir(), 'cert_');
-            $tempKey = tempnam(sys_get_temp_dir(), 'key_');
-            file_put_contents($tempCert, $certContent);
-            file_put_contents($tempKey, $keyContent);
-
-            try {
-                $consultarService = app(\App\Services\ConsultarEdocumentService::class);
-                $result = $consultarService->consultarEdocument(
-                    $folio,
-                    $applicant->applicant_rfc,
-                    $claveWebService,
-                    $tempCert,
-                    $tempKey,
-                    $passwordLlave
-                );
-            } finally {
-                if (file_exists($tempCert)) @unlink($tempCert);
-                if (file_exists($tempKey)) @unlink($tempKey);
-            }
-
-            if (!$result['success'] || empty($result['cove_data'])) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'No se pudo obtener información del COVE: ' . ($result['message'] ?? 'Error desconocido')
-                ], 422);
-            }
-
-            // Guardar en caché para próximas consultas
-            EdocumentRegistrado::updateOrCreate(
-                ['folio_edocument' => $folio],
-                [
-                    'existe_en_vucem' => true,
-                    'fecha_ultima_consulta' => now(),
-                    'response_code' => '200',
-                    'response_message' => $result['message'],
-                    'cove_data' => $result['cove_data'],
-                ]
-            );
-
-            return response()->json([
-                'success' => true,
-                'source' => 'vucem',
-                'data' => $this->extractCoveFormFields($result['cove_data']),
-            ]);
-
-        } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('[COVE_BUSCAR] Error: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Error al consultar VUCEM: ' . $e->getMessage()
-            ], 500);
-        }
+        return response()->json([
+            'success' => false,
+            'message' => 'COVE no encontrado. Verifica que el solicitante tenga credenciales VUCEM configuradas o usa la sección "Consulta COVE" para obtenerlo primero.'
+        ], 404);
     }
 
     /**
@@ -1747,15 +1766,11 @@ class MveController extends Controller
                 }
                 
                 if ($resultado['success']) {
-                                        // Actualizar status a 'enviado'
-                    $datosManifestacion->update(['status' => 'enviado']);
-                    if ($mveId) {
-                        MvInformacionCove::where('datos_manifestacion_id', $mveId)->update(['status' => 'enviado']);
-                        MvDocumentos::where('datos_manifestacion_id', $mveId)->update(['status' => 'enviado']);
-                    } else {
-                        MvInformacionCove::where('applicant_id', $applicantId)->update(['status' => 'enviado']);
-                        MvDocumentos::where('applicant_id', $applicantId)->update(['status' => 'enviado']);
-                    }
+                    // Eliminar el borrador completo — los datos permanentes quedaron en mv_acuses.
+                    // mv_informacion_cove y mv_documentos se eliminan por la FK CASCADE.
+                    // mv_acuses.datos_manifestacion_id queda en NULL por la FK onDelete('set null').
+                    $datosManifestacion->delete();
+                    session()->forget('mve_draft_' . $applicantId);
 
                     // Enviar correo de acuse al usuario y en copia al administrador
                     if (!empty($resultado['acuse_id'])) {
@@ -1777,6 +1792,21 @@ class MveController extends Controller
                                         $folioReal = $consultaResult['numero_mv'];
                                         $consultaService->actualizarAcuseConConsulta($acuse, $consultaResult);
                                         $acuse->refresh();
+
+                                        // Segunda consulta por número de MV (MNVA) para obtener XML de declaración
+                                        try {
+                                            $declaracionResult = $consultaService->consultarManifestacion(
+                                                $folioReal,
+                                                strtoupper($applicant->applicant_rfc),
+                                                $claveWebservice
+                                            );
+                                            if ($declaracionResult['success'] && !empty($declaracionResult['response'])) {
+                                                $consultaService->actualizarAcuseConConsulta($acuse, $declaracionResult);
+                                                $acuse->refresh();
+                                            }
+                                        } catch (\Throwable $ex2) {
+                                            Log::warning('[MVE] No se pudo obtener XML declaración por MV: ' . $ex2->getMessage());
+                                        }
                                     }
                                 } catch (\Throwable $ex) {
                                     Log::warning('[MVE] No se pudo obtener folio real de VUCEM: ' . $ex->getMessage());
@@ -2232,6 +2262,23 @@ class MveController extends Controller
 
                 // Actualizar otros datos del acuse con la respuesta (status, fechas, etc.)
                 $consultaService->actualizarAcuseConConsulta($acuse, $resultado);
+
+                // Si consultamos por número de operación y obtuvimos el MV real,
+                // hacer segunda consulta por MNVA para obtener el XML de declaración
+                if (!empty($resultado['numero_mv']) && !preg_match('/^MNVA/i', $folioConsulta)) {
+                    try {
+                        $declaracionResult = $consultaService->consultarManifestacion(
+                            $resultado['numero_mv'],
+                            $rfc,
+                            $claveWebservice
+                        );
+                        if ($declaracionResult['success'] && !empty($declaracionResult['response'])) {
+                            $consultaService->actualizarAcuseConConsulta($acuse, $declaracionResult);
+                        }
+                    } catch (\Throwable $ex) {
+                        Log::warning('[MV_CONSULTA] No se pudo obtener XML declaración por MV: ' . $ex->getMessage());
+                    }
+                }
 
                 return response()->json([
                     'success' => true,

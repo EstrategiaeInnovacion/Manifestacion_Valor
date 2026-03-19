@@ -62,7 +62,7 @@
                 <div class="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center">
                     <div class="flex flex-col md:flex-row gap-8 w-full justify-between items-center">
                         <div class="flex items-center gap-3 mb-4">
-                            <span class="bg-[#001a4d] text-white text-[10px] font-bold px-2 py-1 tracking-[0.2em]">V2.2</span>
+                            <span class="bg-[#001a4d] text-white text-[10px] font-bold px-2 py-1 tracking-[0.2em]">V2.3</span>
                             <div class="h-px w-8 bg-slate-300"></div>
                             <span class="text-xs font-medium text-slate-400 uppercase tracking-widest">FILE</span>
                         </div>
@@ -278,7 +278,7 @@
                     <div class="h-px flex-grow bg-slate-200"></div>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
                     {{-- TARJETA: SOPORTE --}}
                     <button type="button" onclick="openSupportModal()" class="modern-card group border-t-4 border-t-amber-500 text-left w-full">
                         <div class="card-content">
@@ -329,6 +329,23 @@
                             </p>
                             <div class="mt-8 flex items-center text-violet-600 font-bold text-sm">
                                 Ver Manuales
+                                <i data-lucide="move-right" class="w-4 h-4 ml-2 group-hover:translate-x-2 transition-transform"></i>
+                            </div>
+                        </div>
+                    </a>
+
+                    {{-- TARJETA: PREGUNTAS FRECUENTES --}}
+                    <a href="{{ route('faqs.index') }}" class="modern-card group border-t-4 border-t-cyan-500">
+                        <div class="card-content">
+                            <div class="icon-box bg-cyan-50 text-cyan-600 group-hover:bg-cyan-600 group-hover:text-white transition-all duration-500">
+                                <i data-lucide="circle-help" class="w-8 h-8"></i>
+                            </div>
+                            <h3 class="text-xl font-bold text-[#001a4d] mt-6">Preguntas Frecuentes</h3>
+                            <p class="text-slate-500 text-sm mt-3 leading-relaxed">
+                                Consulta las respuestas a las dudas más comunes sobre el sistema y la MVE.
+                            </p>
+                            <div class="mt-8 flex items-center text-cyan-600 font-bold text-sm">
+                                Ver FAQ
                                 <i data-lucide="move-right" class="w-4 h-4 ml-2 group-hover:translate-x-2 transition-transform"></i>
                             </div>
                         </div>

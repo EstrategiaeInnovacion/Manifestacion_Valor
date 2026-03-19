@@ -302,8 +302,9 @@ async function cargarVistaPreviaInline() {
     try {
         const applicantId = document.querySelector('[data-applicant-id]').getAttribute('data-applicant-id');
         const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        const mveQuery = currentMveId ? `?mve_id=${currentMveId}` : '';
 
-        const response = await fetch(`/mve/preview-data/${applicantId}`, {
+        const response = await fetch(`/mve/preview-data/${applicantId}${mveQuery}`, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
@@ -855,8 +856,13 @@ window.closeNotificationModal = function() {
 document.addEventListener('DOMContentLoaded', function() {
     // Inicializar mve_id si venimos editando una MVE existente
     const mveIdEl = document.querySelector('[data-mve-id]');
+    const _initApplicantId = document.querySelector('[data-applicant-id]')?.getAttribute('data-applicant-id');
     if (mveIdEl && mveIdEl.getAttribute('data-mve-id')) {
         currentMveId = parseInt(mveIdEl.getAttribute('data-mve-id')) || null;
+    } else if (_initApplicantId) {
+        // Recuperar borrador en progreso tras recarga de página
+        const _stored = localStorage.getItem('mve_draft_' + _initApplicantId);
+        if (_stored) currentMveId = parseInt(_stored) || null;
     }
 
     lucide.createIcons();
@@ -1183,6 +1189,10 @@ window.removeEdocumentRow = function(button) {
         `;
         setTimeout(() => lucide.createIcons(), 50);
     }
+
+    // Persistir la eliminación inmediatamente en el servidor
+    // para que el paso de firma no use documentos ya borrados
+    saveDocumentos();
 };
 
 // ============================================
@@ -3240,6 +3250,39 @@ function clearDecrementableFields() {
 // ============================================
 // PRECIO PAGADO FUNCTIONS
 // ============================================
+window.toggleEspecifiquePago = function(section, value) {
+    const groupIds = {
+        'precioPagado':   'especifiquePrecioPagadoGroup',
+        'precioPorPagar': 'especifiquePrecioPorPagarGroup',
+        'compensoPago':   'especifiqueCompensoPagoGroup'
+    };
+    const inputIds = {
+        'precioPagado':   'especifiquePrecioPagadoInput',
+        'precioPorPagar': 'especifiquePrecioPorPagarInput',
+        'compensoPago':   'especifiqueCompensoPagoInput'
+    };
+    const group = document.getElementById(groupIds[section]);
+    if (!group) return;
+    if (value === 'FORPAG.OT') {
+        group.classList.remove('hidden');
+        // Mostrar también campo de momento/situación para precio por pagar
+        if (section === 'precioPorPagar') {
+            document.getElementById('momentoSituacionGroup')?.classList.remove('hidden');
+        }
+    } else {
+        group.classList.add('hidden');
+        const input = document.getElementById(inputIds[section]);
+        if (input) input.value = '';
+        // Ocultar también campo de momento/situación para precio por pagar
+        if (section === 'precioPorPagar') {
+            const momentoGroup = document.getElementById('momentoSituacionGroup');
+            if (momentoGroup) momentoGroup.classList.add('hidden');
+            const momentoInput = document.getElementById('momentoSituacionInput');
+            if (momentoInput) momentoInput.value = '';
+        }
+    }
+};
+
 window.addPrecioPagadoToTable = function() {
     const fecha = document.getElementById('fechaPrecioPagadoInput').value;
     const importe = document.getElementById('importePrecioPagadoInput').value;
@@ -3250,6 +3293,7 @@ window.addPrecioPagadoToTable = function() {
     const tipoMoneda = tipoMonedaSelect.value;
     const tipoMonedaText = tipoMonedaSelect.options[tipoMonedaSelect.selectedIndex].text;
     const tipoCambio = document.getElementById('tipoCambioPrecioPagadoInput').value;
+    const especifique = document.getElementById('especifiquePrecioPagadoInput').value;
 
     // Validaciones
     if (!fecha) {
@@ -3264,6 +3308,11 @@ window.addPrecioPagadoToTable = function() {
 
     if (!formaPago) {
         showNotification('Por favor seleccione la forma de pago', 'error', 'Campo Requerido');
+        return;
+    }
+
+    if (formaPago === 'FORPAG.OT' && !especifique.trim()) {
+        showNotification('Por favor especifique el tipo de pago', 'error', 'Campo Requerido');
         return;
     }
 
@@ -3291,7 +3340,7 @@ window.addPrecioPagadoToTable = function() {
         importe: parseFloat(importe),
         formaPago: formaPago,
         formaPagoText: formaPagoText,
-        especifique: formaPago === 'OTROS' ? 'Especificar otros' : '',
+        especifique: especifique,
         tipoMoneda: tipoMoneda,
         tipoMonedaText: tipoMonedaText,
         tipoCambio: parseFloat(tipoCambio)
@@ -3343,6 +3392,7 @@ window.actualizarTablaPrecioPagado = function() {
             <td class="table-cell">${item.fecha || ''}</td>
             <td class="table-cell">$${importe.toFixed(3)}</td>
             <td class="table-cell">${formaPagoText}</td>
+            <td class="table-cell">${item.especifique || ''}</td>
             <td class="table-cell">${tipoMonedaText}</td>
             <td class="table-cell">${tipoCambio.toFixed(4)}</td>
         </tr>
@@ -3408,6 +3458,8 @@ function clearPrecioPagadoFields() {
     document.getElementById('formaPagoPrecioPagadoSelect').value = '';
     document.getElementById('tipoMonedaPrecioPagadoSelect').value = '';
     document.getElementById('tipoCambioPrecioPagadoInput').value = '';
+    document.getElementById('especifiquePrecioPagadoInput').value = '';
+    document.getElementById('especifiquePrecioPagadoGroup').classList.add('hidden');
 }
 
 // ============================================
@@ -3424,6 +3476,7 @@ window.addPrecioPorPagarToTable = function() {
     const tipoMonedaText = tipoMonedaSelect.options[tipoMonedaSelect.selectedIndex].text;
     const tipoCambio = document.getElementById('tipoCambioPrecioPorPagarInput').value;
     const momentoSituacion = document.getElementById('momentoSituacionInput').value;
+    const especifique = document.getElementById('especifiquePrecioPorPagarInput').value;
 
     // Validaciones
     if (!fecha) {
@@ -3451,8 +3504,8 @@ window.addPrecioPorPagarToTable = function() {
         return;
     }
 
-    if (!momentoSituacion.trim()) {
-        showNotification('Por favor describa el momento o situación cuando se realizará el pago', 'error', 'Campo Requerido');
+    if (formaPago === 'FORPAG.OT' && !especifique.trim()) {
+        showNotification('Por favor especifique el tipo de pago', 'error', 'Campo Requerido');
         return;
     }
 
@@ -3471,7 +3524,7 @@ window.addPrecioPorPagarToTable = function() {
         formaPago: formaPago,
         formaPagoText: formaPagoText,
         momentoSituacion: momentoSituacion,
-        especifique: formaPago === 'OTROS' ? 'Especificar otros' : '',
+        especifique: especifique,
         tipoMoneda: tipoMoneda,
         tipoMonedaText: tipoMonedaText,
         tipoCambio: parseFloat(tipoCambio)
@@ -3522,6 +3575,7 @@ window.actualizarTablaPrecioPorPagar = function() {
             <td class="table-cell">${item.fecha || ''}</td>
             <td class="table-cell">$${importe.toFixed(3)}</td>
             <td class="table-cell">${formaPagoText}</td>
+            <td class="table-cell">${item.especifique || ''}</td>
             <td class="table-cell">${item.momentoSituacion || ''}</td>
             <td class="table-cell">${tipoMonedaText}</td>
         </tr>
@@ -3588,6 +3642,9 @@ function clearPrecioPorPagarFields() {
     document.getElementById('tipoMonedaPrecioPorPagarSelect').value = '';
     document.getElementById('tipoCambioPrecioPorPagarInput').value = '';
     document.getElementById('momentoSituacionInput').value = '';
+    document.getElementById('momentoSituacionGroup')?.classList.add('hidden');
+    document.getElementById('especifiquePrecioPorPagarInput').value = '';
+    document.getElementById('especifiquePrecioPorPagarGroup').classList.add('hidden');
 }
 
 // ============================================
@@ -3637,8 +3694,13 @@ window.addCompensoPagoToTable = function() {
         formaPagoText: formaPagoText,
         motivo: motivo,
         prestacionMercancia: prestacionMercancia,
-        especifique: formaPago === 'OTROS' ? 'Especificar otros' : ''
+        especifique: document.getElementById('especifiqueCompensoPagoInput').value
     };
+
+    if (formaPago === 'FORPAG.OT' && !compensoPagoItem.especifique.trim()) {
+        showNotification('Por favor especifique el tipo de pago', 'error', 'Campo Requerido');
+        return;
+    }
 
     compensoPagoData.push(compensoPagoItem);
     actualizarTablaCompensoPago();
@@ -3684,6 +3746,7 @@ window.actualizarTablaCompensoPago = function() {
             <td class="table-cell">${item.motivo || ''}</td>
             <td class="table-cell">${item.prestacionMercancia || ''}</td>
             <td class="table-cell">${formaPagoText}</td>
+            <td class="table-cell">${item.especifique || ''}</td>
         </tr>
     `}).join('');
 
@@ -3746,6 +3809,8 @@ function clearCompensoPagoFields() {
     document.getElementById('formaPagoCompensoPagoSelect').value = '';
     document.getElementById('motivoCompensoPagoInput').value = '';
     document.getElementById('prestacionMercanciaInput').value = '';
+    document.getElementById('especifiqueCompensoPagoInput').value = '';
+    document.getElementById('especifiqueCompensoPagoGroup').classList.add('hidden');
 }
 
 // ============================================
@@ -3836,6 +3901,18 @@ window.saveInformacionCove = async function() {
             compenso_pago: (c.compenso_pago || []).length
         }))
     });
+
+    // Validar que cada COVE tenga al menos un pedimento registrado
+    for (const cove of informacionCove) {
+        const hasPedimento = Array.isArray(cove.pedimentos) && cove.pedimentos.length > 0;
+        if (!hasPedimento) {
+            showNotification(
+                `El COVE ${cove.numero_cove} no tiene ningún pedimento registrado. Debe agregar al menos un pedimento antes de continuar.`,
+                'error'
+            );
+            return;
+        }
+    }
 
     // Validar que cada COVE tenga al menos un tipo de pago registrado
     for (const cove of informacionCove) {
@@ -3932,6 +4009,10 @@ async function saveSection(sectionName, data, sectionLabel) {
             // Guardar el ID de la MVE retornado por el servidor
             if (result.section_id && sectionName === 'datos-manifestacion') {
                 currentMveId = result.section_id;
+                const _applicantIdForDraft = document.querySelector('[data-applicant-id]')?.getAttribute('data-applicant-id');
+                if (_applicantIdForDraft) {
+                    localStorage.setItem('mve_draft_' + _applicantIdForDraft, currentMveId);
+                }
             }
             showNotification(`${sectionLabel} guardado exitosamente`, 'success');
             return true;
@@ -4611,6 +4692,11 @@ window.confirmarGuardadoFinal = async function() {
         const result = await response.json();
 
         if (result.success) {
+            // Limpiar borrador en localStorage al finalizar exitosamente
+            const _applicantIdForDraft = document.querySelector('[data-applicant-id]')?.getAttribute('data-applicant-id');
+            if (_applicantIdForDraft) {
+                localStorage.removeItem('mve_draft_' + _applicantIdForDraft);
+            }
             showNotification('Manifestación de Valor guardada exitosamente. Ahora puede firmarla y enviarla a VUCEM.', 'success', '¡Éxito!');
             
             // Redirigir a la lista de pendientes para firmar

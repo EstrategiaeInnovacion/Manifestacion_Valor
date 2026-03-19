@@ -365,9 +365,13 @@ class MveConsultaService
                 $datosActualizar['acuse_pdf'] = $consultaData['acuse_pdf'];
             }
 
-            // Actualizar XML de respuesta
+            // Actualizar XML: separar acuse (con selloDigital) de declaración (con datosManifestacionValor)
             if (!empty($consultaData['response'])) {
-                $datosActualizar['xml_respuesta'] = $consultaData['response'];
+                if (str_contains($consultaData['response'], 'datosManifestacionValor')) {
+                    $datosActualizar['xml_declaracion'] = $consultaData['response'];
+                } else {
+                    $datosActualizar['xml_respuesta'] = $consultaData['response'];
+                }
             }
 
             // Actualizar fecha de respuesta

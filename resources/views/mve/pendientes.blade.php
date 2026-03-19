@@ -133,7 +133,7 @@
                                                 <p class="text-sm text-slate-500">
                                                     <span class="font-semibold">RFC:</span> {{ $mveData['applicant']->applicant_rfc }}
                                                 </p>
-                                                @if(in_array(auth()->user()->role, ['SuperAdmin', 'Admin']) && $mveData['datos_manifestacion']->createdByUser)
+                                                @if($mveData['datos_manifestacion']->createdByUser)
                                                     <span class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-indigo-50 border border-indigo-200 rounded-lg text-xs font-semibold text-indigo-700">
                                                         <i data-lucide="user" class="w-3 h-3"></i>
                                                         {{ $mveData['datos_manifestacion']->createdByUser->full_name }}
@@ -1220,6 +1220,9 @@
                 
                 if (result.success) {
                     cerrarModalFirma();
+                    
+                    // Limpiar borrador del localStorage para este solicitante
+                    localStorage.removeItem('mve_draft_' + applicantId);
                     
                     // Mostrar mensaje de éxito
                     const alertDiv = document.createElement('div');

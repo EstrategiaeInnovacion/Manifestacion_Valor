@@ -234,6 +234,27 @@ Route::middleware(['auth', 'license'])->group(function () {
         // 3. Consultar folio eDocument por número de operación pendiente
         Route::post('/digitalizacion/{id}/consultar-operacion', [DigitalizacionController::class , 'consultarOperacion'])
             ->name('digitalizacion.consultar-operacion');
+
+        // ==========================================================
+        // MÓDULO DE PREGUNTAS FRECUENTES (FAQs)
+        // ==========================================================
+
+        // Lista y adjuntos — visibles para todos los usuarios autenticados con licencia
+        Route::get('/faqs', [App\Http\Controllers\FaqController::class, 'index'])->name('faqs.index');
+        Route::get('/faqs/attachment/{attachment}', [App\Http\Controllers\FaqController::class, 'attachment'])->name('faqs.attachment');
+
+        // Gestión (solo SuperAdmin) — declaradas ANTES de las rutas dinámicas {faq}
+        Route::middleware('role:SuperAdmin')->group(function () {
+            Route::get('/faqs/create', [App\Http\Controllers\FaqController::class, 'create'])->name('faqs.create');
+            Route::post('/faqs', [App\Http\Controllers\FaqController::class, 'store'])->name('faqs.store');
+            Route::get('/faqs/{faq}/edit', [App\Http\Controllers\FaqController::class, 'edit'])->name('faqs.edit');
+            Route::put('/faqs/{faq}', [App\Http\Controllers\FaqController::class, 'update'])->name('faqs.update');
+            Route::delete('/faqs/{faq}', [App\Http\Controllers\FaqController::class, 'destroy'])->name('faqs.destroy');
+            Route::delete('/faqs/attachment/{attachment}', [App\Http\Controllers\FaqController::class, 'destroyAttachment'])->name('faqs.attachment.destroy');
+        });
+
+        // Vista individual — accesible para todos los usuarios autenticados con licencia
+        Route::get('/faqs/{faq}', [App\Http\Controllers\FaqController::class, 'show'])->name('faqs.show');
     });
 
 require __DIR__ . '/auth.php';

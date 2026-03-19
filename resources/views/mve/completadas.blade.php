@@ -118,7 +118,7 @@
                                         </div>
                                         <div class="flex flex-wrap items-center gap-3 mb-1">
                                             <p class="text-slate-500 text-sm">RFC: {{ $acuse->applicant->applicant_rfc ?? 'N/A' }}</p>
-                                            @if(in_array(auth()->user()->role, ['SuperAdmin', 'Admin']) && $acuse->datosManifestacion?->createdByUser)
+                                            @if($acuse->datosManifestacion?->createdByUser)
                                                 <span class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-indigo-50 border border-indigo-200 rounded-lg text-xs font-semibold text-indigo-700">
                                                     <i data-lucide="user" class="w-3 h-3"></i>
                                                     {{ $acuse->datosManifestacion->createdByUser->full_name }}
@@ -186,13 +186,7 @@
                                         </a>
                                     @endif
 
-                                    @if($acuse->xml_enviado)
-                                        <button onclick="verXml({{ $acuse->id }})"
-                                           class="inline-flex items-center px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-lg transition-all">
-                                            <i data-lucide="code" class="w-4 h-4 mr-2"></i>
-                                            XML
-                                        </button>
-                                    @endif
+                                    {{-- Botón XML de transmisión ocultado (usar el XML del acuse de consulta) --}}
                                 </div>
                             </div>
                             
@@ -284,6 +278,83 @@
             </div>
 
             <div class="flex-1 overflow-auto p-6">
+
+                {{-- Nota de instrucciones --}}
+                <div class="mb-6 border border-slate-200 rounded-xl overflow-hidden">
+                    <button type="button"
+                            onclick="toggleNota()"
+                            class="w-full flex items-center justify-between px-4 py-3 text-left bg-slate-50 hover:bg-slate-100 transition-colors">
+                        <span class="flex items-center gap-2 text-sm font-bold text-slate-600">
+                            <i data-lucide="info" class="w-4 h-4 text-emerald-600 shrink-0"></i>
+                            ¿Cómo consultar y descargar los archivos?
+                        </span>
+                        <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400 transition-transform duration-200" id="notaChevron"></i>
+                    </button>
+                    <div id="notaContenido" class="hidden bg-white divide-y divide-slate-100">
+
+                        {{-- Bloque 1: Consulta XML --}}
+                        <div class="px-4 py-4">
+                            <p class="text-xs font-bold text-emerald-700 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                                <i data-lucide="file-code" class="w-3.5 h-3.5 shrink-0"></i>
+                                Obtener número de MV y XML
+                            </p>
+                            <ol class="space-y-2 text-sm text-slate-600">
+                                <li class="flex gap-2.5">
+                                    <span class="w-5 h-5 rounded-full bg-emerald-100 text-emerald-700 text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">1</span>
+                                    <span>Copie el folio generado por VUCEM que aparece junto a la MVE en la lista.</span>
+                                </li>
+                                <li class="flex gap-2.5">
+                                    <span class="w-5 h-5 rounded-full bg-emerald-100 text-emerald-700 text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">2</span>
+                                    <span>Haga clic en el botón Consultar de la MVE correspondiente.</span>
+                                </li>
+                                <li class="flex gap-2.5">
+                                    <span class="w-5 h-5 rounded-full bg-emerald-100 text-emerald-700 text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">3</span>
+                                    <span>Pegue el folio en el campo Folio de Manifestación, ingrese su clave Web Service y presione Consultar.</span>
+                                </li>
+                                <li class="flex gap-2.5">
+                                    <span class="w-5 h-5 rounded-full bg-emerald-100 text-emerald-700 text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">4</span>
+                                    <span>El sistema devolverá el Número de MV y el botón para descargar el XML sellado.</span>
+                                </li>
+                                <li class="flex gap-2.5">
+                                    <span class="w-5 h-5 rounded-full bg-emerald-100 text-emerald-700 text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">5</span>
+                                    <span>El XML de transmisión (generado al firmar la MVE) también se puede descargar desde el botón XML en la lista de completadas.</span>
+                                </li>
+                            </ol>
+                        </div>
+
+                        {{-- Bloque 2: PDF E2 --}}
+                        <div class="px-4 py-4">
+                            <p class="text-xs font-bold text-blue-700 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                                <i data-lucide="file-text" class="w-3.5 h-3.5 shrink-0"></i>
+                                Descargar el documento E2 en PDF
+                            </p>
+                            <ol class="space-y-2 text-sm text-slate-600">
+                                <li class="flex gap-2.5">
+                                    <span class="w-5 h-5 rounded-full bg-blue-100 text-blue-700 text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">1</span>
+                                    <span>Ingrese a VUCEM con su e.firma.</span>
+                                </li>
+                                <li class="flex gap-2.5">
+                                    <span class="w-5 h-5 rounded-full bg-blue-100 text-blue-700 text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">2</span>
+                                    <span>Busque la MVE usando el Número de MV obtenido al consultar (ej. MNVA26…). Puede filtrar por fecha de transmisión.</span>
+                                </li>
+                                <li class="flex gap-2.5">
+                                    <span class="w-5 h-5 rounded-full bg-blue-100 text-blue-700 text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">3</span>
+                                    <span>Seleccione la MVE en la lista que muestra VUCEM.</span>
+                                </li>
+                                <li class="flex gap-2.5">
+                                    <span class="w-5 h-5 rounded-full bg-blue-100 text-blue-700 text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">4</span>
+                                    <span>En la parte superior aparecerá el botón Descargar PDF para obtener el documento E2.</span>
+                                </li>
+                            </ol>
+                            <div class="mt-3 flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2.5">
+                                <i data-lucide="triangle-alert" class="w-4 h-4 shrink-0 text-amber-500 mt-0.5"></i>
+                                <p class="text-xs text-amber-800 leading-relaxed">Por el momento VUCEM no ha implementado una forma de obtener el documento E2 en PDF mediante Web Services. La descarga debe realizarse directamente desde el portal de VUCEM.</p>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
                 {{-- Formulario de consulta --}}
                 <form id="formConsulta" onsubmit="consultarManifestacion(event)" class="space-y-4">
                     <input type="hidden" id="consultaAcuseId" name="acuse_id">
@@ -395,10 +466,16 @@
         
         function verXml(acuseId) {
             const xml = xmlData[acuseId];
-            if (xml) {
-                document.getElementById('xmlContent').textContent = xml;
-                document.getElementById('xmlModal').classList.remove('hidden');
-            }
+            if (!xml) return;
+            const blob = new Blob([xml], { type: 'application/xml' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'xml_mve_' + acuseId + '.xml';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
         }
         
         function cerrarXmlModal() {
@@ -433,6 +510,14 @@
 
         // Variable global para saber si se usan credenciales almacenadas en consulta
         let consultaUsaCredencialesAlmacenadas = false;
+
+        function toggleNota() {
+            const contenido = document.getElementById('notaContenido');
+            const chevron   = document.getElementById('notaChevron');
+            const isHidden  = contenido.classList.contains('hidden');
+            contenido.classList.toggle('hidden', !isHidden);
+            chevron.style.transform = isHidden ? 'rotate(180deg)' : '';
+        }
 
         function abrirModalConsulta(acuseId, rfc) {
             const acuse = acusesData[acuseId];
@@ -1135,10 +1220,10 @@
                                                 <i data-lucide="eye" class="w-4 h-4 mr-2"></i>
                                                 Ver Datos Completos
                                             </button>
-                                            <a href="/mve/consultar/${data.acuse_id}/xml" target="_blank"
+                                            <a href="/mve/consultar/${data.acuse_id}/xml" download
                                                 class="flex-1 min-w-[140px] px-4 py-2.5 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-lg transition-all flex items-center justify-center no-underline">
-                                                <i data-lucide="file-down" class="w-4 h-4 mr-2"></i>
-                                                Descargar XML Acuse
+                                                <i data-lucide="download" class="w-4 h-4 mr-2"></i>
+                                                Descargar XML
                                             </a>
                                             <button onclick="window.location.reload()"
                                                 class="flex-1 min-w-[140px] px-4 py-2.5 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg transition-all flex items-center justify-center">
@@ -1148,10 +1233,10 @@
                                         </div>
                                     ` : `
                                         <div class="flex flex-wrap gap-2 mt-4">
-                                            <a href="/mve/consultar/${data.acuse_id}/xml" target="_blank"
+                                            <a href="/mve/consultar/${data.acuse_id}/xml" download
                                                 class="flex-1 min-w-[140px] px-4 py-2.5 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-lg transition-all flex items-center justify-center no-underline">
-                                                <i data-lucide="file-down" class="w-4 h-4 mr-2"></i>
-                                                Descargar XML Acuse
+                                                <i data-lucide="download" class="w-4 h-4 mr-2"></i>
+                                                Descargar XML
                                             </a>
                                             <button onclick="window.location.reload()"
                                                 class="flex-1 min-w-[140px] px-4 py-2.5 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg transition-all flex items-center justify-center">

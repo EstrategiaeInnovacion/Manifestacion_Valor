@@ -19,6 +19,7 @@ class MvAcuse extends Model
         'numero_cove',
         'xml_enviado',
         'xml_respuesta',
+        'xml_declaracion',
         'acuse_pdf',
         'status',
         'mensaje_vucem',

@@ -567,7 +567,7 @@
                                     Forma de Pago
                                     <span class="text-red-500">*</span>
                                 </label>
-                                <select id="formaPagoPrecioPagadoSelect" class="form-select">
+                                <select id="formaPagoPrecioPagadoSelect" class="form-select" onchange="toggleEspecifiquePago('precioPagado', this.value)">
                                     <option value="">Seleccione un valor</option>
                                     @foreach($formasPago as $clave => $descripcion)
                                         <option value="{{ $clave }}">{{ $descripcion }}</option>
@@ -586,6 +586,19 @@
                                         <option value="{{ $codigo }}">{{ $codigo }} - {{ $descripcion }}</option>
                                     @endforeach
                                 </select>
+                            </div>
+                        </div>
+
+                        <div id="especifiquePrecioPagadoGroup" class="hidden">
+                            <div class="form-row">
+                                <div class="form-group flex-1">
+                                    <label class="form-label">
+                                        Especifique
+                                        <span class="text-red-500">*</span>
+                                    </label>
+                                    <input type="text" id="especifiquePrecioPagadoInput" class="form-input" placeholder="Especifique el tipo de pago" maxlength="70">
+                                </div>
+                                <div class="form-group flex-1"></div>
                             </div>
                         </div>
 
@@ -626,13 +639,14 @@
                                         <th>Fecha Pago</th>
                                         <th>Importe</th>
                                         <th>Forma de pago</th>
+                                        <th>Especifique</th>
                                         <th>Tipo moneda</th>
                                         <th>Tipo cam</th>
                                     </tr>
                                 </thead>
                                 <tbody id="precioPagadoTableBody">
                                     <tr>
-                                        <td colspan="6" class="table-empty">
+                                        <td colspan="7" class="table-empty">
                                             <i data-lucide="inbox" class="w-8 h-8 text-slate-300"></i>
                                             <p class="text-sm text-slate-400 mt-2">No hay conceptos de precio pagado agregados</p>
                                         </td>
@@ -682,7 +696,7 @@
                                     Forma de Pago
                                     <span class="text-red-500">*</span>
                                 </label>
-                                <select id="formaPagoPrecioPorPagarSelect" class="form-select">
+                                <select id="formaPagoPrecioPorPagarSelect" class="form-select" onchange="toggleEspecifiquePago('precioPorPagar', this.value)">
                                     <option value="">Seleccione un valor</option>
                                     @foreach($formasPago as $clave => $descripcion)
                                         <option value="{{ $clave }}">{{ $descripcion }}</option>
@@ -718,12 +732,26 @@
                             </div>
                         </div>
 
-                        <div class="form-group">
-                            <label class="form-label">
-                                Momento(s) o situación(es) cuando se realizará el pago
-                                <span class="text-red-500">*</span>
-                            </label>
-                            <textarea id="momentoSituacionInput" class="form-input" rows="3" placeholder="Describa el momento o situación cuando se realizará el pago"></textarea>
+                        <div id="especifiquePrecioPorPagarGroup" class="hidden">
+                            <div class="form-row">
+                                <div class="form-group flex-1">
+                                    <label class="form-label">
+                                        Especifique
+                                        <span class="text-red-500">*</span>
+                                    </label>
+                                    <input type="text" id="especifiquePrecioPorPagarInput" class="form-input" placeholder="Especifique el tipo de pago" maxlength="70">
+                                </div>
+                                <div class="form-group flex-1"></div>
+                            </div>
+                        </div>
+
+                        <div id="momentoSituacionGroup" class="hidden">
+                            <div class="form-group">
+                                <label class="form-label">
+                                    Momento(s) o situación(es) cuando se realizará el pago
+                                </label>
+                                <textarea id="momentoSituacionInput" class="form-input" rows="3" placeholder="Describa el momento o situación cuando se realizará el pago"></textarea>
+                            </div>
                         </div>
 
                         <div class="form-actions-inline">
@@ -749,13 +777,14 @@
                                         <th>Fecha Pago</th>
                                         <th>Importe</th>
                                         <th>Forma de pago</th>
+                                        <th>Especifique</th>
                                         <th>Momento(s) o situación(es) cuando se realizará el pago</th>
                                         <th>Tipo mon</th>
                                     </tr>
                                 </thead>
                                 <tbody id="precioPorPagarTableBody">
                                     <tr>
-                                        <td colspan="6" class="table-empty">
+                                        <td colspan="7" class="table-empty">
                                             <i data-lucide="inbox" class="w-8 h-8 text-slate-300"></i>
                                             <p class="text-sm text-slate-400 mt-2">NO HAY CONCEPTOS DE PRECIO POR PAGAR AGREGADOS</p>
                                         </td>
@@ -795,12 +824,25 @@
                                     Forma de Pago
                                     <span class="text-red-500">*</span>
                                 </label>
-                                <select id="formaPagoCompensoPagoSelect" class="form-select">
+                                <select id="formaPagoCompensoPagoSelect" class="form-select" onchange="toggleEspecifiquePago('compensoPago', this.value)">
                                     <option value="">Seleccione un valor</option>
                                     @foreach($formasPago as $clave => $descripcion)
                                         <option value="{{ $clave }}">{{ $descripcion }}</option>
                                     @endforeach
                                 </select>
+                            </div>
+                        </div>
+
+                        <div id="especifiqueCompensoPagoGroup" class="hidden">
+                            <div class="form-row">
+                                <div class="form-group flex-1">
+                                    <label class="form-label">
+                                        Especifique
+                                        <span class="text-red-500">*</span>
+                                    </label>
+                                    <input type="text" id="especifiqueCompensoPagoInput" class="form-input" placeholder="Especifique el tipo de pago" maxlength="70">
+                                </div>
+                                <div class="form-group flex-1"></div>
                             </div>
                         </div>
 
@@ -844,11 +886,12 @@
                                         <th>Motivo</th>
                                         <th>Prestación de la mercancía</th>
                                         <th>Forma de pago</th>
+                                        <th>Especifique</th>
                                     </tr>
                                 </thead>
                                 <tbody id="compensoPagoTableBody">
                                     <tr>
-                                        <td colspan="5" class="table-empty">
+                                        <td colspan="6" class="table-empty">
                                             <i data-lucide="inbox" class="w-8 h-8 text-slate-300"></i>
                                             <p class="text-sm text-slate-400 mt-2">NO HAY CONCEPTOS DE COMPENSO PAGO AGREGADOS</p>
                                         </td>

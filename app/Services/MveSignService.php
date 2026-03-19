@@ -258,10 +258,10 @@ class MveSignService
             if (!empty($compensosPago)) {
                 foreach ($compensosPago as $cp) {
                     $xml .= '<compensoPago>';
+                    $xml .= '<tipoPago>' . ($cp['tipoPago'] ?? $cp['formaPago'] ?? $cp['tipo_pago'] ?? '') . '</tipoPago>';
                     $xml .= '<fecha>' . $this->mveService->formatXmlDate($cp['fecha'] ?? '') . '</fecha>';
                     $xml .= '<motivo>' . htmlspecialchars($cp['motivo'] ?? '', ENT_XML1) . '</motivo>';
-                    $xml .= '<prestacionMercancia>' . ($cp['prestacionMercancia'] ?? $cp['prestacion_mercancia'] ?? '') . '</prestacionMercancia>';
-                    $xml .= '<tipoPago>' . ($cp['tipoPago'] ?? $cp['formaPago'] ?? $cp['tipo_pago'] ?? '') . '</tipoPago>';
+                    $xml .= '<prestacionMercancia>' . htmlspecialchars($cp['prestacionMercancia'] ?? $cp['prestacion_mercancia'] ?? '', ENT_XML1) . '</prestacionMercancia>';
                     if (!empty($cp['especifique']))
                         $xml .= '<especifique>' . htmlspecialchars($cp['especifique'], ENT_XML1) . '</especifique>';
                     $xml .= '</compensoPago>';

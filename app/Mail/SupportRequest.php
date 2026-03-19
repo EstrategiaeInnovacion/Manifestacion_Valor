@@ -64,7 +64,7 @@ class SupportRequest
                 $allAttachments[] = $attachment;
             }
 
-            $supportEmail = config('mail.support_address', 'soporte@tuempresa.com');
+            $supportEmail = config('mail.support_address');
             $mailService  = app(MicrosoftGraphMailService::class);
 
             return $mailService->sendMail(
