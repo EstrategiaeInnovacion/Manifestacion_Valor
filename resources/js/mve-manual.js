@@ -3917,7 +3917,16 @@ async function saveSection(sectionName, data, sectionLabel) {
             body: JSON.stringify(data)
         });
 
-        const result = await response.json();
+        let result;
+        try {
+            result = await response.json();
+        } catch (parseError) {
+            // El servidor devolvió HTML en lugar de JSON (ej. error 500, sesión expirada)
+            const text = await response.text().catch(() => '');
+            console.error(`[saveSection] Respuesta no-JSON del servidor (${response.status}):`, text.substring(0, 500));
+            showNotification(`Error al guardar ${sectionLabel}: el servidor devolvió un error inesperado (${response.status}). Revise los logs.`, 'error');
+            return false;
+        }
 
         if (result.success) {
             // Guardar el ID de la MVE retornado por el servidor
@@ -3931,7 +3940,8 @@ async function saveSection(sectionName, data, sectionLabel) {
             return false;
         }
     } catch (error) {
-        showNotification(`Error al guardar ${sectionLabel}. Por favor intente nuevamente.`, 'error');
+        console.error(`[saveSection] Error inesperado en ${sectionLabel}:`, error);
+        showNotification(`Error al guardar ${sectionLabel}: ${error.message}`, 'error');
         return false;
     }
 }

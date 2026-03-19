@@ -37,8 +37,18 @@ class MvDatosManifestacion extends Model
         static::creating(function (self $model) {
             if (empty($model->folio_interno)) {
                 $year = date('Y');
-                $count = self::whereYear('created_at', $year)->count() + 1;
-                $model->folio_interno = 'MVE-' . $year . '-' . str_pad($count, 5, '0', STR_PAD_LEFT);
+                // Usar MAX en lugar de COUNT para evitar colisiones cuando existen
+                // registros eliminados o intentos fallidos previos que ya consumieron un número
+                $maxFolio = self::whereYear('created_at', $year)
+                    ->where('folio_interno', 'like', 'MVE-' . $year . '-%')
+                    ->max('folio_interno');
+                if ($maxFolio) {
+                    $lastNum = (int) substr($maxFolio, strrpos($maxFolio, '-') + 1);
+                    $next = $lastNum + 1;
+                } else {
+                    $next = 1;
+                }
+                $model->folio_interno = 'MVE-' . $year . '-' . str_pad($next, 5, '0', STR_PAD_LEFT);
             }
         });
     }

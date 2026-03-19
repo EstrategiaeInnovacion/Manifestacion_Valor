@@ -432,46 +432,67 @@ class MveController extends Controller
      */
     public function saveDatosManifestacion(Request $request, $applicantId)
     {
-        $applicant = MvClientApplicant::findOrFail($applicantId);
-        
-        // Verificar que el solicitante pertenece al usuario actual
-        if (!auth()->user()->canAccessApplicant($applicant)) {
+        try {
+            $applicant = MvClientApplicant::findOrFail($applicantId);
+
+            // Verificar que el solicitante pertenece al usuario actual
+            if (!auth()->user()->canAccessApplicant($applicant)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No tienes permiso para acceder a este solicitante.'
+                ], 403);
+            }
+
+            // mve_id: si se envía → actualizar esa MVE específica
+            // Si no → buscar borrador existente para este applicant antes de crear uno nuevo
+            $mveId = $request->input('mve_id') ? (int)$request->input('mve_id') : null;
+            if ($mveId) {
+                $datosManifestacion = MvDatosManifestacion::where('id', $mveId)
+                    ->where('applicant_id', $applicantId)
+                    ->first();
+            } else {
+                // Reutilizar borrador existente para evitar duplicados de folio_interno
+                $datosManifestacion = MvDatosManifestacion::where('applicant_id', $applicantId)
+                    ->where('status', 'borrador')
+                    ->latest('id')
+                    ->first();
+            }
+
+            $datosActualizar = [
+                'rfc_importador' => ($request->rfc_importador ?: $applicant->applicant_rfc),
+                'metodo_valoracion' => $request->metodo_valoracion,
+                'existe_vinculacion' => $request->existe_vinculacion,
+                'pedimento' => $request->pedimento,
+                'patente' => $request->patente,
+                'aduana' => $request->aduana,
+                'persona_consulta' => $request->persona_consulta,
+                'status' => 'borrador',
+            ];
+
+            if ($datosManifestacion) {
+                $datosManifestacion->update($datosActualizar);
+            } else {
+                $datosActualizar['applicant_id'] = $applicantId;
+                $datosActualizar['created_by_user_id'] = auth()->id();
+                $datosManifestacion = MvDatosManifestacion::create($datosActualizar);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Datos de Manifestación guardados exitosamente',
+                'section_id' => $datosManifestacion->id
+            ]);
+        } catch (\Exception $e) {
+            Log::error('[MVE] Error en saveDatosManifestacion', [
+                'applicant_id' => $applicantId,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
             return response()->json([
                 'success' => false,
-                'message' => 'No tienes permiso para acceder a este solicitante.'
-            ], 403);
+                'message' => 'Error al guardar: ' . $e->getMessage()
+            ], 500);
         }
-        
-        // mve_id: si se envía → actualizar esa MVE; si no → crear nueva
-        $mveId = $request->input('mve_id') ? (int)$request->input('mve_id') : null;
-        $datosManifestacion = $mveId
-            ? MvDatosManifestacion::where('id', $mveId)->where('applicant_id', $applicantId)->first()
-            : null;
-        
-        $datosActualizar = [
-            'rfc_importador' => ($request->rfc_importador ?: $applicant->applicant_rfc),
-            'metodo_valoracion' => $request->metodo_valoracion,
-            'existe_vinculacion' => $request->existe_vinculacion,
-            'pedimento' => $request->pedimento,
-            'patente' => $request->patente,
-            'aduana' => $request->aduana,
-            'persona_consulta' => $request->persona_consulta,
-            'status' => 'borrador', // Al editar, vuelve a borrador
-        ];
-        
-        if ($datosManifestacion) {
-            $datosManifestacion->update($datosActualizar);
-        } else {
-            $datosActualizar['applicant_id'] = $applicantId;
-            $datosActualizar['created_by_user_id'] = auth()->id();
-            $datosManifestacion = MvDatosManifestacion::create($datosActualizar);
-        }
-        
-        return response()->json([
-            'success' => true,
-            'message' => 'Datos de ManifestaciÃ³n guardados exitosamente',
-            'section_id' => $datosManifestacion->id
-        ]);
     }
 
     /**
