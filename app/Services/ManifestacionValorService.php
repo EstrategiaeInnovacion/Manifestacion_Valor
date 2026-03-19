@@ -98,11 +98,14 @@ class ManifestacionValorService
         if (!empty($covesList)) {
             if (empty($covesList[0]['pedimentos']) && !empty($informacionCove->pedimentos))
                 $covesList[0]['pedimentos'] = $informacionCove->pedimentos ?? [];
-            if (empty($covesList[0]['precios_pagados']))
-                $covesList[0]['precios_pagados'] = $informacionCove->precios_pagados ?? $informacionCove->precio_pagado ?? [];
-            if (empty($covesList[0]['precio_por_pagar']))
+            // IMPORTANTE: solo migrar precios_pagados si hay dato en la columna plana (formato antiguo).
+            // Sin esta guarda, en formato nuevo el compat sobreescribe con [] y el ?? del loop
+            // no puede caer al precio_pagado real que está anidado en el COVE.
+            if (empty($covesList[0]['precios_pagados']) && !empty($informacionCove->precio_pagado))
+                $covesList[0]['precios_pagados'] = $informacionCove->precio_pagado ?? [];
+            if (empty($covesList[0]['precio_por_pagar']) && !empty($informacionCove->precio_por_pagar))
                 $covesList[0]['precio_por_pagar'] = $informacionCove->precio_por_pagar ?? [];
-            if (empty($covesList[0]['compenso_pago']))
+            if (empty($covesList[0]['compenso_pago']) && !empty($informacionCove->compenso_pago))
                 $covesList[0]['compenso_pago'] = $informacionCove->compenso_pago ?? [];
             if (empty($covesList[0]['incrementables']) && !empty($informacionCove->incrementables))
                 $covesList[0]['incrementables'] = $informacionCove->incrementables ?? [];
