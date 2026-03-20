@@ -11,9 +11,6 @@
          class="mve-data-container"
          data-applicant-rfc="{{ $applicant->applicant_rfc }}"
          data-applicant-id="{{ $applicant->id }}"
-         data-search-url="{{ route('mve.rfc-consulta.search') }}"
-         data-store-url="{{ route('mve.rfc-consulta.store') }}"
-         data-delete-url="{{ route('mve.rfc-consulta.delete') }}"
          data-persona-consulta='@json(optional($datosManifestacion)->persona_consulta ?? [])'
          data-metodo-valoracion="{{ optional($datosManifestacion)->metodo_valoracion ?? '' }}"
          data-existe-vinculacion="{{ optional($datosManifestacion)->existe_vinculacion ?? '' }}"
@@ -253,58 +250,6 @@
                 <button type="button" onclick="ejecutarBorrarBorrador()" class="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition-colors">
                     Sí, Borrar
                 </button>
-            </div>
-        </div>
-    </div>
-
-    {{-- Modales --}}
-    {{-- Modal: RFC No Encontrado --}}
-    <div id="rfcNotFoundModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onclick="if(event.target === this) closeRfcNotFoundModal()">
-        <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 overflow-hidden">
-            <div class="bg-gradient-to-r from-red-500 to-red-600 px-6 py-4">
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
-                        <i data-lucide="alert-circle" class="w-6 h-6 text-white"></i>
-                    </div>
-                    <h3 class="text-xl font-bold text-white">RFC No Encontrado</h3>
-                </div>
-            </div>
-            <div class="p-6">
-                <p class="text-slate-700 text-center mb-6">
-                    El RFC no se encuentra registrado en la BD del sistema
-                </p>
-                <div class="flex justify-center">
-                    <button onclick="closeRfcNotFoundModal()" class="px-6 py-2.5 bg-slate-600 hover:bg-slate-700 text-white font-semibold rounded-lg transition-colors">
-                        Entendido
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    {{-- Modal: RFC Encontrado --}}
-    <div id="rfcFoundModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onclick="if(event.target === this) closeRfcFoundModal()">
-        <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 overflow-hidden">
-            <div class="bg-gradient-to-r from-green-500 to-green-600 px-6 py-4">
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
-                        <i data-lucide="check-circle" class="w-6 h-6 text-white"></i>
-                    </div>
-                    <h3 class="text-xl font-bold text-white">RFC Encontrado</h3>
-                </div>
-            </div>
-            <div class="p-6">
-                <p class="text-slate-700 text-center mb-6">
-                    El RFC de consulta existe en la BD del sistema
-                </p>
-                <div class="flex gap-3 justify-center">
-                    <button onclick="closeRfcFoundModal()" class="px-6 py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold rounded-lg transition-colors">
-                        Cancelar
-                    </button>
-                    <button onclick="confirmAddRfcConsulta()" class="px-6 py-2.5 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-colors">
-                        Aceptar
-                    </button>
-                </div>
             </div>
         </div>
     </div>

@@ -13,6 +13,7 @@ use App\Http\Controllers\LicenseController;
 use App\Http\Controllers\AnnouncementController;
 use App\Models\MvClientApplicant;
 use App\Models\MvDatosManifestacion;
+use App\Models\User;
 use App\Models\MvInformacionCove;
 use App\Models\MvDocumentos;
 use App\Models\MvAcuse;
@@ -35,7 +36,19 @@ Route::get('/dashboard', function () {
     $user = auth()->user();
 
     if ($user->role === 'SuperAdmin') {
-        $applicantIds = MvClientApplicant::pluck('id');
+        // SuperAdmin solo ve datos de su propia empresa (nunca de otras empresas)
+        if (empty($user->company)) {
+            $applicantIds = MvClientApplicant::where('created_by_user_id', $user->id)->pluck('id');
+        } else {
+            $cIds    = User::where('company', $user->company)->pluck('id');
+            $cEmails = User::where('company', $user->company)->pluck('email');
+            $applicantIds = MvClientApplicant::where(function ($q) use ($cIds, $cEmails) {
+                $q->whereIn('created_by_user_id', $cIds)
+                  ->orWhere(function ($sub) use ($cEmails) {
+                      $sub->whereNull('created_by_user_id')->whereIn('user_email', $cEmails);
+                  });
+            })->pluck('id');
+        }
     } elseif ($user->role === 'Admin') {
         $applicantIds = MvClientApplicant::where(function($q) use ($user) {
             $q->where('created_by_user_id', $user->id)
@@ -63,7 +76,19 @@ Route::middleware(['auth', 'license'])->group(function () {
     Route::get('/mve/pending-count', function () {
         $user = auth()->user();
         if ($user->role === 'SuperAdmin') {
-            $applicantIds = MvClientApplicant::pluck('id');
+            // SuperAdmin solo ve datos de su propia empresa
+            if (empty($user->company)) {
+                $applicantIds = MvClientApplicant::where('created_by_user_id', $user->id)->pluck('id');
+            } else {
+                $cIds    = User::where('company', $user->company)->pluck('id');
+                $cEmails = User::where('company', $user->company)->pluck('email');
+                $applicantIds = MvClientApplicant::where(function ($q) use ($cIds, $cEmails) {
+                    $q->whereIn('created_by_user_id', $cIds)
+                      ->orWhere(function ($sub) use ($cEmails) {
+                          $sub->whereNull('created_by_user_id')->whereIn('user_email', $cEmails);
+                      });
+                })->pluck('id');
+            }
         } elseif ($user->role === 'Admin') {
             $applicantIds = MvClientApplicant::where(function($q) use ($user) {
                 $q->where('created_by_user_id', $user->id)
@@ -149,11 +174,6 @@ Route::middleware(['auth', 'license'])->group(function () {
         Route::get('/mve/manual/{applicant}', [MveController::class , 'createManual'])->name('mve.create-manual');
         Route::get('/mve/archivo-m/{applicant}', [MveController::class , 'createWithFile'])->name('mve.upload-file');
         Route::post('/mve/archivo-m/{applicant}', [MveController::class , 'createWithFile'])->name('mve.process-file');
-
-        // Rutas para RFC de consulta
-        Route::post('/mve/rfc-consulta/search', [MveController::class , 'searchRfcConsulta'])->name('mve.rfc-consulta.search');
-        Route::post('/mve/rfc-consulta/store', [MveController::class , 'storeRfcConsulta'])->name('mve.rfc-consulta.store');
-        Route::delete('/mve/rfc-consulta/delete', [MveController::class , 'deleteRfcConsulta'])->name('mve.rfc-consulta.delete');
 
         // Rutas para borradores MVE por sección
         Route::get('/mve/pendientes', [MveController::class , 'pendientes'])->name('mve.pendientes');

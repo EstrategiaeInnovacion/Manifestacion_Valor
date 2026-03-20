@@ -2,7 +2,6 @@
 import axios from 'axios';
 
 // Variables globales
-let currentSearchedRfc = null;
 let selectedCoveRow = null;
 let pedimentosData = [];
 let incrementablesData = [];
@@ -1540,54 +1539,14 @@ window.digitalizarDocumento = async function() {
 };
 
 // ============================================
-// RFC DE CONSULTA
+// RFC DE CONSULTA (solo local, sin persistencia en BD)
 // ============================================
-window.searchRfcConsulta = async function() {
-    const rfcInput = document.getElementById('rfcConsultaInput');
-    const rfcValue = rfcInput.value.trim().toUpperCase();
-    const applicantRfc = document.querySelector('[data-applicant-rfc]').getAttribute('data-applicant-rfc');
-
-    if (!rfcValue) {
-        showNotification('Por favor ingrese un RFC para buscar', 'warning');
-        return;
-    }
-
-    if (rfcValue.length < 12 || rfcValue.length > 13) {
-        showNotification('El RFC debe tener entre 12 y 13 caracteres', 'warning');
-        return;
-    }
-
-    try {
-        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-        const searchUrl = document.querySelector('[data-search-url]').getAttribute('data-search-url');
-        
-        const response = await fetch(searchUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': csrfToken
-            },
-            body: JSON.stringify({
-                applicant_rfc: applicantRfc,
-                rfc_consulta: rfcValue
-            })
-        });
-
-        const data = await response.json();
-
-        if (data.found) {
-            document.getElementById('tipoFiguraConsulta').value = data.data.tipo_figura;
-            currentSearchedRfc = data.data;
-            showRfcFoundModal();
-        } else {
-            showRfcNotFoundModal();
-        }
-    } catch (error) {
-        showNotification('Error al buscar el RFC. Por favor intente nuevamente.', 'error');
-    }
+window.searchRfcConsulta = function() {
+    // Sin BD: el botón buscar ya no tiene función, solo se agrega directamente
+    window.addRfcConsulta();
 };
 
-window.addRfcConsulta = async function() {
+window.addRfcConsulta = function() {
     const rfcValue = document.getElementById('rfcConsultaInput').value.trim().toUpperCase();
     const tipoFiguraSelect = document.getElementById('tipoFiguraConsulta');
     const tipoFigura = tipoFiguraSelect.value;
@@ -1625,85 +1584,9 @@ window.addRfcConsulta = async function() {
         return;
     }
 
-    await saveAndAddRfcConsulta(rfcValue, tipoFigura, tipoFiguraTexto);
+    addRfcToTable(rfcValue, tipoFiguraTexto, tipoFigura);
+    clearRfcConsultaFields();
 };
-
-window.showRfcNotFoundModal = function() {
-    document.getElementById('rfcNotFoundModal').classList.remove('hidden');
-};
-
-window.closeRfcNotFoundModal = function() {
-    document.getElementById('rfcNotFoundModal').classList.add('hidden');
-};
-
-window.showRfcFoundModal = function() {
-    document.getElementById('rfcFoundModal').classList.remove('hidden');
-};
-
-window.closeRfcFoundModal = function() {
-    document.getElementById('rfcFoundModal').classList.add('hidden');
-};
-
-window.confirmAddRfcConsulta = async function() {
-    const rfcValue = document.getElementById('rfcConsultaInput').value.trim().toUpperCase();
-    const tipoFiguraSelect = document.getElementById('tipoFiguraConsulta');
-    const tipoFigura = tipoFiguraSelect.value;
-    const tipoFiguraTexto = tipoFiguraSelect.options[tipoFiguraSelect.selectedIndex].text;
-
-    if (!rfcValue || !tipoFigura) {
-        showNotification('Por favor complete todos los campos', 'warning');
-        return;
-    }
-
-    closeRfcFoundModal();
-
-    if (currentSearchedRfc) {
-        addRfcToTable(rfcValue, tipoFiguraTexto, tipoFigura);
-        clearRfcConsultaFields();
-        currentSearchedRfc = null;
-        return;
-    }
-
-    await saveAndAddRfcConsulta(rfcValue, tipoFigura, tipoFiguraTexto);
-};
-
-async function saveAndAddRfcConsulta(rfc, tipoFigura, tipoFiguraTexto) {
-    try {
-        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-        const storeUrl = document.querySelector('[data-store-url]').getAttribute('data-store-url');
-        const applicantRfc = document.querySelector('[data-applicant-rfc]').getAttribute('data-applicant-rfc');
-
-        const response = await fetch(storeUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': csrfToken
-            },
-            body: JSON.stringify({
-                applicant_rfc: applicantRfc,
-                rfc_consulta: rfc,
-                tipo_figura: tipoFigura
-            })
-        });
-
-        const data = await response.json();
-
-        if (data.success || (data.message && data.message.includes('ya está registrado'))) {
-            addRfcToTable(rfc, tipoFiguraTexto, tipoFigura);
-            clearRfcConsultaFields();
-        } else if (data.errors) {
-            let errorMessages = [];
-            for (let field in data.errors) {
-                errorMessages.push(data.errors[field].join(', '));
-            }
-            showNotification('Errores de validación:\n' + errorMessages.join('\n'), 'error');
-        } else {
-            showNotification(data.message || 'Error al guardar el RFC', 'error');
-        }
-    } catch (error) {
-        showNotification('Error al guardar el RFC. Por favor intente nuevamente.', 'error');
-    }
-}
 
 window.addRfcToTable = function(rfc, tipoFigura, tipoFiguraClave = null) {
     const tbody = document.getElementById('rfcConsultaTableBody');
@@ -1735,7 +1618,7 @@ window.addRfcToTable = function(rfc, tipoFigura, tipoFiguraClave = null) {
             </button>
         </td>
     `;
-    
+
     tbody.appendChild(newRow);
     setTimeout(() => lucide.createIcons(), 50);
 };
@@ -1751,7 +1634,7 @@ window.toggleAllRfcConsulta = function(checkbox) {
 window.toggleDeleteButton = function() {
     const checkedBoxes = document.querySelectorAll('.rfc-checkbox:checked');
     const deleteBtn = document.getElementById('btnDeleteRfcConsulta');
-    
+
     if (checkedBoxes.length > 0) {
         deleteBtn.classList.remove('hidden');
     } else {
@@ -1761,7 +1644,7 @@ window.toggleDeleteButton = function() {
 
 window.deleteSelectedRfcConsulta = async function() {
     const checkedBoxes = document.querySelectorAll('.rfc-checkbox:checked');
-    
+
     if (checkedBoxes.length === 0) {
         showNotification('Por favor seleccione al menos un RFC para eliminar', 'warning');
         return;
@@ -1771,63 +1654,28 @@ window.deleteSelectedRfcConsulta = async function() {
         `¿Está seguro de eliminar ${checkedBoxes.length} RFC(s) de consulta?`,
         'ELIMINAR RFCS'
     );
-    
-    if (!confirmResult) {
-        return;
+
+    if (!confirmResult) return;
+
+    const rowsToDelete = Array.from(checkedBoxes).map(cb => cb.closest('tr'));
+    rowsToDelete.forEach(row => row.remove());
+
+    const tbody = document.getElementById('rfcConsultaTableBody');
+    if (tbody.children.length === 0) {
+        const emptyRow = document.createElement('tr');
+        emptyRow.innerHTML = `
+            <td colspan="5" class="table-empty">
+                <i data-lucide="inbox" class="w-8 h-8 text-slate-300"></i>
+                <p class="text-sm text-slate-400 mt-2">No hay RFC's agregados</p>
+            </td>
+        `;
+        tbody.appendChild(emptyRow);
+        setTimeout(() => lucide.createIcons(), 50);
     }
 
-    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-    const deleteUrl = document.querySelector('[data-delete-url]').getAttribute('data-delete-url');
-    const applicantRfc = document.querySelector('[data-applicant-rfc]').getAttribute('data-applicant-rfc');
-
-    const deletePromises = [];
-    const rowsToDelete = [];
-
-    checkedBoxes.forEach(checkbox => {
-        const row = checkbox.closest('tr');
-        const rfc = row.getAttribute('data-rfc');
-        rowsToDelete.push(row);
-
-        const deletePromise = fetch(deleteUrl, {
-            method: 'DELETE',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': csrfToken
-            },
-            body: JSON.stringify({
-                applicant_rfc: applicantRfc,
-                rfc_consulta: rfc
-            })
-        });
-
-        deletePromises.push(deletePromise);
-    });
-
-    try {
-        await Promise.all(deletePromises);
-        
-        rowsToDelete.forEach(row => row.remove());
-        
-        const tbody = document.getElementById('rfcConsultaTableBody');
-        if (tbody.children.length === 0) {
-            const emptyRow = document.createElement('tr');
-            emptyRow.innerHTML = `
-                <td colspan="5" class="table-empty">
-                    <i data-lucide="inbox" class="w-8 h-8 text-slate-300"></i>
-                    <p class="text-sm text-slate-400 mt-2">No hay RFC's agregados</p>
-                </td>
-            `;
-            tbody.appendChild(emptyRow);
-            setTimeout(() => lucide.createIcons(), 50);
-        }
-
-        document.getElementById('selectAllRfcConsulta').checked = false;
-        toggleDeleteButton();
-
-        showNotification('RFC(s) eliminado(s) exitosamente', 'success');
-    } catch (error) {
-        showNotification('Error al eliminar los RFC(s). Por favor intente nuevamente.', 'error');
-    }
+    document.getElementById('selectAllRfcConsulta').checked = false;
+    toggleDeleteButton();
+    showNotification('RFC(s) eliminado(s) exitosamente', 'success');
 };
 
 // Variable para rastrear si estamos editando un RFC existente
@@ -1840,12 +1688,10 @@ window.editRfcConsulta = function(rfc) {
 
     editingRfcRow = row;
 
-    // Poblar los campos de entrada con los datos de la fila
     document.getElementById('rfcConsultaInput').value = rfc;
     const tipoFigura = row.getAttribute('data-tipo-figura') || '';
     document.getElementById('tipoFiguraConsulta').value = tipoFigura;
 
-    // Scroll al formulario de entrada
     document.getElementById('rfcConsultaInput').scrollIntoView({ behavior: 'smooth', block: 'center' });
     document.getElementById('rfcConsultaInput').focus();
 
@@ -1855,7 +1701,6 @@ window.editRfcConsulta = function(rfc) {
 window.clearRfcConsultaFields = function() {
     document.getElementById('rfcConsultaInput').value = '';
     document.getElementById('tipoFiguraConsulta').value = '';
-    currentSearchedRfc = null;
     editingRfcRow = null;
 };
 

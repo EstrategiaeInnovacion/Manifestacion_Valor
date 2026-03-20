@@ -226,10 +226,14 @@ class User extends Authenticatable
     public function canAccessApplicant(MvClientApplicant $applicant): bool
     {
         if ($this->role === 'SuperAdmin') {
-            // SuperAdmin puede ver solicitantes de toda su empresa
-            $companyUserIds = User::where('company', $this->company)->pluck('id')->toArray();
+            // SuperAdmin solo puede ver solicitantes de su propia empresa.
+            // Sin empresa asignada: únicamente los que creó directamente.
+            if (empty($this->company)) {
+                return $applicant->created_by_user_id === $this->id;
+            }
+            $companyUserIds    = User::where('company', $this->company)->pluck('id')->toArray();
             $companyUserEmails = User::where('company', $this->company)->pluck('email')->toArray();
-            
+
             return $applicant->created_by_user_id === $this->id
                 || in_array($applicant->created_by_user_id, $companyUserIds)
                 || (is_null($applicant->created_by_user_id) && in_array($applicant->user_email, $companyUserEmails));

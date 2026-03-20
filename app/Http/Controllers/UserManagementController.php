@@ -20,10 +20,23 @@ class UserManagementController extends Controller
         $authUser = auth()->user();
 
         if ($authUser->role === 'SuperAdmin') {
-            // Para SuperAdmin: mostrar todos los usuarios separados por rol
-            $superAdmins = User::where('role', 'SuperAdmin')->with('createdUsers')->get();
-            $admins = User::where('role', 'Admin')->with('createdUsers')->get();
-            $usuarios = User::where('role', 'Usuario')->get();
+            // SuperAdmin solo puede ver/gestionar usuarios de su propia empresa.
+            // Nunca debe ver ni editar usuarios de otras empresas.
+            $companyFilter = $authUser->company
+                ? ['company', $authUser->company]
+                : ['id', $authUser->id]; // sin empresa: solo él mismo
+
+            $superAdmins = User::where('role', 'SuperAdmin')
+                ->where(...$companyFilter)
+                ->with('createdUsers')
+                ->get();
+            $admins = User::where('role', 'Admin')
+                ->where(...$companyFilter)
+                ->with('createdUsers')
+                ->get();
+            $usuarios = User::where('role', 'Usuario')
+                ->where(...$companyFilter)
+                ->get();
 
             return view('users.index', compact('superAdmins', 'admins', 'usuarios'));
         }

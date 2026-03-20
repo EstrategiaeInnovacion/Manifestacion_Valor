@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\MvClientApplicant;
-use App\Models\MveRfcConsulta;
 use App\Models\MvDatosManifestacion;
 use App\Models\MvInformacionCove;
 use App\Models\MvDocumentos;
@@ -34,8 +33,21 @@ class MveController extends Controller
         $user = auth()->user();
         
         if ($user->role === 'SuperAdmin') {
-            // SuperAdmin tiene acceso a todos los solicitantes del sistema
-            return MvClientApplicant::query();
+            // SuperAdmin solo accede a solicitantes de su propia empresa.
+            // Nunca debe ver solicitantes de otras empresas (riesgo de seguridad).
+            if (empty($user->company)) {
+                // Sin empresa asignada: solo sus propios solicitantes
+                return MvClientApplicant::where('created_by_user_id', $user->id);
+            }
+            $companyUserIds    = User::where('company', $user->company)->pluck('id');
+            $companyUserEmails = User::where('company', $user->company)->pluck('email');
+            return MvClientApplicant::where(function ($q) use ($companyUserIds, $companyUserEmails) {
+                $q->whereIn('created_by_user_id', $companyUserIds)
+                  ->orWhere(function ($sub) use ($companyUserEmails) {
+                      $sub->whereNull('created_by_user_id')
+                          ->whereIn('user_email', $companyUserEmails);
+                  });
+            });
         }
         
         if ($user->role === 'Admin') {
@@ -255,130 +267,6 @@ class MveController extends Controller
                 ->withErrors(['archivo_m' => 'Error al procesar el archivo: ' . $e->getMessage()])
                 ->withInput();
         }
-    }
-    
-    /**
-     * Buscar RFC de consulta en la base de datos
-     */
-    public function searchRfcConsulta(Request $request)
-    {
-        $request->validate([
-            'applicant_rfc' => 'required|string|max:13',
-            'rfc_consulta' => 'required|string|max:13'
-        ]);
-        
-        $applicantRfc = strtoupper($request->applicant_rfc);
-        $rfcConsulta = strtoupper($request->rfc_consulta);
-        
-        // Buscar el RFC de consulta asociado al RFC del solicitante
-        $rfcData = MveRfcConsulta::where('applicant_rfc', $applicantRfc)
-            ->get()
-            ->first(function ($item) use ($rfcConsulta) {
-                return strtoupper($item->rfc_consulta) === $rfcConsulta;
-            });
-        
-        if ($rfcData) {
-            return response()->json([
-                'found' => true,
-                'data' => [
-                    'rfc_consulta' => $rfcData->rfc_consulta,
-                    'razon_social' => $rfcData->razon_social,
-                    'tipo_figura' => $rfcData->tipo_figura
-                ]
-            ]);
-        }
-        
-        return response()->json([
-            'found' => false,
-            'message' => 'El RFC no se encuentra registrado en la BD del sistema'
-        ]);
-    }
-    
-    /**
-     * Guardar RFC de consulta en la base de datos
-     */
-    public function storeRfcConsulta(Request $request)
-    {
-        try {
-            $validated = $request->validate([
-                'applicant_rfc' => 'required|string|max:13',
-                'rfc_consulta' => 'required|string|max:13',
-                'tipo_figura' => 'required|string'
-            ]);
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Error de validaciÃ³n',
-                'errors' => $e->errors()
-            ], 422);
-        }
-        
-        $applicantRfc = strtoupper($request->applicant_rfc);
-        $rfcConsulta = strtoupper($request->rfc_consulta);
-        
-        // Verificar si ya existe
-        $exists = MveRfcConsulta::where('applicant_rfc', $applicantRfc)
-            ->get()
-            ->first(function ($item) use ($rfcConsulta) {
-                return strtoupper($item->rfc_consulta) === $rfcConsulta;
-            });
-        
-        if ($exists) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Este RFC de consulta ya estÃ¡ registrado'
-            ], 422);
-        }
-        
-        // Guardar el RFC de consulta
-        MveRfcConsulta::create([
-            'applicant_rfc' => $applicantRfc,
-            'rfc_consulta' => $rfcConsulta,
-            'tipo_figura' => $request->tipo_figura
-        ]);
-        
-        return response()->json([
-            'success' => true,
-            'message' => 'RFC de consulta guardado exitosamente'
-        ]);
-    }
-    
-    /**
-     * Eliminar RFC de consulta de la base de datos
-     */
-    public function deleteRfcConsulta(Request $request)
-    {
-        $request->validate([
-            'applicant_rfc' => 'required|string|max:13',
-            'rfc_consulta' => 'required|string|max:13'
-        ]);
-        
-        $applicantRfc = strtoupper($request->applicant_rfc);
-        $rfcConsulta = strtoupper($request->rfc_consulta);
-        
-        // Buscar y eliminar el RFC de consulta
-        $deleted = false;
-        $records = MveRfcConsulta::where('applicant_rfc', $applicantRfc)->get();
-        
-        foreach ($records as $record) {
-            if (strtoupper($record->rfc_consulta) === $rfcConsulta) {
-                $record->delete();
-                $deleted = true;
-                break;
-            }
-        }
-        
-        if ($deleted) {
-            return response()->json([
-                'success' => true,
-                'message' => 'RFC de consulta eliminado exitosamente'
-            ]);
-        }
-        
-        return response()->json([
-            'success' => false,
-            'message' => 'RFC de consulta no encontrado'
-        ], 404);
     }
     
 
