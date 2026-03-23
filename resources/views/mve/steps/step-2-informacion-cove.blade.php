@@ -745,7 +745,7 @@
                             </div>
                         </div>
 
-                        <div id="momentoSituacionGroup" class="hidden">
+                        <div id="momentoSituacionGroup">
                             <div class="form-group">
                                 <label class="form-label">
                                     Momento(s) o situación(es) cuando se realizará el pago

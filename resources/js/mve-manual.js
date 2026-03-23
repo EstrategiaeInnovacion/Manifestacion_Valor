@@ -3110,21 +3110,10 @@ window.toggleEspecifiquePago = function(section, value) {
     if (!group) return;
     if (value === 'FORPAG.OT') {
         group.classList.remove('hidden');
-        // Mostrar también campo de momento/situación para precio por pagar
-        if (section === 'precioPorPagar') {
-            document.getElementById('momentoSituacionGroup')?.classList.remove('hidden');
-        }
     } else {
         group.classList.add('hidden');
         const input = document.getElementById(inputIds[section]);
         if (input) input.value = '';
-        // Ocultar también campo de momento/situación para precio por pagar
-        if (section === 'precioPorPagar') {
-            const momentoGroup = document.getElementById('momentoSituacionGroup');
-            if (momentoGroup) momentoGroup.classList.add('hidden');
-            const momentoInput = document.getElementById('momentoSituacionInput');
-            if (momentoInput) momentoInput.value = '';
-        }
     }
 };
 
@@ -3487,7 +3476,6 @@ function clearPrecioPorPagarFields() {
     document.getElementById('tipoMonedaPrecioPorPagarSelect').value = '';
     document.getElementById('tipoCambioPrecioPorPagarInput').value = '';
     document.getElementById('momentoSituacionInput').value = '';
-    document.getElementById('momentoSituacionGroup')?.classList.add('hidden');
     document.getElementById('especifiquePrecioPorPagarInput').value = '';
     document.getElementById('especifiquePrecioPorPagarGroup').classList.add('hidden');
 }
