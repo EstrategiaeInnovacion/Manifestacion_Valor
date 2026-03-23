@@ -102,10 +102,21 @@ class MveController extends Controller
 
         if ($mveId) {
             // Editar una MVE específica (desde pendientes)
-            $datosManifestacion = MvDatosManifestacion::where('id', $mveId)
+            $mveQuery = MvDatosManifestacion::where('id', $mveId)
                 ->where('applicant_id', $applicantId)
-                ->whereIn('status', $statusEditables)
-                ->first();
+                ->whereIn('status', $statusEditables);
+
+            // Usuario solo puede editar sus propias MVE; Admin puede editar cualquiera de sus solicitantes
+            $currentUser = auth()->user();
+            if ($currentUser->role === 'Usuario') {
+                $mveQuery->where('created_by_user_id', $currentUser->id);
+            }
+
+            $datosManifestacion = $mveQuery->first();
+
+            if (!$datosManifestacion) {
+                abort(403, 'No tienes permiso para editar esta manifestación.');
+            }
             $informacionCove = $datosManifestacion?->informacionCove;
             $documentos = $datosManifestacion?->documentos;
         } else {
@@ -283,13 +294,8 @@ class MveController extends Controller
             ->whereIn('applicant_id', $this->getAccessibleApplicants()->pluck('id'))
             ->whereIn('status', $estadosPendientes);
 
-        // Admin: solo ve sus propias MVE y las de sus sub-usuarios
-        // Usuario: solo ve sus propias MVE
-        if ($user->role === 'Admin') {
-            $subUserIds = User::where('created_by', $user->id)->where('role', 'Usuario')->pluck('id')->toArray();
-            $allowedIds = array_merge([$user->id], $subUserIds);
-            $query->whereIn('created_by_user_id', $allowedIds);
-        } elseif ($user->role === 'Usuario') {
+        // Usuario solo ve sus propias MVE; Admin ve todas las de sus solicitantes
+        if ($user->role === 'Usuario') {
             $query->where('created_by_user_id', $user->id);
         }
 
@@ -309,13 +315,8 @@ class MveController extends Controller
         $query = MvAcuse::with(['applicant', 'datosManifestacion.createdByUser'])
             ->whereIn('applicant_id', $applicantIds);
 
-        // Admin: solo ve sus propias MVE y las de sus sub-usuarios
-        // Usuario: solo ve sus propias MVE
-        if ($user->role === 'Admin') {
-            $subUserIds = User::where('created_by', $user->id)->where('role', 'Usuario')->pluck('id')->toArray();
-            $allowedIds = array_merge([$user->id], $subUserIds);
-            $query->whereHas('datosManifestacion', fn($q) => $q->whereIn('created_by_user_id', $allowedIds));
-        } elseif ($user->role === 'Usuario') {
+        // Usuario solo ve sus propias MVE; Admin ve todas las de sus solicitantes
+        if ($user->role === 'Usuario') {
             $query->whereHas('datosManifestacion', fn($q) => $q->where('created_by_user_id', $user->id));
         }
 
@@ -347,12 +348,8 @@ class MveController extends Controller
             if ($mveId) {
                 $mveQuery = MvDatosManifestacion::where('id', $mveId)
                     ->where('applicant_id', $applicantId);
-                // Admin y Usuario solo pueden editar MVEs propias o de sus sub-usuarios
-                if (auth()->user()->role === 'Admin') {
-                    $subUserIds = User::where('created_by', auth()->id())->where('role', 'Usuario')->pluck('id')->toArray();
-                    $allowedIds = array_merge([auth()->id()], $subUserIds);
-                    $mveQuery->whereIn('created_by_user_id', $allowedIds);
-                } elseif (auth()->user()->role === 'Usuario') {
+                // Usuario solo puede editar sus propias MVE; Admin puede editar cualquiera
+                if (auth()->user()->role === 'Usuario') {
                     $mveQuery->where('created_by_user_id', auth()->id());
                 }
                 $datosManifestacion = $mveQuery->first();
