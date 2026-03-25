@@ -846,9 +846,9 @@ document.addEventListener('DOMContentLoaded', function() {
     if (mveIdEl && mveIdEl.getAttribute('data-mve-id')) {
         currentMveId = parseInt(mveIdEl.getAttribute('data-mve-id')) || null;
     } else if (_initApplicantId) {
-        // Recuperar borrador en progreso tras recarga de página
-        const _stored = localStorage.getItem('mve_draft_' + _initApplicantId);
-        if (_stored) currentMveId = parseInt(_stored) || null;
+        // Nueva MVE: limpiar localStorage para no reutilizar borrador anterior
+        localStorage.removeItem('mve_draft_' + _initApplicantId);
+        currentMveId = null;
     }
 
     lucide.createIcons();
@@ -3806,6 +3806,10 @@ async function saveSection(sectionName, data, sectionLabel) {
                 const _applicantIdForDraft = document.querySelector('[data-applicant-id]')?.getAttribute('data-applicant-id');
                 if (_applicantIdForDraft) {
                     localStorage.setItem('mve_draft_' + _applicantIdForDraft, currentMveId);
+                }
+                // Actualizar URL con ?edit= para que recargas de página restauren este borrador
+                if (!window.location.search.includes('edit=')) {
+                    history.replaceState(null, '', window.location.pathname + '?edit=' + currentMveId);
                 }
             }
             showNotification(`${sectionLabel} guardado exitosamente`, 'success');

@@ -354,14 +354,8 @@ class MveController extends Controller
                 }
                 $datosManifestacion = $mveQuery->first();
             } else {
-                // Reutilizar borrador sólo si la sesión indica que ese borrador es el activo para este solicitante
-                $sessionMveId = session('mve_draft_' . $applicantId);
-                $datosManifestacion = $sessionMveId
-                    ? MvDatosManifestacion::where('id', $sessionMveId)
-                        ->where('applicant_id', $applicantId)
-                        ->where('status', 'borrador')
-                        ->first()
-                    : null;
+                // Sin mve_id: siempre crear un nuevo borrador independiente
+                $datosManifestacion = null;
             }
 
             $datosActualizar = [
@@ -382,9 +376,6 @@ class MveController extends Controller
                 $datosActualizar['created_by_user_id'] = auth()->id();
                 $datosManifestacion = MvDatosManifestacion::create($datosActualizar);
             }
-
-            // Registrar en sesión el borrador activo para evitar contaminación entre MVEs
-            session(['mve_draft_' . $applicantId => $datosManifestacion->id]);
 
             return response()->json([
                 'success' => true,
