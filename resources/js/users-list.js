@@ -29,13 +29,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Accordion functionality
 window.toggleAccordion = function(id) {
-    console.log('Toggling accordion for ID:', id); // Debug log
-    
     const content = document.getElementById('content-' + id);
     const icon = document.getElementById('icon-' + id);
     
     if (!content || !icon) {
-        console.error('Content or icon not found for ID:', id);
         return;
     }
     

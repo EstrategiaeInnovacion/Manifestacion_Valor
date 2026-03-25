@@ -351,7 +351,7 @@
                                     Tipo de cambio
                                     <span class="text-red-500">*</span>
                                 </label>
-                                <input type="number" id="tipoCambioIncrementableInput" class="form-input" placeholder="0.0000" step="0.0001" min="0" max="9999999999999.9999">
+                                <input type="number" id="tipoCambioIncrementableInput" class="form-input" placeholder="0.000" step="0.001" min="0" max="9999999999999.999">
                             </div>
 
                             <div class="form-group flex-1">
@@ -481,7 +481,7 @@
                                     Tipo de cambio
                                     <span class="text-red-500">*</span>
                                 </label>
-                                <input type="number" id="tipoCambioDecrementableInput" class="form-input" placeholder="0.0000" step="0.0001" min="0" max="9999999999999.9999">
+                                <input type="number" id="tipoCambioDecrementableInput" class="form-input" placeholder="0.000" step="0.001" min="0" max="9999999999999.999">
                             </div>
 
                             <div class="form-group flex-1">
@@ -608,7 +608,7 @@
                                     Tipo de cambio
                                     <span class="text-red-500">*</span>
                                 </label>
-                                <input type="number" id="tipoCambioPrecioPagadoInput" class="form-input" placeholder="0.0000" step="0.0001" min="0" max="9999999999999.9999">
+                                <input type="number" id="tipoCambioPrecioPagadoInput" class="form-input" placeholder="0.000" step="0.001" min="0" max="9999999999999.999">
                             </div>
 
                             <div class="form-group flex-1">
@@ -724,7 +724,7 @@
                                     Tipo de cambio
                                     <span class="text-red-500">*</span>
                                 </label>
-                                <input type="number" id="tipoCambioPrecioPorPagarInput" class="form-input" placeholder="0.0000" step="0.0001" min="0" max="9999999999999.9999">
+                                <input type="number" id="tipoCambioPrecioPorPagarInput" class="form-input" placeholder="0.000" step="0.001" min="0" max="9999999999999.999">
                             </div>
 
                             <div class="form-group flex-1">

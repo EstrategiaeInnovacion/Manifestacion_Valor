@@ -587,11 +587,8 @@
                     }
                 });
                 
-                console.log('[MVE] Verificando credenciales para solicitante:', applicantId, 'Status:', response.status);
-                
                 if (response.ok) {
                     const data = await response.json();
-                    console.log('[MVE] Respuesta credenciales:', data);
                     
                     if (data.has_credentials && data.has_webservice_key) {
                         // Tiene todas las credenciales almacenadas
@@ -600,7 +597,6 @@
                         document.getElementById('manualCredsContainer').classList.add('hidden');
                         setManualFieldsRequired(false);
                         lucide.createIcons();
-                        console.log('[MVE] Credenciales almacenadas detectadas - usando automáticamente');
                     } else if (data.has_credentials) {
                         // Tiene cert/key pero no clave WS: ocultar solo cert/key
                         document.getElementById('useStoredCredentials').value = '1';
@@ -613,15 +609,10 @@
                         setManualFieldsRequired(false);
                         document.getElementById('clave_webservice').required = true;
                         lucide.createIcons();
-                        console.log('[MVE] Credenciales parciales - falta clave WS');
-                    } else {
-                        console.log('[MVE] Sin credenciales almacenadas - modo manual');
                     }
-                } else {
-                    console.warn('[MVE] Error verificando credenciales:', response.status, response.statusText);
                 }
             } catch (err) {
-                console.error('[MVE] Error de conexión verificando credenciales:', err);
+                // error silenciado en producción
             }
         }
         
@@ -687,7 +678,6 @@
                     lucide.createIcons();
                 }
             } catch (error) {
-                console.error('Error:', error);
                 document.getElementById('vistaPreviaContenido').innerHTML = `
                     <div class="text-center py-12">
                         <i data-lucide="alert-circle" class="w-12 h-12 text-red-500 mx-auto mb-4"></i>
@@ -1184,7 +1174,6 @@
                     btn.innerHTML = originalHtml;
                 }
             } catch (error) {
-                console.error('Error:', error);
                 alert('Error al descartar la manifestación');
                 btn.disabled = false;
                 btn.innerHTML = originalHtml;
@@ -1257,7 +1246,6 @@
                     btnTexto.textContent = originalText;
                 }
             } catch (error) {
-                console.error('Error:', error);
                 alert('Error al procesar la firma: ' + error.message);
                 btn.disabled = false;
                 btnTexto.textContent = originalText;

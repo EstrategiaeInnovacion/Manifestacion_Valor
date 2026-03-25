@@ -33,7 +33,7 @@
                     <select class="form-input" id="documentTypeSelect">
                         <option value="">Seleccione tipo de documento...</option>
                         @foreach($tiposDocumento as $id => $nombre)
-                            <option value="{{ $id }}">{{ $nombre }}</option>
+                            <option value="{{ $id }}" {{ $id == '360' ? 'selected' : '' }}>{{ $nombre }}</option>
                         @endforeach
                     </select>
                 </div>

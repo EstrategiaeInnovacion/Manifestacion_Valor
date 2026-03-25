@@ -306,8 +306,6 @@
                     throw new Error(data.message || 'Error al borrar el borrador');
                 }
             } catch (error) {
-                console.error('Error:', error);
-
                 // Restaurar el botón
                 const btnBorrar = document.querySelector('#confirmDeleteDraftModal button[onclick="ejecutarBorrarBorrador()"]');
                 btnBorrar.disabled = false;

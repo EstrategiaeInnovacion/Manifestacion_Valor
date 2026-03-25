@@ -1175,7 +1175,6 @@
                 }
 
             } catch (error) {
-                console.error('Error:', error);
                 mostrarResultadoConsulta('error', 'Error de conexión al consultar la manifestación');
             } finally {
                 // Re-habilitar botón

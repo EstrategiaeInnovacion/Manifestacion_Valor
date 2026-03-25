@@ -84,8 +84,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const form = document.querySelector('form');
     if (form) {
         form.addEventListener('submit', function(e) {
-            console.log('[COVE DEBUG] Form submit event fired');
-            
             const folioInput = document.getElementById('folio_edocument');
             const certificadoInput = document.querySelector('input[name="certificado"]');
             const llaveInput = document.querySelector('input[name="llave_privada"]');
@@ -102,7 +100,6 @@ document.addEventListener('DOMContentLoaded', function() {
             // Validate certificate file (only if the eFirma section is visible)
             const efirmaSection = document.getElementById('efirma-manual-section');
             const efirmaVisible = efirmaSection && !efirmaSection.classList.contains('hidden');
-            console.log('[COVE DEBUG] efirma visible:', efirmaVisible);
 
             if (efirmaVisible) {
                 if (!certificadoInput || certificadoInput.files.length === 0) {
@@ -134,12 +131,10 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             if (hasErrors) {
-                console.log('[COVE DEBUG] Validation errors found, preventing submit');
                 e.preventDefault();
                 return false;
             }
             
-            console.log('[COVE DEBUG] No errors, form will submit. Action:', form.action);
             // Show loading state
             showLoadingState();
         });

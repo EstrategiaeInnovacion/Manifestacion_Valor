@@ -244,7 +244,7 @@ window.guardarYVistaPrevia = async function() {
         await saveDocumentos();
         goToStep(5);
     } catch (error) {
-        console.error('Error al guardar documentos:', error);
+        // error silenciado en producción
     }
 };
 
@@ -323,7 +323,6 @@ async function cargarVistaPreviaInline() {
             if (typeof lucide !== 'undefined') lucide.createIcons();
         }, 100);
     } catch (error) {
-        console.error('Error cargando vista previa:', error);
         container.innerHTML = `<div class="text-center py-16">
             <i data-lucide="alert-triangle" class="w-12 h-12 text-red-400 mx-auto mb-4"></i>
             <p class="text-red-600 font-semibold">Error al cargar la vista previa</p>
@@ -425,10 +424,8 @@ window.saveMveToLocalStorage = function(data) {
         const existingData = getMveFromLocalStorage() || {};
         const mergedData = { ...existingData, ...data, lastUpdated: new Date().toISOString() };
         localStorage.setItem(storageKey, JSON.stringify(mergedData));
-        console.log('Datos MVE guardados en localStorage:', mergedData);
         return true;
     } catch (error) {
-        console.error('Error guardando en localStorage:', error);
         return false;
     }
 };
@@ -442,7 +439,6 @@ window.getMveFromLocalStorage = function() {
         const data = localStorage.getItem(storageKey);
         return data ? JSON.parse(data) : null;
     } catch (error) {
-        console.error('Error leyendo de localStorage:', error);
         return null;
     }
 };
@@ -454,10 +450,8 @@ window.clearMveLocalStorage = function() {
     try {
         const storageKey = getApplicantStorageKey();
         localStorage.removeItem(storageKey);
-        console.log('Datos MVE eliminados de localStorage');
         return true;
     } catch (error) {
-        console.error('Error limpiando localStorage:', error);
         return false;
     }
 };
@@ -502,8 +496,6 @@ window.savePedimentoInfoToLocalStorage = function(pedimento, patente, aduana) {
 window.loadMveFromLocalStorage = function() {
     const savedData = getMveFromLocalStorage();
     if (!savedData) return;
-    
-    console.log('Cargando datos de localStorage:', savedData);
     
     // Cargar pedimentos si existen
     if (savedData.pedimentos && Array.isArray(savedData.pedimentos) && savedData.pedimentos.length > 0) {
@@ -589,9 +581,6 @@ window.loadSavedDataCallback = function() {
         return;
     }
 
-    // Debug: Log para ver los datos de COVE
-    console.log('Datos COVE cargados:', data.informacionCove);
-
     if (Array.isArray(data.personaConsulta) && data.personaConsulta.length > 0) {
         data.personaConsulta.forEach((persona) => {
             if (!persona) {
@@ -613,7 +602,6 @@ window.loadSavedDataCallback = function() {
         if (!alreadyExists) {
             const tipoFiguraDesc = getOptionText('tipoFiguraConsulta', 'TIPFIG.AGE');
             window.addRfcToTable(rfcAgente, tipoFiguraDesc, 'TIPFIG.AGE');
-            console.log('RFC agente aduanal auto-agregado desde Archivo M:', rfcAgente);
         }
     }
 
@@ -656,7 +644,6 @@ window.loadSavedDataCallback = function() {
             // Guardar vinculación del archivo M (del registro 551) en localStorage
             if (data.vinculacionArchivoM !== undefined && data.vinculacionArchivoM !== '') {
                 saveVinculacionToLocalStorage(data.vinculacionArchivoM);
-                console.log('Vinculación del archivo M guardada:', data.vinculacionArchivoM);
             }
             
             // Guardar pedimento, patente y aduana en localStorage desde el archivo M
@@ -1040,7 +1027,6 @@ window.validateEdocumentInput = async function() {
         updateEdocumentValidationStatus(status, result.message);
         showNotification(result.message, result.valid ? 'success' : 'warning');
     } catch (error) {
-        console.error('Error validando eDocument:', error);
         showNotification('Error al validar eDocument', 'error');
         updateEdocumentValidationStatus(EDOCUMENT_STATUS.INVALID, 'Error WS');
     }
@@ -1163,7 +1149,6 @@ window.validateEdocumentRow = async function(button) {
 
         showNotification(result.message, result.valid ? 'success' : 'warning');
     } catch (error) {
-        console.error('Error validando eDocument:', error);
         showNotification('Error al validar eDocument', 'error');
     }
 };
@@ -1398,7 +1383,6 @@ window.consultarOperacionPendiente = async function() {
             }
         }
     } catch (err) {
-        console.error('[PENDIENTE] Error consultando operación:', err);
         if (statusEl) statusEl.textContent = 'Error al consultar. Reintentando...';
         schedulePendingRetry();
     }
@@ -1528,7 +1512,6 @@ window.digitalizarDocumento = async function() {
             }
         }
     } catch (error) {
-        console.error('[DIGITALIZAR] Error:', error);
         showNotification('Error de conexión al enviar a VUCEM.', 'error');
     } finally {
         _digitalizando = false;
@@ -1733,7 +1716,6 @@ function convertDateToInputFormat(dateStr) {
         return `${match[3]}-${match[2]}-${match[1]}`;
     }
     
-    console.warn('Formato de fecha no reconocido:', dateStr);
     return dateStr;
 }
 
@@ -1758,8 +1740,6 @@ window.loadCoveToFields = function(cove, metodoValor, factura, fechaExpedicion, 
     if (fechaInput) fechaInput.value = fechaFormateada || '';
     if (emisorInput) emisorInput.value = emisorOriginal || '';
     if (destinatarioInput) destinatarioInput.value = destinatario || '';
-    
-    console.log('Datos COVE cargados en campos del formulario:', { cove, metodoValor, factura, fechaExpedicion, fechaFormateada, emisorOriginal, destinatario });
 };
 
 /**
@@ -1819,7 +1799,6 @@ window.buscarInfoCove = async function() {
         showNotification('Información del COVE cargada desde ' + src + '.', 'success', 'COVE encontrado');
 
     } catch (err) {
-        console.error('[COVE_BUSCAR]', err);
         showNotification('Error al consultar el COVE. Intenta de nuevo.', 'error');
     } finally {
         if (btn) {
@@ -2849,7 +2828,7 @@ window.actualizarTablaIncrementables = function() {
             <td class="table-cell">${incrementable.fechaErogacion || ''}</td>
             <td class="table-cell">$${importe.toFixed(3)}</td>
             <td class="table-cell">${tipoMonedaText}</td>
-            <td class="table-cell">${tipoCambio.toFixed(4)}</td>
+            <td class="table-cell">${tipoCambio.toFixed(3)}</td>
             <td class="table-cell">${incrementable.aCargoImportador ? 'Sí' : 'No'}</td>
         </tr>
     `}).join('');
@@ -3228,7 +3207,7 @@ window.actualizarTablaPrecioPagado = function() {
             <td class="table-cell">${formaPagoText}</td>
             <td class="table-cell">${item.especifique || ''}</td>
             <td class="table-cell">${tipoMonedaText}</td>
-            <td class="table-cell">${tipoCambio.toFixed(4)}</td>
+            <td class="table-cell">${tipoCambio.toFixed(3)}</td>
         </tr>
     `}).join('');
 
@@ -3688,8 +3667,6 @@ window.saveInformacionCove = async function() {
     const informacionCove = [];
     const coveRows = document.querySelectorAll('#informacionCoveTableBody tr[data-cove]');
     
-    console.log('Filas COVE encontradas:', coveRows.length);
-    
     coveRows.forEach(row => {
         const coveNum = row.getAttribute('data-cove');
         if (coveNum) {
@@ -3716,24 +3693,9 @@ window.saveInformacionCove = async function() {
         }
     });
     
-    console.log('Información COVE a guardar (multi-COVE):', informacionCove);
-    
     const data = {
         informacion_cove: informacionCove
     };
-
-    console.log('Datos a enviar:', {
-        total_coves: informacionCove.length,
-        coves: informacionCove.map(c => ({
-            cove: c.numero_cove,
-            pedimentos: (c.pedimentos || []).length,
-            incrementables: (c.incrementables || []).length,
-            decrementables: (c.decrementables || []).length,
-            precio_pagado: (c.precio_pagado || []).length,
-            precio_por_pagar: (c.precio_por_pagar || []).length,
-            compenso_pago: (c.compenso_pago || []).length
-        }))
-    });
 
     // Validar que cada COVE tenga al menos un pedimento registrado
     for (const cove of informacionCove) {
@@ -3833,7 +3795,6 @@ async function saveSection(sectionName, data, sectionLabel) {
         } catch (parseError) {
             // El servidor devolvió HTML en lugar de JSON (ej. error 500, sesión expirada)
             const text = await response.text().catch(() => '');
-            console.error(`[saveSection] Respuesta no-JSON del servidor (${response.status}):`, text.substring(0, 500));
             showNotification(`Error al guardar ${sectionLabel}: el servidor devolvió un error inesperado (${response.status}). Revise los logs.`, 'error');
             return false;
         }
@@ -3854,7 +3815,6 @@ async function saveSection(sectionName, data, sectionLabel) {
             return false;
         }
     } catch (error) {
-        console.error(`[saveSection] Error inesperado en ${sectionLabel}:`, error);
         showNotification(`Error al guardar ${sectionLabel}: ${error.message}`, 'error');
         return false;
     }
@@ -4021,7 +3981,7 @@ async function checkAllSectionsCompletion() {
             }
         }
     } catch (error) {
-        console.warn('Error verificando completitud de secciones:', error);
+        // error silenciado en producción
     }
 }
 
@@ -4094,7 +4054,6 @@ async function mostrarVistaPrevia() {
         }, 100);
         
     } catch (error) {
-        console.error('Error mostrando vista previa:', error);
         showNotification('Error al mostrar la vista previa: ' + error.message, 'error', 'Error');
     }
 }
@@ -4540,7 +4499,6 @@ window.confirmarGuardadoFinal = async function() {
             throw new Error(result.message || 'Error desconocido');
         }
     } catch (error) {
-        console.error('Error guardando manifestación:', error);
         showNotification('Error al guardar la manifestación: ' + error.message, 'error', 'Error');
         
         const btnConfirmar = document.getElementById('btnConfirmarManifestacion');
@@ -4615,8 +4573,6 @@ window.viewDocument = async function(documentId) {
         window.open(url, '_blank');
         
     } catch (error) {
-        console.error('Error al visualizar documento:', error);
-        // Ocultar modal de carga en caso de error
         hideDocumentLoadingModal();
         showNotification('Error al visualizar el documento: ' + error.message, 'error', 'Error');
     }
@@ -4657,8 +4613,6 @@ window.downloadDocument = async function(documentId, filename) {
         URL.revokeObjectURL(url);
         
     } catch (error) {
-        console.error('Error al descargar documento:', error);
-        // Ocultar modal de carga en caso de error
         hideDocumentLoadingModal();
         showNotification('Error al descargar el documento: ' + error.message, 'error', 'Error');
     }
