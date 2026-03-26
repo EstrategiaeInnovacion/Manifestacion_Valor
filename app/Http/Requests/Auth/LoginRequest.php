@@ -37,7 +37,7 @@ class LoginRequest extends FormRequest
     {
         $this->ensureIsNotRateLimited();
 
-        $loginValue = $this->input('login');
+        $loginValue = trim($this->input('login'));
         
         // Determinamos si el valor de "login" es un email o un nombre de usuario
         $loginField = filter_var($loginValue, FILTER_VALIDATE_EMAIL) ? 'email' : 'username';
@@ -45,7 +45,7 @@ class LoginRequest extends FormRequest
         // Intentamos autenticar usando (Email o Username) + Password
         $credentials = [
             $loginField => $loginValue,
-            'password' => $this->input('password'),
+            'password' => trim($this->input('password')),
         ];
 
         if (! Auth::attempt($credentials, $this->boolean('remember'))) {
