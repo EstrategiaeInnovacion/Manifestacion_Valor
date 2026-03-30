@@ -2157,6 +2157,10 @@ class MveController extends Controller
                 // Actualizar otros datos del acuse con la respuesta (status, fechas, etc.)
                 $consultaService->actualizarAcuseConConsulta($acuse, $resultado);
 
+                // datos_manifestacion: preferir los del primer resultado; se sobreescribirá si la
+                // segunda consulta los trae (caso consulta por folio de operación).
+                $datosManifestacion = $resultado['datos_manifestacion'] ?? null;
+
                 // Si consultamos por número de operación y obtuvimos el MV real,
                 // hacer segunda consulta por MNVA para obtener el XML de declaración
                 if (!empty($resultado['numero_mv']) && !preg_match('/^MNVA/i', $folioConsulta)) {
@@ -2168,11 +2172,18 @@ class MveController extends Controller
                         );
                         if ($declaracionResult['success'] && !empty($declaracionResult['response'])) {
                             $consultaService->actualizarAcuseConConsulta($acuse, $declaracionResult);
+                            // Usar datos_manifestacion de la consulta por MNVA si el primer resultado no los traía
+                            if (!$datosManifestacion && !empty($declaracionResult['datos_manifestacion'])) {
+                                $datosManifestacion = $declaracionResult['datos_manifestacion'];
+                            }
                         }
                     } catch (\Throwable $ex) {
                         Log::warning('[MV_CONSULTA] No se pudo obtener XML declaración por MV: ' . $ex->getMessage());
                     }
                 }
+
+                // Refrescar para saber qué XMLs quedaron guardados
+                $acuse->refresh();
 
                 return response()->json([
                     'success' => true,
@@ -2182,7 +2193,9 @@ class MveController extends Controller
                         'folio_operacion' => $acuse->folio_manifestacion,
                         'status' => $resultado['status'],
                         'fecha_registro' => $resultado['fecha_registro'],
-                        'datos_manifestacion' => $resultado['datos_manifestacion'] ?? null
+                        'datos_manifestacion' => $datosManifestacion,
+                        'has_acuse_xml' => !empty($acuse->xml_respuesta),
+                        'has_declaracion_xml' => !empty($acuse->xml_declaracion),
                     ]
                 ]);
 
@@ -2231,6 +2244,29 @@ class MveController extends Controller
             ->header('Content-Type', 'application/xml')
             ->header('Content-Disposition', 'attachment; filename="' . $filename . '"')
             ->header('Content-Length', strlen($acuse->xml_respuesta));
+    }
+
+    /**
+     * Descargar XML de detalles/declaración (xml_declaracion) por ID de acuse
+     */
+    public function downloadDeclaracionXml($acuseId)
+    {
+        $acuse = MvAcuse::with('applicant')->findOrFail($acuseId);
+
+        if (!auth()->user()->canAccessApplicant($acuse->applicant)) {
+            abort(403, 'No tienes permiso para acceder a este acuse.');
+        }
+
+        if (!$acuse->xml_declaracion) {
+            abort(404, 'No hay XML de detalles disponible. Realice primero la consulta por número de MV.');
+        }
+
+        $filename = 'detalles_mve_' . ($acuse->numero_cove ?: $acuse->folio_manifestacion) . '.xml';
+
+        return response($acuse->xml_declaracion)
+            ->header('Content-Type', 'application/xml')
+            ->header('Content-Disposition', 'attachment; filename="' . $filename . '"')
+            ->header('Content-Length', strlen($acuse->xml_declaracion));
     }
 
 }

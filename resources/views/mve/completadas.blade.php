@@ -1219,11 +1219,20 @@
                                                 <i data-lucide="eye" class="w-4 h-4 mr-2"></i>
                                                 Ver Datos Completos
                                             </button>
+                                            ${data.has_acuse_xml ? `
                                             <a href="/mve/consultar/${data.acuse_id}/xml" download
                                                 class="flex-1 min-w-[140px] px-4 py-2.5 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-lg transition-all flex items-center justify-center no-underline">
                                                 <i data-lucide="download" class="w-4 h-4 mr-2"></i>
-                                                Descargar XML
+                                                Acuse XML
                                             </a>
+                                            ` : ''}
+                                            ${data.has_declaracion_xml ? `
+                                            <a href="/mve/consultar/${data.acuse_id}/declaracion-xml" download
+                                                class="flex-1 min-w-[140px] px-4 py-2.5 bg-violet-600 hover:bg-violet-700 text-white font-bold rounded-lg transition-all flex items-center justify-center no-underline">
+                                                <i data-lucide="file-code" class="w-4 h-4 mr-2"></i>
+                                                Detalles MVE XML
+                                            </a>
+                                            ` : ''}
                                             <button onclick="window.location.reload()"
                                                 class="flex-1 min-w-[140px] px-4 py-2.5 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg transition-all flex items-center justify-center">
                                                 <i data-lucide="refresh-cw" class="w-4 h-4 mr-2"></i>
@@ -1232,11 +1241,20 @@
                                         </div>
                                     ` : `
                                         <div class="flex flex-wrap gap-2 mt-4">
+                                            ${data.has_acuse_xml ? `
                                             <a href="/mve/consultar/${data.acuse_id}/xml" download
                                                 class="flex-1 min-w-[140px] px-4 py-2.5 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-lg transition-all flex items-center justify-center no-underline">
                                                 <i data-lucide="download" class="w-4 h-4 mr-2"></i>
-                                                Descargar XML
+                                                Acuse XML
                                             </a>
+                                            ` : ''}
+                                            ${data.has_declaracion_xml ? `
+                                            <a href="/mve/consultar/${data.acuse_id}/declaracion-xml" download
+                                                class="flex-1 min-w-[140px] px-4 py-2.5 bg-violet-600 hover:bg-violet-700 text-white font-bold rounded-lg transition-all flex items-center justify-center no-underline">
+                                                <i data-lucide="file-code" class="w-4 h-4 mr-2"></i>
+                                                Detalles MVE XML
+                                            </a>
+                                            ` : ''}
                                             <button onclick="window.location.reload()"
                                                 class="flex-1 min-w-[140px] px-4 py-2.5 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg transition-all flex items-center justify-center">
                                                 <i data-lucide="refresh-cw" class="w-4 h-4 mr-2"></i>
