@@ -51,6 +51,7 @@ class User extends Authenticatable
         'max_users' => 'integer',
         'max_applicants' => 'integer',
         'load_edocs_from_m' => 'boolean',
+        'created_by' => 'integer',
     ];
 
     /**
