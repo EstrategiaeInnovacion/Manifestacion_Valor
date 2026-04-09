@@ -312,12 +312,21 @@ class MveController extends Controller
         $user = auth()->user();
         $applicantIds = $this->getAccessibleApplicants()->pluck('id');
 
-        $query = MvAcuse::with(['applicant', 'datosManifestacion.createdByUser'])
+        $query = MvAcuse::with(['applicant', 'datosManifestacion.createdByUser', 'createdByUser'])
             ->whereIn('applicant_id', $applicantIds);
 
-        // Usuario solo ve sus propias MVE; Admin ve todas las de sus solicitantes
+        // Usuario solo ve sus propias MVE con doble fallback:
+        // 1. created_by_user_id en mv_acuses (nuevas MVEs post-fix)
+        // 2. via datosManifestacion si la relación aún existe (registros intermedios)
+        // Admin/SuperAdmin ven todo sin filtro adicional.
         if ($user->role === 'Usuario') {
-            $query->whereHas('datosManifestacion', fn($q) => $q->where('created_by_user_id', $user->id));
+            $query->where(function ($q) use ($user) {
+                $q->where('created_by_user_id', $user->id)
+                  ->orWhere(function ($sub) use ($user) {
+                      $sub->whereNull('created_by_user_id')
+                          ->whereHas('datosManifestacion', fn($dm) => $dm->where('created_by_user_id', $user->id));
+                  });
+            });
         }
 
         $mveCompletadas = $query->orderByDesc('fecha_envio')->get();
@@ -972,6 +981,34 @@ class MveController extends Controller
                 ], 400);
             }
 
+            // Usuario solo puede borrar sus propias MVE
+            if (auth()->user()->role === 'Usuario') {
+                $owned = MvDatosManifestacion::where('id', $mveId)
+                    ->where('applicant_id', $applicantId)
+                    ->where('created_by_user_id', auth()->id())
+                    ->exists();
+                if (!$owned) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'No tienes permiso para eliminar este borrador.'
+                    ], 403);
+                }
+            }
+
+            // Usuario solo puede borrar sus propias MVE
+            if (auth()->user()->role === 'Usuario') {
+                $owned = MvDatosManifestacion::where('id', $mveId)
+                    ->where('applicant_id', $applicantId)
+                    ->where('created_by_user_id', auth()->id())
+                    ->exists();
+                if (!$owned) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'No tienes permiso para eliminar este borrador.'
+                    ], 403);
+                }
+            }
+
             MvDocumentos::where('datos_manifestacion_id', $mveId)->delete();
             MvInformacionCove::where('datos_manifestacion_id', $mveId)->delete();
             MvDatosManifestacion::where('id', $mveId)->where('applicant_id', $applicantId)->delete();
@@ -1013,8 +1050,10 @@ class MveController extends Controller
                 $informacionCove = MvInformacionCove::where('datos_manifestacion_id', $mveId)->exists();
                 $documentosRecord = MvDocumentos::where('datos_manifestacion_id', $mveId)->whereNotNull('documentos')->first();
             } else {
-                // Sin mve_id: tomar siempre el registro más reciente del solicitante
-                $ultimaMve = MvDatosManifestacion::where('applicant_id', $applicantId)->latest('id')->first();
+                // Sin mve_id: tomar el más reciente; Usuario solo ve los suyos
+                $ultimaMve = MvDatosManifestacion::where('applicant_id', $applicantId)
+                    ->when(auth()->user()->role === 'Usuario', fn($q) => $q->where('created_by_user_id', auth()->id()))
+                    ->latest('id')->first();
                 $datosManifestacion = (bool) $ultimaMve;
                 $informacionCove = $ultimaMve
                     ? MvInformacionCove::where('datos_manifestacion_id', $ultimaMve->id)->exists()
@@ -1079,7 +1118,9 @@ class MveController extends Controller
 
             $datosManifestacion = $mveId
                 ? MvDatosManifestacion::where('id', $mveId)->where('applicant_id', $applicantId)->first()
-                : MvDatosManifestacion::where('applicant_id', $applicantId)->latest('id')->first();
+                : MvDatosManifestacion::where('applicant_id', $applicantId)
+                    ->when(auth()->user()->role === 'Usuario', fn($q) => $q->where('created_by_user_id', auth()->id()))
+                    ->latest('id')->first();
 
             if ($datosManifestacion) {
                 $datosManifestacion->update(['status' => 'guardado', 'updated_at' => now()]);
@@ -1128,8 +1169,10 @@ class MveController extends Controller
                 $informacionCove = MvInformacionCove::where('datos_manifestacion_id', $mveId)->first();
                 $documentosRecord = MvDocumentos::where('datos_manifestacion_id', $mveId)->whereNotNull('documentos')->first();
             } else {
-                // Sin mve_id: tomar siempre el más reciente para evitar mezcla de datos entre MVEs
-                $datosManifestacion = MvDatosManifestacion::where('applicant_id', $applicantId)->latest('id')->first();
+                // Sin mve_id: tomar el más reciente; Usuario solo ve los suyos
+                $datosManifestacion = MvDatosManifestacion::where('applicant_id', $applicantId)
+                    ->when(auth()->user()->role === 'Usuario', fn($q) => $q->where('created_by_user_id', auth()->id()))
+                    ->latest('id')->first();
                 $informacionCove = $datosManifestacion
                     ? MvInformacionCove::where('datos_manifestacion_id', $datosManifestacion->id)->first()
                     : null;
@@ -1500,9 +1543,16 @@ class MveController extends Controller
                 $informacionCove = MvInformacionCove::where('datos_manifestacion_id', $mveId)->first();
                 $documentosRecord = MvDocumentos::where('datos_manifestacion_id', $mveId)->first();
             } else {
-                $datosManifestacion = MvDatosManifestacion::where('applicant_id', $applicantId)->first();
-                $informacionCove = MvInformacionCove::where('applicant_id', $applicantId)->first();
-                $documentosRecord = MvDocumentos::where('applicant_id', $applicantId)->first();
+                $datosManifestacion = MvDatosManifestacion::where('applicant_id', $applicantId)
+                    ->when(auth()->user()->role === 'Usuario', fn($q) => $q->where('created_by_user_id', auth()->id()))
+                    ->where('status', 'guardado')
+                    ->latest('id')->first();
+                $informacionCove = $datosManifestacion
+                    ? MvInformacionCove::where('datos_manifestacion_id', $datosManifestacion->id)->first()
+                    : null;
+                $documentosRecord = $datosManifestacion
+                    ? MvDocumentos::where('datos_manifestacion_id', $datosManifestacion->id)->first()
+                    : null;
             }
             
             if (!$datosManifestacion || $datosManifestacion->status !== 'guardado') {
@@ -1660,10 +1710,9 @@ class MveController extends Controller
                 }
                 
                 if ($resultado['success']) {
-                    // Eliminar el borrador completo — los datos permanentes quedaron en mv_acuses.
-                    // mv_informacion_cove y mv_documentos se eliminan por la FK CASCADE.
-                    // mv_acuses.datos_manifestacion_id queda en NULL por la FK onDelete('set null').
-                    $datosManifestacion->delete();
+                    // NO se elimina el borrador: el registro mv_datos_manifestacion permanece con
+                    // status='enviado' para mantener la trazabilidad y la relación con mv_acuses.
+                    // El status 'enviado' lo excluye de la lista de pendientes automáticamente.
                     session()->forget('mve_draft_' . $applicantId);
 
                     // Enviar correo de acuse al usuario y en copia al administrador

@@ -413,9 +413,11 @@ class MveSignService
 
         if ($folioReal) {
             $acuse = MvAcuse::create([
-                'applicant_id' => $applicant->id,
+                'applicant_id'           => $applicant->id,
                 'datos_manifestacion_id' => $datosManifestacion->id,
-                'folio_manifestacion' => $folioReal, // Usar numeroManifestacion como folio principal
+                'created_by_user_id'     => $datosManifestacion->created_by_user_id,
+                'folio_interno'          => $datosManifestacion->folio_interno,
+                'folio_manifestacion'    => $folioReal, // Usar numeroManifestacion como folio principal
                 'numero_cove' => $numeroManifestacion ?: null, // eDocument/MNVA...
                 'numero_pedimento' => $datosManifestacion->pedimento,
                 'acuse_pdf' => $acusePdf, // Guardar acuse PDF si viene en respuesta

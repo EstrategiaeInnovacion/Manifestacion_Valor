@@ -64,9 +64,20 @@ Route::get('/dashboard', function () {
 
     $mvePendientesCount = MvDatosManifestacion::whereIn('applicant_id', $applicantIds)
         ->whereIn('status', ['borrador', 'guardado', 'rechazado'])
+        ->when($user->role === 'Usuario', fn($q) => $q->where('created_by_user_id', $user->id))
         ->count();
 
-    $mveCompletadasCount = MvAcuse::whereIn('applicant_id', $applicantIds)->count();
+    $mveCompletadasCount = MvAcuse::whereIn('applicant_id', $applicantIds)
+        ->when($user->role === 'Usuario', function ($q) use ($user) {
+            $q->where(function ($inner) use ($user) {
+                $inner->where('created_by_user_id', $user->id)
+                      ->orWhere(function ($sub) use ($user) {
+                          $sub->whereNull('created_by_user_id')
+                              ->whereHas('datosManifestacion', fn($dm) => $dm->where('created_by_user_id', $user->id));
+                      });
+            });
+        })
+        ->count();
 
     return view('dashboard', compact('mvePendientesCount', 'mveCompletadasCount'));
 })->middleware(['auth', 'verified', 'license'])->name('dashboard');
@@ -103,6 +114,7 @@ Route::middleware(['auth', 'license'])->group(function () {
         }
         $count = MvDatosManifestacion::whereIn('applicant_id', $applicantIds)
             ->whereIn('status', ['borrador', 'guardado', 'rechazado'])
+            ->when($user->role === 'Usuario', fn($q) => $q->where('created_by_user_id', $user->id))
             ->count();
         return response()->json(['count' => $count]);
     })->name('mve.pending-count');

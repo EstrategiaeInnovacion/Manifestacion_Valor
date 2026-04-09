@@ -96,6 +96,13 @@
             {{-- Lista de MVE Completadas --}}
             <div class="space-y-4">
                 @forelse($mveCompletadas as $acuse)
+                    @php
+                        // Fuente primaria: columnas propias del acuse (post-fix)
+                        // Fallback: via datosManifestacion si la relación aún existe (registros intermedios)
+                        $folioInterno = $acuse->folio_interno ?? $acuse->datosManifestacion?->folio_interno;
+                        $creatorUser  = $acuse->createdByUser ?? $acuse->datosManifestacion?->createdByUser;
+                        $esAdmin      = in_array(auth()->user()->role, ['SuperAdmin', 'Admin']);
+                    @endphp
                     <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition-shadow">
                         <div class="p-6">
                             <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -109,19 +116,19 @@
                                             <h3 class="font-bold text-lg text-[#001a4d]">
                                                 {{ $acuse->applicant->business_name ?? 'Sin nombre' }}
                                             </h3>
-                                            @if($acuse->datosManifestacion?->folio_interno)
+                                            @if($folioInterno)
                                                 <span class="inline-flex items-center gap-1 px-2.5 py-1 bg-slate-100 text-slate-600 rounded-lg text-xs font-bold">
                                                     <i data-lucide="hash" class="w-3 h-3"></i>
-                                                    {{ $acuse->datosManifestacion->folio_interno }}
+                                                    {{ $folioInterno }}
                                                 </span>
                                             @endif
                                         </div>
                                         <div class="flex flex-wrap items-center gap-3 mb-1">
                                             <p class="text-slate-500 text-sm">RFC: {{ $acuse->applicant->applicant_rfc ?? 'N/A' }}</p>
-                                            @if($acuse->datosManifestacion?->createdByUser)
+                                            @if($creatorUser && $esAdmin)
                                                 <span class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-indigo-50 border border-indigo-200 rounded-lg text-xs font-semibold text-indigo-700">
                                                     <i data-lucide="user" class="w-3 h-3"></i>
-                                                    {{ $acuse->datosManifestacion->createdByUser->full_name }}
+                                                    {{ $creatorUser->full_name }}
                                                 </span>
                                             @endif
                                         </div>
@@ -177,7 +184,7 @@
                                         Consultar
                                     </button>
 
-                                    @if($acuse->acuse_pdf)
+                                    @if($acuse->acuse_pdf && $acuse->datos_manifestacion_id)
                                         <a href="{{ route('mve.acuse.pdf', ['manifestacion' => $acuse->datos_manifestacion_id]) }}"
                                            target="_blank"
                                            class="inline-flex items-center px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition-all">

@@ -181,19 +181,7 @@
 
                 </div>
 
-                {{-- Zona de Peligro --}}
-                <div class="profile-section-card danger-zone-card" id="section-danger">
-                    <div class="section-card-header danger-header">
-                        <div class="section-icon-wrap" style="background:#fef2f2;">
-                            <i data-lucide="triangle-alert" class="w-5 h-5" style="color:#dc2626;"></i>
-                        </div>
-                        <div>
-                            <h3 class="section-card-title" style="color:#dc2626;">Zona de Peligro</h3>
-                            <p class="section-card-desc">Acciones permanentes e irreversibles sobre tu cuenta.</p>
-                        </div>
-                    </div>
-                    @include('profile.partials.delete-user-form')
-                </div>
+
 
             </div>
         </main>

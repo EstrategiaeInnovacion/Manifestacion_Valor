@@ -14,6 +14,8 @@ class MvAcuse extends Model
     protected $fillable = [
         'applicant_id',
         'datos_manifestacion_id',
+        'created_by_user_id',
+        'folio_interno',
         'folio_manifestacion',
         'numero_pedimento',
         'numero_cove',
@@ -46,5 +48,14 @@ class MvAcuse extends Model
     public function datosManifestacion()
     {
         return $this->belongsTo(MvDatosManifestacion::class, 'datos_manifestacion_id');
+    }
+
+    /**
+     * Relación con el usuario que creó la MVE (columna propia, no via datosManifestacion).
+     * Persiste aunque se borre el borrador.
+     */
+    public function createdByUser()
+    {
+        return $this->belongsTo(\App\Models\User::class, 'created_by_user_id');
     }
 }
