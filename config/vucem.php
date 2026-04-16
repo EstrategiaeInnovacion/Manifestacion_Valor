@@ -54,6 +54,25 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Configuración del Servicio RecibirCove (Transmisión)
+    |--------------------------------------------------------------------------
+    */
+    'recibir_cove' => [
+        // Puerto 8110 normalmente se usa en QA y no se usa en Prod según algunas documentaciones, pero por defecto:
+        'endpoint' => env('VUCEM_RECIBIR_COVE_ENDPOINT', 'https://www.ventanillaunica.gob.mx/ventanilla/RecibirCoveService'),
+        'soap_action' => env('VUCEM_RECIBIR_COVE_ACTION', 'http://www.ventanillaunica.gob.mx/cove/wsrecepcion'),
+        'wsdl_path' => base_path('wsdl/vucem/COVE/RecibirCoveService.wsdl'),
+        
+        // Configuración SOAP
+        'soap_version' => config('vucem.soap_1_1'),
+        'connection_timeout' => 30,
+        'trace' => true,
+        'exceptions' => true,
+        'cache_wsdl' => config('vucem.wsdl_cache_none'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Configuración del Servicio ConsultaAcuses (para descargar PDFs)
     |--------------------------------------------------------------------------
     */

@@ -11,6 +11,7 @@ use App\Http\Controllers\SupportController;
 use App\Http\Controllers\TicketController;
 use App\Http\Controllers\LicenseController;
 use App\Http\Controllers\AnnouncementController;
+use App\Http\Controllers\CoveController;
 use App\Models\MvClientApplicant;
 use App\Models\MvDatosManifestacion;
 use App\Models\User;
@@ -203,6 +204,18 @@ Route::middleware(['auth', 'license'])->group(function () {
         Route::post('/mve/parse-pedimento-edocuments', [MveController::class , 'parsePedimentoEdocuments'])->name('mve.parse-pedimento-edocuments');
         Route::post('/mve/validate-edocument', [MveController::class , 'validateEdocument'])->name('mve.validate-edocument');
         Route::get('/mve/cove/info/{applicant}', [MveController::class , 'buscarCoveInfo'])->name('mve.cove.info');
+
+        // ==========================================================
+        // MÓDULO COVE (FRONTEND EXCLUSIVO)
+        // ==========================================================
+        Route::prefix('cove')->name('cove.')->group(function () {
+            Route::get('/pendientes', [CoveController::class, 'pendientes'])->name('pendientes');
+            Route::get('/completadas', [CoveController::class, 'completadas'])->name('completadas');
+            Route::get('/select-applicant', [CoveController::class, 'selectApplicant'])->name('select-applicant');
+            Route::get('/manual/{applicant}', [CoveController::class, 'createManual'])->name('create-manual');
+            Route::post('/save-draft/{applicant}', [CoveController::class, 'saveDraft'])->name('save-draft');
+            Route::post('/firmar-enviar/{applicant}', [CoveController::class, 'firmarEnviarAjax'])->name('firmar-enviar');
+        });
 
         // ==========================================================
         // MÓDULO DE CONSULTA DE COVE

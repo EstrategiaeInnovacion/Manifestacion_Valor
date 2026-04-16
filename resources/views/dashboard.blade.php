@@ -250,6 +250,23 @@
                         </div>
                     </a>
 
+                    {{-- TRANSMITIR COVE --}}
+                    <a href="{{ route('cove.pendientes') }}" class="modern-card group border-t-4 border-t-indigo-500">
+                        <div class="card-content">
+                            <div class="icon-box bg-indigo-50 text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-all duration-500">
+                                <i data-lucide="file-plus-2" class="w-8 h-8"></i>
+                            </div>
+                            <h3 class="text-xl font-bold text-[#001a4d] mt-6">Transmitir COVE</h3>
+                            <p class="text-slate-500 text-sm mt-3 leading-relaxed">
+                                Generación y firmado de Comprobantes de Valor.
+                            </p>
+                            <div class="mt-8 flex items-center text-indigo-600 font-bold text-sm">
+                                Gestionar 
+                                <i data-lucide="move-right" class="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform"></i>
+                            </div>
+                        </div>
+                    </a>
+
                     {{-- CONSULTA COVE --}}
                     <a href="{{ route('cove.consulta.index') }}" class="modern-card group border-t-4 border-t-emerald-600 relative overflow-hidden transition-all hover:shadow-xl">
                         <div class="card-content">

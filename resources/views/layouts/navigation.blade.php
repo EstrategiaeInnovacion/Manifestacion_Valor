@@ -15,6 +15,14 @@
                     <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
                         {{ __('Dashboard') }}
                     </x-nav-link>
+                    
+                    <x-nav-link :href="route('cove.pendientes')" :active="request()->routeIs('cove.pendientes')">
+                        {{ __('COVE Pendientes') }}
+                    </x-nav-link>
+
+                    <x-nav-link :href="route('cove.completadas')" :active="request()->routeIs('cove.completadas')">
+                        {{ __('COVE Completadas') }}
+                    </x-nav-link>
                 </div>
             </div>
 
