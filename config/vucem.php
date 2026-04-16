@@ -5,28 +5,9 @@ return [
     |--------------------------------------------------------------------------
     | Configuración VUCEM (Ventanilla Única de Comercio Exterior)
     |--------------------------------------------------------------------------
-    |
-    | Configuración para los servicios web de VUCEM.
-    | Configuración para ambiente de PRUEBAS.
-    |
-    | IMPORTANTE: Las credenciales (RFC y clave webservice) se obtienen 
-    | automáticamente del perfil del usuario autenticado, NO del .env
-    |
     */
-
-    /*
-    |--------------------------------------------------------------------------
-    | SEGURIDAD COVE - Control de Generación
-    |--------------------------------------------------------------------------
-    |
-    | ⚠️  PELIGRO: RecibirCove genera trámites REALES ante SAT
-    | ✅  SEGURO:  ConsultarRespuestaCove solo consulta
-    |
-    | Deshabilita RecibirCove en producción para evitar generar 
-    | trámites no deseados.
-    |
-    */
-    'cove_recibir_enabled' => env('COVE_RECIBIR_ENABLED', false),
+    'soap_1_1' => 1,
+    'wsdl_cache_none' => 0,
 
     // RFC para el sello digital (RFC de prueba oficial SAT)
     'rfc' => env('VUCEM_RFC', 'GWT921026L97'),
@@ -44,11 +25,11 @@ return [
         'soap_action' => env('VUCEM_EDOCUMENT_ACTION', null), // null = auto-detect from WSDL
         
         // Configuración SOAP para ambiente de pruebas
-        'soap_version' => SOAP_1_1,
+        'soap_version' => config('vucem.soap_1_1'),
         'connection_timeout' => 30,
         'trace' => true,
         'exceptions' => true,
-        'cache_wsdl' => WSDL_CACHE_NONE,
+        'cache_wsdl' => config('vucem.wsdl_cache_none'),
     ],
 
     /*
@@ -64,11 +45,11 @@ return [
         'wsdl_path' => base_path('wsdl/vucem/COVE/ConsultarRespuestaCoveService.wsdl'),
         
         // Configuración SOAP
-        'soap_version' => SOAP_1_1,
+        'soap_version' => config('vucem.soap_1_1'),
         'connection_timeout' => 30,
         'trace' => true,
         'exceptions' => true,
-        'cache_wsdl' => WSDL_CACHE_NONE,
+        'cache_wsdl' => config('vucem.wsdl_cache_none'),
     ],
 
     /*
@@ -82,11 +63,11 @@ return [
         'wsdl_path' => base_path('wsdl/vucem/ACUSES/ConsultaAcusesServiceWS.wsdl'),
         
         // Configuración SOAP
-        'soap_version' => SOAP_1_1,
+        'soap_version' => config('vucem.soap_1_1'),
         'connection_timeout' => 30,
         'trace' => true,
         'exceptions' => true,
-        'cache_wsdl' => WSDL_CACHE_NONE,
+        'cache_wsdl' => config('vucem.wsdl_cache_none'),
     ],
 
     /*
@@ -144,7 +125,7 @@ return [
         'key_file' => 'Claveprivada_FIEL_NET070608EM9_20250604_163343.key',
         
         // Configuración de firma
-        'signature_algorithm' => OPENSSL_ALGO_SHA256,
+        'signature_algorithm' => 5, // OPENSSL_ALGO_SHA256
     ],
 
     /*
@@ -160,6 +141,16 @@ return [
     
     'mv_consulta_endpoint' => env('VUCEM_MV_CONSULTA_ENDPOINT', 'https://privados.ventanillaunica.gob.mx/ConsultaManifestacionImpl/ConsultaManifestacionService?wsdl'),
     'mv_consulta_wsdl' => env('VUCEM_MV_CONSULTA_WSDL', 'https://privados.ventanillaunica.gob.mx/ConsultaManifestacionImpl/ConsultaManifestacionService?wsdl'),
-    
+
+    /*
+    |--------------------------------------------------------------------------
+    | Configuración Pedimentos
+    |--------------------------------------------------------------------------
+    */
+    'pedimentos' => [
+        'listar_endpoint' => env('VUCEM_PEDIMENTOS_LISTAR', 'https://www.ventanillaunica.gob.mx/ventanilla-ws-pedimentos/ListarPedimentosService'),
+        'consultar_completo_endpoint' => env('VUCEM_PEDIMENTOS_CONSULTAR', 'https://www.ventanillaunica.gob.mx/ventanilla-ws-pedimentos/ConsultarPedimentoCompletoService'),
+    ],
+
     'soap_timeout' => env('VUCEM_SOAP_TIMEOUT', 60),
 ];

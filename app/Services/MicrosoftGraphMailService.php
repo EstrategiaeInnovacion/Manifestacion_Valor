@@ -8,17 +8,17 @@ use Illuminate\Support\Facades\Cache;
 
 class MicrosoftGraphMailService
 {
-    protected string $tenantId;
-    protected string $clientId;
-    protected string $clientSecret;
-    protected string $fromAddress;
+    protected string $tenantId = '';
+    protected string $clientId = '';
+    protected string $clientSecret = '';
+    protected string $fromAddress = '';
 
     public function __construct()
     {
-        $this->tenantId = config('services.microsoft_graph.tenant_id');
-        $this->clientId = config('services.microsoft_graph.client_id');
-        $this->clientSecret = config('services.microsoft_graph.client_secret');
-        $this->fromAddress = config('services.microsoft_graph.from_address');
+        $this->tenantId = config('services.microsoft_graph.tenant_id') ?? '';
+        $this->clientId = config('services.microsoft_graph.client_id') ?? '';
+        $this->clientSecret = config('services.microsoft_graph.client_secret') ?? '';
+        $this->fromAddress = config('services.microsoft_graph.from_address') ?? '';
     }
 
     /**

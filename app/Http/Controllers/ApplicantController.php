@@ -150,13 +150,22 @@ class ApplicantController extends Controller
 
         // Procesar archivos VUCEM si se proporcionaron
         if ($request->hasFile('vucem_key_file')) {
+            $keyFile = $request->file('vucem_key_file');
+            Log::info('VUCEM KEY FILE detected', [
+                'name' => $keyFile->getClientOriginalName(),
+                'size' => $keyFile->getSize(),
+            ]);
             $data['vucem_key_file'] = base64_encode(
-                file_get_contents($request->file('vucem_key_file')->getRealPath())
+                file_get_contents($keyFile->getRealPath())
             );
         }
 
         if ($request->hasFile('vucem_cert_file')) {
             $certFile = $request->file('vucem_cert_file');
+            Log::info('VUCEM CERT FILE detected', [
+                'name' => $certFile->getClientOriginalName(),
+                'size' => $certFile->getSize(),
+            ]);
             $data['vucem_cert_file'] = base64_encode(file_get_contents($certFile->getRealPath()));
             $data['vucem_cert_vigencia'] = $this->extractCertExpiry($certFile->getRealPath());
             $data['seal_expiry_notified'] = false;
@@ -177,6 +186,13 @@ class ApplicantController extends Controller
         }
 
         $applicant = MvClientApplicant::create($data);
+        
+        Log::info('Applicant created', [
+            'id' => $applicant->id,
+            'rfc' => $applicant->applicant_rfc,
+            'has_key' => !empty($applicant->vucem_key_file),
+            'has_cert' => !empty($applicant->vucem_cert_file),
+        ]);
 
         // Sincronizar usuarios asignados (muchos-a-muchos)
         $assignedIds = array_filter($validated['assigned_user_ids'] ?? []);
