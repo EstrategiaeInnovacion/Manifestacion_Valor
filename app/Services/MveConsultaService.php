@@ -151,6 +151,7 @@ class MveConsultaService
 
         $xml = $xmlResult['xml'];
         $endpoint = config('vucem.mv_consulta_wsdl', 'https://privados.ventanillaunica.gob.mx/ConsultaManifestacionImpl/ConsultaManifestacionService?wsdl');
+        $soapAction = 'http://www.ventanillaunica.gob.mx/ventanilla/consultarManifestacion';
 
         Log::info('[MV_CONSULTA] Iniciando consulta a VUCEM', [
             'rfc' => $rfc,
@@ -160,17 +161,18 @@ class MveConsultaService
 
         try {
             // 2. Enviar petición SOAP usando cURL (mismo método que el registro)
-            $ch = curl_init($endpoint);
+$ch = curl_init($endpoint);
             curl_setopt_array($ch, [
                 CURLOPT_RETURNTRANSFER => true,
                 CURLOPT_POST => true,
                 CURLOPT_POSTFIELDS => $xml,
-                CURLOPT_TIMEOUT => config('vucem.soap_timeout', 60),
+                CURLOPT_TIMEOUT => 300,
+                CURLOPT_CONNECTTIMEOUT => 120,
                 CURLOPT_SSL_VERIFYPEER => false,
                 CURLOPT_SSL_CIPHER_LIST => 'DEFAULT@SECLEVEL=0',
                 CURLOPT_HTTPHEADER => [
                     'Content-Type: text/xml; charset=utf-8',
-                    'SOAPAction: ""',
+                    'SOAPAction: "' . $soapAction . '"',
                     'Content-Length: ' . strlen($xml)
                 ]
             ]);

@@ -5,6 +5,12 @@
 
     RewriteEngine On
 
+    # PHP config for large requests
+    <IfModule mod_php7.c>
+        php_value max_execution_time 600
+        php_value max_input_time 600
+    </IfModule>
+
     # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .
     RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
