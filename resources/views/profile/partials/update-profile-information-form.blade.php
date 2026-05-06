@@ -18,27 +18,8 @@
 
         <div class="form-group">
             <label for="email" class="form-label">Correo Electrónico</label>
-            <input id="email" name="email" type="email" class="form-input" value="{{ old('email', $user->email) }}" required autocomplete="username">
-            @error('email')
-                <p class="error-message">{{ $message }}</p>
-            @enderror
-
-            @if ($user instanceof \Illuminate\Contracts\Auth\MustVerifyEmail && ! $user->hasVerifiedEmail())
-                <div class="verification-box">
-                    <p class="text-sm">
-                        Tu correo electrónico no está verificado.
-                        <button form="send-verification" class="verification-link">
-                            Haz clic aquí para reenviar el correo de verificación.
-                        </button>
-                    </p>
-
-                    @if (session('status') === 'verification-link-sent')
-                        <p class="success-message mt-2">
-                            Un nuevo enlace de verificación ha sido enviado a tu correo.
-                        </p>
-                    @endif
-                </div>
-            @endif
+            <input id="email" type="email" class="form-input" value="{{ $user->email }}" disabled>
+            <p class="text-xs text-slate-400 mt-1">El correo electrónico no puede modificarse.</p>
         </div>
 
         <div class="flex items-center gap-4">

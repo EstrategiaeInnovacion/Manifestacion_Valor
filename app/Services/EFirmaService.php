@@ -28,8 +28,13 @@ class EFirmaService
                 $passwordLlave
             );
 
-            // (Opcional) Validar que el RFC del certificado coincida con el usuario
+            // Validar que el RFC del certificado coincida con el usuario
             $rfcCertificado = $credential->rfc();
+            Log::info('[EFirmaService] RFC encontrado en certificado', [
+                'rfc_certificado' => $rfcCertificado,
+                'rfc_solicitado'  => $rfc,
+                'coinciden'       => ($rfc === $rfcCertificado),
+            ]);
             if ($rfc !== $rfcCertificado) {
                 Log::warning("[EFirmaService] El RFC del certificado ($rfcCertificado) no coincide con el RFC del usuario ($rfc).");
             }

@@ -82,7 +82,12 @@ class ConsultarEdocumentService
             $this->claveWebService = trim($claveWebService);
             $eDocument = trim($eDocument);
 
-            Log::info('[EDOCUMENT] Iniciando consulta XML Manual', ['eDocument' => $eDocument]);
+            Log::info('[EDOCUMENT] Iniciando consulta XML Manual', [
+                'eDocument'        => $eDocument,
+                'rfc'              => $this->rfc,
+                'clave_ws_preview' => substr($this->claveWebService, 0, 4) . str_repeat('*', max(0, strlen($this->claveWebService) - 4)),
+                'clave_ws_len'     => strlen($this->claveWebService),
+            ]);
 
             // =========================================================================
             // CORRECCIÓN DE LA CADENA ORIGINAL
@@ -109,6 +114,12 @@ class ConsultarEdocumentService
                 $llavePrivadaPath,
                 $passwordLlave
             );
+
+            Log::info('[EDOCUMENT] Firma generada correctamente', [
+                'rfc_solicitado'    => $this->rfc,
+                'cert_len'          => strlen($firma['certificado']),
+                'firma_len'         => strlen($firma['firma']),
+            ]);
 
             // 2. Header de Seguridad (Timestamp + Token)
             $this->setSecurityHeader();
@@ -175,9 +186,19 @@ class ConsultarEdocumentService
 
         }
         catch (SoapFault $e) {
+            // Capturar el XML enviado y recibido para diagnosticar qué rechazó VUCEM
+            try {
+                $lastRequest  = $this->soapClient->__getLastRequest();
+                $lastResponse = $this->soapClient->__getLastResponse();
+            } catch (\Throwable $ex) {
+                $lastRequest  = 'N/A';
+                $lastResponse = 'N/A';
+            }
             Log::error('[EDOCUMENT] SOAP Fault: ' . $e->getMessage(), [
-                'code' => $e->faultcode ?? 'N/A',
-                'detail' => $e->detail ?? 'N/A'
+                'code'          => $e->faultcode ?? 'N/A',
+                'detail'        => $e->detail ?? 'N/A',
+                'last_request'  => $lastRequest,
+                'last_response' => $lastResponse,
             ]);
             return ['success' => false, 'message' => "Error VUCEM: " . $e->getMessage()];
         }
