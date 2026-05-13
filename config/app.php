@@ -41,6 +41,10 @@ return [
 
     'debug' => (bool) env('APP_DEBUG', false),
 
+    // Habilita el panel de debug del digitalizador VUCEM (solo SuperAdmin)
+    // Poner en false (o eliminar del .env) cuando no se esté depurando
+    'pdf_debug_enabled' => (bool) env('PDF_DEBUG_ENABLED', false),
+
     /*
     |--------------------------------------------------------------------------
     | Application URL
