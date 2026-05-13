@@ -165,6 +165,10 @@ Route::middleware(['auth', 'license'])->group(function () {
             Route::patch('/admin/settings', [App\Http\Controllers\AdminSettingsController::class, 'update'])->name('admin.settings.update');
             Route::get('/admin/estadisticas', [App\Http\Controllers\AdminStatsController::class, 'index'])->name('admin.estadisticas');
 
+            // Debug digitalizador VUCEM (solo SuperAdmin)
+            Route::get('/admin/pdf-debug', [App\Http\Controllers\Admin\PdfDebugController::class, 'index'])->name('admin.pdf-debug');
+            Route::post('/admin/pdf-debug/test', [App\Http\Controllers\Admin\PdfDebugController::class, 'test'])->name('admin.pdf-debug.test');
+
             // Manuales de uso — subir y eliminar (solo SuperAdmin)
             Route::post('/manuals', [App\Http\Controllers\UserManualController::class, 'store'])->name('manuals.store');
             Route::delete('/manuals/{manual}', [App\Http\Controllers\UserManualController::class, 'destroy'])->name('manuals.destroy');
