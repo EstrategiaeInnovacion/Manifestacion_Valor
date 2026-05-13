@@ -26,6 +26,7 @@ return [
     */
 
     'ghostscript' => env('GHOSTSCRIPT_PATH', ''),
+    'imagemagick' => env('IMAGEMAGICK_PATH', ''),
 
     /*
     |--------------------------------------------------------------------------
