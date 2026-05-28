@@ -28,6 +28,10 @@ class DigitalizarDocumentoService
         string $rfcConsulta = ''
         ): array
     {
+        // El flujo completo puede tomar varios minutos: conversión PDF + envío VUCEM + polling
+        set_time_limit(600);
+        ini_set('max_execution_time', '600');
+
         try {
             // 1. LIMPIEZA
             $nombreArchivoLimpio = $this->limpiarNombreArchivo($nombreArchivo);
@@ -152,6 +156,23 @@ class DigitalizarDocumentoService
             if ($curlError) {
                 return $this->handleCurlError($curlError, 'DIGITALIZACION');
             }
+
+            // Detectar respuestas de infraestructura VUCEM (WebLogic, balanceador) antes de parsear SOAP.
+            // HTTP 5xx con HTML = servidores backend de VUCEM caídos o sin capacidad.
+            if ($httpCode >= 500 || ($httpCode > 0 && !str_contains($responseBody, '<S:Body') && str_contains($responseBody, '<HTML'))) {
+                Log::warning('[DIGITALIZACION] VUCEM infraestructura no disponible', [
+                    'http_code'    => $httpCode,
+                    'body_preview' => substr(strip_tags($responseBody), 0, 200),
+                ]);
+                $this->registrarErrorVucemPublico($httpCode . ' - Infraestructura VUCEM no disponible', 'DIGITALIZACION');
+                return [
+                    'success'            => false,
+                    'connectivity_error' => true,
+                    'message'            => 'El servicio VUCEM no está disponible en este momento (error ' . $httpCode . '). '
+                                         . 'Esto es un problema del servicio externo, no del sistema. Intente de nuevo en unos minutos.',
+                ];
+            }
+
             Log::info('[DIGITALIZACION] Respuesta VUCEM', [
                 'status' => $httpCode,
                 'body_preview' => substr($responseBody, 0, 2000)
@@ -168,7 +189,7 @@ class DigitalizarDocumentoService
                 if (preg_match_all('/<[:\w]*mensaje>(.*?)<\/[:\w]*mensaje>/', $responseBody, $allErrors)) {
                     $msg = implode(" | ", $allErrors[1]);
                 }
-                return ['success' => false, 'message' => "VUCEM Rechazo: " . $msg];
+                return ['success' => false, 'message' => "VUCEM no aceptó el documento: " . $msg];
             }
 
             if (preg_match('/<[:\w]*eDocument>(.*?)<\/[:\w]*eDocument>/', $responseBody, $matches)) {
@@ -207,12 +228,32 @@ class DigitalizarDocumentoService
                 ];
             }
 
-            return ['success' => false, 'message' => "Respuesta ambigua de VUCEM (Ver Logs)."];
+            // VUCEM devolvió SOAP sin eDocument, numeroOperacion ni tieneError reconocible.
+            // Respuesta malformada o incompleta — probable problema interno de VUCEM.
+            Log::warning('[DIGITALIZACION] Respuesta SOAP sin resultado reconocible', [
+                'http_code'    => $httpCode,
+                'body_preview' => substr($responseBody, 0, 300),
+            ]);
+            $this->registrarErrorVucemPublico('Respuesta SOAP sin resultado (HTTP ' . $httpCode . ')', 'DIGITALIZACION');
+            return [
+                'success'            => false,
+                'connectivity_error' => true,
+                'message'            => 'VUCEM respondió de forma inesperada. Esto ocurre cuando el servicio tiene problemas temporales. Intente de nuevo en unos minutos.',
+            ];
 
         }
         catch (Exception $e) {
-            Log::error('[DIGITALIZACION] Excepción: ' . $e->getMessage());
-            return ['success' => false, 'message' => $e->getMessage()];
+            $msg = $e->getMessage();
+            Log::error('[DIGITALIZACION] Excepción: ' . $msg);
+            // Si la excepción tiene señales de red/conectividad, usar el canal de diagnóstico
+            $esConectividad = str_contains($msg, 'timed out')
+                || str_contains($msg, 'SSL')
+                || str_contains($msg, 'Connection reset')
+                || str_contains(strtolower($msg), 'curl');
+            if ($esConectividad) {
+                return $this->handleConnectionException($e, 'DIGITALIZACION');
+            }
+            return ['success' => false, 'message' => 'Error al procesar la solicitud de digitalización. Intente de nuevo.'];
         }
     }
 
@@ -389,10 +430,20 @@ class DigitalizarDocumentoService
                     if (preg_match_all('/<[:\w]*mensaje>(.*?)<\/[:\w]*mensaje>/', $body, $allMsgs)) {
                         $errMsg = implode(' | ', $allMsgs[1]);
                     }
-                    Log::warning('[DIGITALIZACION] Error de negocio en consulta operación', [
-                        'operacion' => $numeroOperacion,
-                        'error' => $errMsg,
-                    ]);
+                    // "se encuentra procesando" es el estado normal del flujo asíncrono de VUCEM
+                    $esEnProceso = str_contains(strtolower($errMsg), 'procesando')
+                        || str_contains(strtolower($errMsg), 'procesamiento');
+                    if ($esEnProceso) {
+                        Log::info('[DIGITALIZACION] Operación aún procesando en VUCEM (estado normal)', [
+                            'operacion' => $numeroOperacion,
+                            'mensaje' => $errMsg,
+                        ]);
+                    } else {
+                        Log::warning('[DIGITALIZACION] Error de negocio en consulta operación', [
+                            'operacion' => $numeroOperacion,
+                            'error' => $errMsg,
+                        ]);
+                    }
                     return null;
                 }
             }
@@ -483,10 +534,10 @@ class DigitalizarDocumentoService
                 return $this->handleCurlError($curlError, 'DIGITALIZACION_EDOCUMENT');
             }
 
-            // Errores
+            // Errores de negocio devueltos por VUCEM
             if (preg_match('/<[:\w]*tieneError>(.*?)<\/[:\w]*tieneError>/', $body, $matchErr)) {
                 if (filter_var($matchErr[1], FILTER_VALIDATE_BOOLEAN)) {
-                    $msg = "No encontrado";
+                    $msg = "El eDocument no fue encontrado o no está disponible.";
                     if (preg_match('/<[:\w]*mensaje>(.*?)<\/[:\w]*mensaje>/', $body, $mMsg))
                         $msg = $mMsg[1];
                     return ['success' => false, 'message' => $msg];
@@ -505,14 +556,27 @@ class DigitalizarDocumentoService
                 $datos['tipo_documento'] = $m[1];
 
             if (empty($datos) && !str_contains($body, 'nombreDocumento')) {
-                return ['success' => false, 'message' => 'eDocument no encontrado en Digitalización.'];
+                Log::warning('[DIGITALIZACION_EDOCUMENT] Respuesta VUCEM sin datos reconocibles');
+                $this->registrarErrorVucemPublico('Respuesta sin datos al consultar eDocument', 'DIGITALIZACION_EDOCUMENT');
+                return [
+                    'success'            => false,
+                    'connectivity_error' => true,
+                    'message'            => 'VUCEM no devolvió información. Es posible que el servicio tenga problemas temporales. Intente de nuevo en unos minutos.',
+                ];
             }
 
             return ['success' => true, 'data' => $datos, 'tipo' => 'DIGITALIZACION'];
 
         }
         catch (Exception $e) {
-            return ['success' => false, 'message' => 'Error: ' . $e->getMessage()];
+            $msg = $e->getMessage();
+            $esConectividad = str_contains($msg, 'timed out') || str_contains($msg, 'SSL')
+                || str_contains($msg, 'Connection reset') || str_contains(strtolower($msg), 'curl');
+            if ($esConectividad) {
+                return $this->handleConnectionException($e, 'DIGITALIZACION_EDOCUMENT');
+            }
+            Log::error('[DIGITALIZACION_EDOCUMENT] Excepción: ' . $msg);
+            return ['success' => false, 'message' => 'Error al consultar el eDocument. Intente de nuevo.'];
         }
     }
 }

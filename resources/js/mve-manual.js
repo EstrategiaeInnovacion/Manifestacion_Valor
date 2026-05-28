@@ -737,12 +737,25 @@ window.loadSavedDataCallback = function() {
     loadMveFromLocalStorage();
 
     if (Array.isArray(data.documentos) && data.documentos.length > 0) {
+        let pendingEntry = null;
         data.documentos.forEach((documento) => {
-            if (!documento) {
-                return;
+            if (!documento) return;
+            if ((documento.folio_edocument || '').startsWith('PENDIENTE-Op-')) {
+                // Guardar la primera operación pendiente encontrada para mostrar el panel
+                if (!pendingEntry) pendingEntry = documento;
+            } else {
+                addEdocumentToTable(documento);
             }
-            addEdocumentToTable(documento);
         });
+
+        // Si existe una operación pendiente, mostrar el panel con el botón para obtener el folio
+        if (pendingEntry) {
+            const numOp = pendingEntry.folio_edocument.replace('PENDIENTE-Op-', '');
+            showPendingOperationPanel(numOp, {
+                tipo_documento:   pendingEntry.tipo_documento,
+                nombre_documento: pendingEntry.nombre_documento,
+            });
+        }
     }
 
     // Inicializar flags de guardado según el paso inicial (datos ya en BD)
@@ -1077,6 +1090,11 @@ function addEdocumentToTable(documentData) {
         return;
     }
 
+    // Las entradas pendientes no se muestran en la tabla; se gestionan desde el panel
+    if ((documentData.folio_edocument || '').startsWith('PENDIENTE-Op-')) {
+        return;
+    }
+
     const emptyMessage = tbody.querySelector('.table-empty');
     if (emptyMessage) {
         emptyMessage.parentElement.remove();
@@ -1357,11 +1375,10 @@ window.consultarOperacionPendiente = async function() {
         const result = await response.json();
 
         if (result.success && result.eDocument) {
-            // ¡Folio obtenido!
-            window.cancelarOperacionPendiente();
-
+            // ¡Folio obtenido! Agregar a la tabla y cerrar el panel pendiente
             const tipoDoc   = _pendingDocData?.tipo_documento   ?? result.tipo_documento   ?? '';
             const nombreDoc = _pendingDocData?.nombre_documento  ?? result.nombre_documento ?? '';
+            window.cancelarOperacionPendiente();
 
             addEdocumentToTable({
                 tipo_documento:   tipoDoc,

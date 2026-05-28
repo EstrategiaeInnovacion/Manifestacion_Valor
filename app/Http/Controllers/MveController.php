@@ -143,7 +143,11 @@ class MveController extends Controller
                 if ($informacionCove->valor_en_aduana) {
                     $initialStep = 4;
                     $docsGuardados = $documentos?->documentos ?? [];
-                    $hasDocWithFolio = collect($docsGuardados)->contains(fn($d) => !empty($d['folio_edocument']));
+                    // Solo cuentan folios reales (no pendientes) para avanzar al paso 5
+                    $hasDocWithFolio = collect($docsGuardados)->contains(
+                        fn($d) => !empty($d['folio_edocument'])
+                            && !str_starts_with($d['folio_edocument'], 'PENDIENTE-Op-')
+                    );
                     if ($hasDocWithFolio) {
                         $initialStep = 5;
                     }
@@ -246,7 +250,11 @@ class MveController extends Controller
                     if ($informacionCove->valor_en_aduana) {
                         $initialStep = 4;
                         $docsGuardados = $documentos?->documentos ?? [];
-                        $hasDocWithFolio = collect($docsGuardados)->contains(fn($d) => !empty($d['folio_edocument']));
+                        // Solo cuentan folios reales (no pendientes) para avanzar al paso 5
+                        $hasDocWithFolio = collect($docsGuardados)->contains(
+                            fn($d) => !empty($d['folio_edocument'])
+                                && !str_starts_with($d['folio_edocument'], 'PENDIENTE-Op-')
+                        );
                         if ($hasDocWithFolio) {
                             $initialStep = 5;
                         }
@@ -569,7 +577,17 @@ class MveController extends Controller
         $documentos = $mveId
             ? MvDocumentos::where('datos_manifestacion_id', $mveId)->first()
             : null;
-        
+
+        // Preservar entradas pendientes que existan en BD y no hayan sido resueltas aún
+        // (el frontend no las incluye en el payload porque no están en la tabla)
+        if ($documentos) {
+            foreach ($documentos->documentos ?? [] as $existing) {
+                if (str_starts_with($existing['folio_edocument'] ?? '', 'PENDIENTE-Op-')) {
+                    $normalizedDocuments[] = $existing;
+                }
+            }
+        }
+
         if ($documentos) {
             $documentos->update([
                 'documentos' => $normalizedDocuments,
@@ -763,25 +781,25 @@ class MveController extends Controller
                     ]
                 );
 
-                if (!$isPending) {
-                    $digitMveId = $request->input('mve_id') ? (int)$request->input('mve_id') : null;
-                    // Guardar/agregar el eDocument directamente en mv_documentos (asociaciÃ³n con la MVE)
-                    $this->agregarDocumentoAMve($applicantId, [
-                        'tipo_documento' => $tipoDocumento,
-                        'nombre_documento' => $nombreDocumento,
-                        'folio_edocument' => $eDocument,
-                        'numero_operacion' => $numeroOperacion,
-                        'created_at' => now()->toDateTimeString(),
-                        'updated_at' => now()->toDateTimeString(),
-                    ], $digitMveId);
+                $digitMveId = $request->input('mve_id') ? (int)$request->input('mve_id') : null;
+                // Guardar en mv_documentos siempre, incluso pendientes (folio = 'PENDIENTE-Op-{numero}')
+                // para que el usuario pueda consultar/retomar el folio desde la MVE aunque recargue la página.
+                $this->agregarDocumentoAMve($applicantId, [
+                    'tipo_documento' => $tipoDocumento,
+                    'nombre_documento' => $nombreDocumento,
+                    'folio_edocument' => $eDocument,
+                    'numero_operacion' => $numeroOperacion,
+                    'created_at' => now()->toDateTimeString(),
+                    'updated_at' => now()->toDateTimeString(),
+                ], $digitMveId);
 
-                    Log::info('[DIGITALIZAR] eDocument guardado y asociado a MVE', [
-                        'applicant_id' => $applicantId,
-                        'eDocument' => $eDocument,
-                        'numero_operacion' => $numeroOperacion,
-                        'tipo_documento' => $tipoDocumento,
-                    ]);
-                }
+                Log::info('[DIGITALIZAR] eDocument ' . ($isPending ? 'pendiente guardado' : 'guardado y asociado') . ' en MVE', [
+                    'applicant_id' => $applicantId,
+                    'eDocument' => $eDocument,
+                    'numero_operacion' => $numeroOperacion,
+                    'tipo_documento' => $tipoDocumento,
+                    'pending' => $isPending,
+                ]);
 
                 return response()->json([
                     'success' => true,
@@ -795,8 +813,25 @@ class MveController extends Controller
                 if (file_exists($tempKeyPath)) @unlink($tempKeyPath);
             }
         } catch (\Exception $e) {
-            Log::error('[DIGITALIZAR] Error: ' . $e->getMessage());
-            return response()->json(['success' => false, 'message' => 'Error: ' . $e->getMessage()], 500);
+            $msg = $e->getMessage();
+            Log::error('[DIGITALIZAR] Error: ' . $msg);
+
+            $esConectividad = str_contains($msg, 'timed out')
+                || str_contains($msg, 'SSL')
+                || str_contains($msg, 'Connection reset')
+                || str_contains($msg, 'cURL')
+                || str_contains(strtolower($msg), 'curl');
+
+            if ($esConectividad) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'El servicio VUCEM no está disponible temporalmente. Esto no es un error del sistema. Intente de nuevo en unos minutos.',
+                    'connectivity_error' => true,
+                    'diagnostico' => (new VucemDiagnosticService())->getDiagnostico(auth()->id(), (int) $applicantId),
+                ], 422);
+            }
+
+            return response()->json(['success' => false, 'message' => 'Error al digitalizar el documento. Intente de nuevo.'], 500);
         }
     }
 
@@ -882,16 +917,42 @@ class MveController extends Controller
                     $registrado->response_message       = 'Folio obtenido por consulta de operación';
                     $registrado->save();
 
-                    // Agregar a la tabla de documentos de la MVE
+                    // Actualizar la fila pendiente en mv_documentos en lugar de agregar una nueva
+                    // para evitar duplicados cuando el folio estaba guardado como PENDIENTE-Op-{numero}
                     $mveId = $request->input('mve_id') ? (int)$request->input('mve_id') : null;
-                    $this->agregarDocumentoAMve($applicantId, [
-                        'tipo_documento'   => $registrado->tipo_documento,
-                        'nombre_documento' => $registrado->nombre_documento,
-                        'folio_edocument'  => $eDocument,
-                        'numero_operacion' => $numeroOperacion,
-                        'created_at'       => now()->toDateTimeString(),
-                        'updated_at'       => now()->toDateTimeString(),
-                    ], $mveId);
+                    $mvDocumentos = $mveId
+                        ? MvDocumentos::where('datos_manifestacion_id', $mveId)->first()
+                        : MvDocumentos::where('applicant_id', $applicantId)->latest('id')->first();
+
+                    $folioActualizado = false;
+                    if ($mvDocumentos) {
+                        $docs = $mvDocumentos->documentos ?? [];
+                        foreach ($docs as &$doc) {
+                            if (($doc['folio_edocument'] ?? '') === 'PENDIENTE-Op-' . $numeroOperacion) {
+                                $doc['folio_edocument'] = $eDocument;
+                                $doc['updated_at'] = now()->toDateTimeString();
+                                $folioActualizado = true;
+                                break;
+                            }
+                        }
+                        unset($doc);
+                        if ($folioActualizado) {
+                            $mvDocumentos->documentos = $docs;
+                            $mvDocumentos->save();
+                        }
+                    }
+
+                    if (!$folioActualizado) {
+                        // Fallback: no había fila pendiente previa, insertar como nueva
+                        $this->agregarDocumentoAMve($applicantId, [
+                            'tipo_documento'   => $registrado->tipo_documento,
+                            'nombre_documento' => $registrado->nombre_documento,
+                            'folio_edocument'  => $eDocument,
+                            'numero_operacion' => $numeroOperacion,
+                            'created_at'       => now()->toDateTimeString(),
+                            'updated_at'       => now()->toDateTimeString(),
+                        ], $mveId);
+                    }
                 }
 
                 return response()->json([
@@ -1253,6 +1314,7 @@ class MveController extends Controller
         $folio = strtoupper(trim($request->input('folio')));
 
         $vucemError = null;
+        $vucemConnectivityError = false;
 
         // 1. Si el solicitante tiene credenciales, consultar VUCEM siempre (datos frescos)
         if ($applicant->hasVucemCredentials() && $applicant->hasWebserviceKey()) {
@@ -1303,13 +1365,23 @@ class MveController extends Controller
                         ]);
                     }
 
-                    $vucemError = $result['message'] ?? 'Error desconocido';
+                    $vucemError = $result['message'] ?? 'Error al consultar VUCEM.';
+                    $vucemConnectivityError = !empty($result['connectivity_error']);
                 } else {
                     $vucemError = 'Credenciales almacenadas incompletas. Actualízalas en el módulo de Solicitantes.';
                 }
             } catch (\Exception $e) {
-                \Illuminate\Support\Facades\Log::warning('[COVE_BUSCAR] Fallo VUCEM, usando caché si existe: ' . $e->getMessage());
-                $vucemError = $e->getMessage();
+                $exMsg = $e->getMessage();
+                \Illuminate\Support\Facades\Log::warning('[COVE_BUSCAR] Fallo VUCEM, usando caché si existe: ' . $exMsg);
+
+                $esConect = str_contains($exMsg, 'timed out')
+                    || str_contains($exMsg, 'SSL')
+                    || str_contains($exMsg, 'Connection reset')
+                    || str_contains(strtolower($exMsg), 'curl');
+
+                $vucemError = $esConect
+                    ? 'El servicio VUCEM no está disponible temporalmente. Intente de nuevo en unos minutos.'
+                    : 'Error al consultar VUCEM. Intente de nuevo.';
             }
         }
 
@@ -1328,10 +1400,13 @@ class MveController extends Controller
 
         // 3. Sin resultado disponible
         if ($vucemError) {
-            return response()->json([
-                'success' => false,
-                'message' => 'No se pudo obtener información del COVE: ' . $vucemError
-            ], 422);
+            $responseData = ['success' => false, 'message' => $vucemError];
+            if ($vucemConnectivityError) {
+                $responseData['connectivity_error'] = true;
+                $responseData['diagnostico'] = (new VucemDiagnosticService())
+                    ->getDiagnostico(auth()->id(), (int) $applicantId);
+            }
+            return response()->json($responseData, 422);
         }
 
         return response()->json([

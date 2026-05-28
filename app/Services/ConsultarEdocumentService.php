@@ -186,7 +186,6 @@ class ConsultarEdocumentService
 
         }
         catch (SoapFault $e) {
-            // Capturar el XML enviado y recibido para diagnosticar qué rechazó VUCEM
             try {
                 $lastRequest  = $this->soapClient->__getLastRequest();
                 $lastResponse = $this->soapClient->__getLastResponse();
@@ -194,17 +193,31 @@ class ConsultarEdocumentService
                 $lastRequest  = 'N/A';
                 $lastResponse = 'N/A';
             }
-            Log::error('[EDOCUMENT] SOAP Fault: ' . $e->getMessage(), [
+            $soapMsg = $e->getMessage();
+            Log::error('[EDOCUMENT] SOAP Fault: ' . $soapMsg, [
                 'code'          => $e->faultcode ?? 'N/A',
                 'detail'        => $e->detail ?? 'N/A',
                 'last_request'  => $lastRequest,
                 'last_response' => $lastResponse,
             ]);
-            return ['success' => false, 'message' => "Error VUCEM: " . $e->getMessage()];
+            // Distinguir error de conectividad (SSL, timeout) de error de negocio SOAP
+            $esConectividad = str_contains($soapMsg, 'timed out') || str_contains($soapMsg, 'SSL')
+                || str_contains($soapMsg, 'Connection reset') || str_contains(strtolower($soapMsg), 'curl')
+                || str_contains($soapMsg, 'Could not connect');
+            $mensajeUsuario = $esConectividad
+                ? 'El servicio VUCEM no está disponible temporalmente. Intente de nuevo en unos minutos.'
+                : 'VUCEM rechazó la consulta. Verifique el folio e intente de nuevo.';
+            return ['success' => false, 'message' => $mensajeUsuario, 'connectivity_error' => $esConectividad];
         }
         catch (Exception $e) {
-            Log::error('[EDOCUMENT] Exception: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
-            return ['success' => false, 'message' => $e->getMessage()];
+            $msg = $e->getMessage();
+            Log::error('[EDOCUMENT] Exception: ' . $msg, ['trace' => $e->getTraceAsString()]);
+            $esConectividad = str_contains($msg, 'timed out') || str_contains($msg, 'SSL')
+                || str_contains($msg, 'Connection reset') || str_contains(strtolower($msg), 'curl');
+            $mensajeUsuario = $esConectividad
+                ? 'El servicio VUCEM no está disponible temporalmente. Intente de nuevo en unos minutos.'
+                : 'Error al consultar el eDocument. Intente de nuevo.';
+            return ['success' => false, 'message' => $mensajeUsuario, 'connectivity_error' => $esConectividad];
         }
     }
 

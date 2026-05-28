@@ -75,8 +75,31 @@ trait VucemConnectivityHandler
     }
 
     // -------------------------------------------------------------------------
-    // Métodos privados de soporte
+    // Métodos de soporte
     // -------------------------------------------------------------------------
+
+    /**
+     * Registra un error de infraestructura VUCEM (HTTP 5xx, WebLogic, SOAP malformado)
+     * sin el prefijo "cURL" que sería engañoso cuando la petición sí llegó al servidor.
+     *
+     * @param string $descripcion  Descripción breve del problema (aparece en vucem_error_logs)
+     * @param string $ctx          Contexto (ej: 'DIGITALIZACION')
+     * @param int|null $applicantId
+     */
+    protected function registrarErrorVucemPublico(string $descripcion, string $ctx, ?int $applicantId = null): void
+    {
+        try {
+            VucemErrorLog::create([
+                'user_id'       => Auth::id(),
+                'applicant_id'  => $applicantId,
+                'servicio'      => $this->contextoAServicio($ctx),
+                'tipo_error'    => 'HTTP_ERROR',
+                'curl_error_raw'=> mb_substr($descripcion, 0, 1000),
+            ]);
+        } catch (\Throwable $e) {
+            Log::warning('[VucemConnectivityHandler] No se pudo guardar error en BD: ' . $e->getMessage());
+        }
+    }
 
     /**
      * Persiste el error de conectividad en vucem_error_logs para diagnóstico posterior.

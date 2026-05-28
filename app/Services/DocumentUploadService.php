@@ -52,32 +52,53 @@ class DocumentUploadService
             // Validar formato VUCEM
             $validationResult = $this->validateVucemFormat($fullTempPath);
             
-            $finalPath = null;
             $wasConverted = false;
 
+            // Log detallado de la validación del documento original
+            Log::info('DocumentUploadService: Resultado validación original', [
+                'valido'        => $validationResult['is_valid'],
+                'errores'       => $validationResult['errors'],
+                'version'       => $validationResult['details']['version']   ?? 'N/A',
+                'tamano_mb'     => $validationResult['details']['size_mb']   ?? 'N/A',
+                'escala_grises' => ($validationResult['details']['is_grayscale'] ?? null) === true
+                    ? 'SÍ'
+                    : (($validationResult['details']['is_grayscale'] ?? null) === false ? 'NO — tiene color' : 'no verificado'),
+            ]);
+
             if ($validationResult['is_valid']) {
-                // El archivo ya cumple con VUCEM
-                Log::info('DocumentUploadService: Archivo ya válido para VUCEM');
+                Log::info('DocumentUploadService: Archivo ya válido para VUCEM — usando original sin conversión');
                 $finalContent = file_get_contents($fullTempPath);
-                $finalPath = $tempPath; // Mantener referencia para limpieza
             } else {
-                // Convertir archivo al formato VUCEM
-                Log::info('DocumentUploadService: Convirtiendo archivo a formato VUCEM', [
-                    'validation_errors' => $validationResult['errors']
+                Log::info('DocumentUploadService: Iniciando conversión a formato VUCEM', [
+                    'errores_detectados' => $validationResult['errors'],
+                    'requiere_grises'    => !($validationResult['details']['is_grayscale'] ?? true),
                 ]);
-                
+
                 $finalContent = $this->convertToBase64($fullTempPath);
                 $wasConverted = true;
-                $finalPath = $tempPath; // Mantener referencia para limpieza
             }
 
-            // Validar contenido final (crear archivo temporal para validación)
+            // Validar el documento resultante
             $tempValidationPath = 'tmp/validation_' . uniqid() . '.pdf';
             $tempValidationFullPath = Storage::path($tempValidationPath);
             file_put_contents($tempValidationFullPath, $finalContent);
-            
+
             $finalValidation = $this->validateVucemFormat($tempValidationFullPath);
-            
+
+            // Log del resultado FINAL — aquí se confirma si quedó en escala de grises
+            Log::info('DocumentUploadService: Resultado del documento FINAL (enviado a VUCEM)', [
+                'convertido'        => $wasConverted,
+                'valido_vucem'      => $finalValidation['is_valid'],
+                'errores_finales'   => $finalValidation['errors'],
+                'version_final'     => $finalValidation['details']['version']     ?? 'N/A',
+                'tamano_final_mb'   => $finalValidation['details']['size_mb']     ?? 'N/A',
+                'escala_grises_final' => ($finalValidation['details']['is_grayscale'] ?? null) === true
+                    ? 'SÍ ✓'
+                    : (($finalValidation['details']['is_grayscale'] ?? null) === false
+                        ? '⚠ NO — aún tiene color después de conversión'
+                        : 'no verificado'),
+            ]);
+
             // Limpiar archivo de validación
             @unlink($tempValidationFullPath);
             Storage::delete($tempPath);
@@ -117,6 +138,8 @@ class DocumentUploadService
     {
         $errors = [];
         $isValid = true;
+        $colorCheck      = ['is_grayscale'   => true,  'detail' => 'no verificado'];
+        $encryptionCheck = ['is_unencrypted' => true,  'detail' => 'no verificado'];
 
         try {
             // 1. Validar tamaño (máx 4MB)
@@ -305,44 +328,89 @@ class DocumentUploadService
     protected function checkGrayscale(string $filePath): array
     {
         $gsPath = $this->findGhostscript();
-        
+
         if (!$gsPath) {
-            return [
-                'is_grayscale' => false,
-                'detail' => 'Ghostscript no disponible'
-            ];
+            Log::warning('DocumentUploadService: checkGrayscale — Ghostscript no disponible, color NO verificado');
+            return ['is_grayscale' => false, 'detail' => 'Ghostscript no disponible'];
         }
 
         try {
+            // Usar el device 'inkcov' de Ghostscript — método estándar compatible con GS 9.x y 10.x.
+            // Salida por página: "C  M  Y  K  CMYK OK", ej: "0.00000  0.00050  0.00000  0.12300  CMYK OK"
+            // Si C, M, Y son todos 0 (< 0.001) → escala de grises. Si cualquiera > 0 → tiene color.
+            $nullDevice = (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') ? 'nul' : '/dev/null';
+
             $process = new Process([
                 $gsPath,
                 '-q',
-                '-dNODISPLAY',
-                '-dNOSAFER',
-                '-c',
-                "(" . str_replace('\\', '/', $filePath) . ") (r) file runpdfbegin",
-                '-c',
-                '1 1 pdfpagecount { pdfgetpage /Contents get dup type /arraytype eq { { .inkcoverage 4 1 roll pop pop pop 0.001 gt { (Color found) = quit } if } forall } { .inkcoverage 4 1 roll pop pop pop 0.001 gt { (Color found) = quit } if } ifelse } for',
-                '-c',
-                '(Grayscale) = quit'
+                '-dNOPAUSE',
+                '-dBATCH',
+                '-dSAFER',
+                '-sDEVICE=inkcov',
+                '-sOutputFile=' . $nullDevice,
+                $filePath,
             ]);
-            
+
             $process->setTimeout(config('pdftools.timeouts.validation', 30));
             $process->run();
-            
-            $output = trim($process->getOutput());
-            $isGrayscale = !str_contains($output, 'Color found');
-            
+
+            $output   = trim($process->getOutput());
+            $exitCode = $process->getExitCode();
+            $gsError  = trim($process->getErrorOutput());
+
+            // Error de GS: forzar conversión por seguridad
+            if ($exitCode !== 0 && empty($output)) {
+                Log::warning('DocumentUploadService: checkGrayscale — inkcov falló sin output, forzando conversión', [
+                    'exit_code' => $exitCode,
+                    'gs_error'  => $gsError ?: '(ninguno)',
+                    'archivo'   => basename($filePath),
+                ]);
+                return ['is_grayscale' => false, 'detail' => 'No verificado — se forzará conversión a grises'];
+            }
+
+            // Output vacío con exit_code 0 = PDF de texto/vectores puro (inkcov no genera cobertura
+            // para contenido vectorial). No podemos saber si tiene color → forzar conversión por seguridad.
+            if (empty($output)) {
+                Log::info('DocumentUploadService: checkGrayscale — inkcov sin cobertura (PDF vectorial/texto). Forzando conversión a grises por seguridad.', [
+                    'archivo' => basename($filePath),
+                ]);
+                return ['is_grayscale' => false, 'detail' => 'PDF vectorial — color no verificable, se convierte a grises'];
+            }
+
+            // Parsear cada línea: los tres primeros valores son C, M, Y
+            $hasColor = false;
+            foreach (explode("\n", $output) as $line) {
+                $line = trim($line);
+                if (preg_match('/^\s*([\d.]+)\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)\s+CMYK/', $line, $m)) {
+                    $c = (float) $m[1];
+                    $mg = (float) $m[2];
+                    $y = (float) $m[3];
+                    if ($c > 0.001 || $mg > 0.001 || $y > 0.001) {
+                        $hasColor = true;
+                        break;
+                    }
+                }
+            }
+
+            $isGrayscale = !$hasColor;
+
+            Log::info('DocumentUploadService: checkGrayscale (inkcov)', [
+                'resultado'     => $isGrayscale ? 'ESCALA DE GRISES ✓' : 'TIENE COLOR — requiere conversión',
+                'inkcov_output' => $output,
+                'archivo'       => basename($filePath),
+            ]);
+
             return [
                 'is_grayscale' => $isGrayscale,
-                'detail' => $isGrayscale ? 'Escala de grises' : 'Contiene colores'
+                'detail'       => $isGrayscale ? 'Escala de grises' : 'Contiene colores',
             ];
-            
+
         } catch (\Exception $e) {
-            return [
-                'is_grayscale' => false,
-                'detail' => 'Error verificando colores: ' . $e->getMessage()
-            ];
+            Log::warning('DocumentUploadService: checkGrayscale falló con excepción', [
+                'error'   => $e->getMessage(),
+                'archivo' => basename($filePath),
+            ]);
+            return ['is_grayscale' => false, 'detail' => 'Error verificando colores: ' . $e->getMessage()];
         }
     }
 
@@ -386,7 +454,7 @@ class DocumentUploadService
                 'detail' => 'Sin protección'
             ];
             
-        } catch (\Exception $e) {
+        } catch (\Exception) {
             return [
                 'is_unencrypted' => true,
                 'detail' => 'No se pudo verificar encriptación'
