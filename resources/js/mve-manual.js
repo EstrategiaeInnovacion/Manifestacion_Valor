@@ -1447,6 +1447,7 @@ window.digitalizarDocumento = async function() {
     formData.append('nombre_documento', nombreDoc);
     formData.append('file_content', pdfValidado.file_content);
     formData.append('rfc_consulta', rfcConsulta);
+    if (currentMveId) formData.append('mve_id', currentMveId);
 
     // Credenciales manuales (solo si no están almacenadas)
     if (!hasStoredWs) {

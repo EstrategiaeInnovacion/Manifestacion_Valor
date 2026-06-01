@@ -135,10 +135,16 @@ class VucemDiagnosticService
      * Estado del sistema VUCEM para el banner automático del layout.
      * Resultado cacheado 5 minutos para no golpear la BD en cada request.
      *
+     * Si el admin activó el override manual, devuelve OPERANDO directamente.
      * Retorna solo lo necesario para el banner: estado, titulo, mensaje.
      */
     public static function getEstadoSistema(): array
     {
+        // Si hay un override manual activo del admin, forzar OPERANDO
+        if (Cache::get('vucem_override_operando')) {
+            return ['estado' => 'OPERANDO', 'override' => true];
+        }
+
         return Cache::remember('vucem_estado_sistema', 300, function () {
             $hace30min = now()->subMinutes(30);
 
@@ -167,5 +173,32 @@ class VucemDiagnosticService
 
             return ['estado' => 'OPERANDO'];
         });
+    }
+
+    /**
+     * Fuerza el estado a OPERANDO durante 2 horas (override manual del admin).
+     * Limpia también el cache automático para que no se restablezca antes.
+     */
+    public static function forzarOperando(): void
+    {
+        Cache::forget('vucem_estado_sistema');
+        Cache::put('vucem_override_operando', true, now()->addHours(2));
+    }
+
+    /**
+     * Elimina el override manual y deja que el diagnóstico automático tome el control.
+     */
+    public static function limpiarOverride(): void
+    {
+        Cache::forget('vucem_override_operando');
+        Cache::forget('vucem_estado_sistema');
+    }
+
+    /**
+     * Indica si hay un override manual activo.
+     */
+    public static function tieneOverride(): bool
+    {
+        return (bool) Cache::get('vucem_override_operando');
     }
 }

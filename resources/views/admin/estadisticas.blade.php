@@ -101,14 +101,26 @@
                         ];
                         $ec = $estadoColorMap[$estadoActual['estado']] ?? $estadoColorMap['OPERANDO'];
                     @endphp
-                    <div class="{{ $ec['bg'] }} rounded-2xl p-5 mb-8 flex items-center gap-4 shadow-md">
+
+                    {{-- Flash de confirmación --}}
+                    @if(session('success_vucem'))
+                    <div class="mb-4 flex items-center gap-3 bg-green-50 border border-green-200 text-green-800 rounded-xl px-4 py-3 text-sm font-medium">
+                        <i data-lucide="check-circle" class="w-4 h-4 shrink-0 text-green-600"></i>
+                        {{ session('success_vucem') }}
+                    </div>
+                    @endif
+
+                    <div class="{{ $ec['bg'] }} rounded-2xl p-5 mb-4 flex flex-wrap items-center gap-4 shadow-md">
                         <div class="flex-shrink-0 bg-white bg-opacity-20 rounded-full p-3">
                             <i data-lucide="{{ $ec['icon'] }}" class="w-7 h-7 {{ $ec['text'] }}"></i>
                         </div>
-                        <div class="flex-1">
-                            <div class="flex items-center gap-3">
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center gap-3 flex-wrap">
                                 <span class="text-xs font-black {{ $ec['text'] }} opacity-70 uppercase tracking-widest">Estado actual (últimos 30 min)</span>
                                 <span class="text-xs font-black {{ $ec['text'] }} bg-white bg-opacity-20 px-2.5 py-0.5 rounded-full">{{ $ec['label'] }}</span>
+                                @if($tieneOverride)
+                                <span class="text-xs font-bold bg-white bg-opacity-30 {{ $ec['text'] }} px-2 py-0.5 rounded-full">Override activo (2h)</span>
+                                @endif
                             </div>
                             <p class="font-black text-lg {{ $ec['text'] }} mt-0.5">
                                 {{ $estadoActual['titulo'] ?? 'VUCEM operando normalmente' }}
@@ -119,8 +131,40 @@
                         </div>
                         <div class="text-right flex-shrink-0">
                             <p class="text-3xl font-black {{ $ec['text'] }}">{{ number_format($vucemTasaError, 1) }}%</p>
-                            <p class="text-xs {{ $ec['text'] }} opacity-70">tasa de error (7 días)</p>
+                            <p class="text-xs {{ $ec['text'] }} opacity-70">tasa de error (sem. actual)</p>
                         </div>
+                    </div>
+
+                    {{-- Controles de override (solo admin) --}}
+                    <div class="flex flex-wrap items-center gap-3 mb-8">
+                        @if(!$tieneOverride && in_array($estadoActual['estado'], ['VUCEM_CAIDO', 'INTERMITENTE']))
+                        <form method="POST" action="{{ route('admin.estadisticas.forzar-operando') }}">
+                            @csrf
+                            <button type="submit"
+                                    onclick="return confirm('¿Confirmas que el sistema VUCEM está funcionando correctamente y deseas ocultar la alerta por 2 horas?')"
+                                    class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-green-600 hover:bg-green-700 text-white text-xs font-bold shadow transition-colors">
+                                <i data-lucide="shield-check" class="w-4 h-4"></i>
+                                Marcar como Operando (forzar 2h)
+                            </button>
+                        </form>
+                        @endif
+                        @if($tieneOverride)
+                        <form method="POST" action="{{ route('admin.estadisticas.limpiar-override') }}">
+                            @csrf
+                            <button type="submit"
+                                    class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-600 hover:bg-slate-700 text-white text-xs font-bold shadow transition-colors">
+                                <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+                                Restaurar diagnóstico automático
+                            </button>
+                        </form>
+                        @endif
+                        <form method="POST" action="{{ route('admin.estadisticas.forzar-operando') }}" class="hidden" id="form-limpiar-cache">
+                            @csrf
+                        </form>
+                        <p class="text-xs text-slate-400">
+                            <i data-lucide="info" class="w-3 h-3 inline-block"></i>
+                            La alerta automática evalúa los últimos 30 minutos. Los errores de la semana pasada no afectan este diagnóstico.
+                        </p>
                     </div>
 
                     {{-- KPI cards --}}
@@ -140,7 +184,7 @@
                                 <div class="w-10 h-10 bg-orange-50 rounded-xl flex items-center justify-center">
                                     <i data-lucide="alert-triangle" class="w-5 h-5 text-orange-500"></i>
                                 </div>
-                                <span class="text-xs font-bold text-slate-400 bg-slate-50 px-2 py-0.5 rounded-full">7 días</span>
+                                <span class="text-xs font-bold text-slate-400 bg-slate-50 px-2 py-0.5 rounded-full">sem. actual</span>
                             </div>
                             <p class="text-3xl font-black text-slate-800">{{ $vucemErroresTotal }}</p>
                             <p class="text-xs font-semibold text-slate-500 mt-1">Errores totales</p>
@@ -150,7 +194,7 @@
                                 <div class="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center">
                                     <i data-lucide="check-circle" class="w-5 h-5 text-green-500"></i>
                                 </div>
-                                <span class="text-xs font-bold text-slate-400 bg-slate-50 px-2 py-0.5 rounded-full">7 días</span>
+                                <span class="text-xs font-bold text-slate-400 bg-slate-50 px-2 py-0.5 rounded-full">sem. actual</span>
                             </div>
                             <p class="text-3xl font-black text-slate-800">{{ $vucemExitososTotal }}</p>
                             <p class="text-xs font-semibold text-slate-500 mt-1">MVE enviadas</p>
@@ -160,20 +204,20 @@
                                 <div class="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center">
                                     <i data-lucide="activity" class="w-5 h-5 text-blue-500"></i>
                                 </div>
-                                <span class="text-xs font-bold text-slate-400 bg-slate-50 px-2 py-0.5 rounded-full">7 días</span>
+                                <span class="text-xs font-bold text-slate-400 bg-slate-50 px-2 py-0.5 rounded-full">sem. actual</span>
                             </div>
                             <p class="text-3xl font-black text-slate-800">{{ $vucemTotalOps }}</p>
                             <p class="text-xs font-semibold text-slate-500 mt-1">Operaciones totales</p>
                         </div>
                     </div>
 
-                    {{-- Gráfica de 7 días --}}
+                    {{-- Gráfica semana actual --}}
                     @php
                         $maxDiaVal = max(array_map(fn($d) => $d['errores'] + $d['exitosos'], $diasChart) + [1]);
                     @endphp
                     <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm mb-6">
-                        <h2 class="text-base font-black text-slate-800 mb-1">Actividad últimos 7 días</h2>
-                        <p class="text-xs text-slate-400 mb-5">Errores vs. envíos exitosos por día</p>
+                        <h2 class="text-base font-black text-slate-800 mb-1">Actividad semana actual</h2>
+                        <p class="text-xs text-slate-400 mb-5">Errores vs. envíos exitosos por día (lun–hoy)</p>
                         <div class="flex items-end gap-2 h-36">
                             @foreach($diasChart as $dia)
                             @php
@@ -211,7 +255,7 @@
                         {{-- Errores por servicio --}}
                         <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
                             <h2 class="text-base font-black text-slate-800 mb-1">Por servicio</h2>
-                            <p class="text-xs text-slate-400 mb-5">Errores de los últimos 7 días por servicio VUCEM</p>
+                            <p class="text-xs text-slate-400 mb-5">Errores de la semana actual por servicio VUCEM</p>
                             @php $maxServ = max($vucemPorServicio->max('total') ?? 1, 1); @endphp
                             @forelse($vucemPorServicio as $row)
                             @php
@@ -228,14 +272,14 @@
                                 </div>
                             </div>
                             @empty
-                            <p class="text-sm text-slate-400 text-center py-6">Sin errores en los últimos 7 días ✓</p>
+                            <p class="text-sm text-slate-400 text-center py-6">Sin errores esta semana ✓</p>
                             @endforelse
                         </div>
 
                         {{-- Errores por tipo --}}
                         <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
                             <h2 class="text-base font-black text-slate-800 mb-1">Por tipo de error</h2>
-                            <p class="text-xs text-slate-400 mb-5">Clasificación de errores de red (últimos 7 días)</p>
+                            <p class="text-xs text-slate-400 mb-5">Clasificación de errores de red (semana actual)</p>
                             @php
                                 $maxTipo = max($vucemPorTipo->max('total') ?? 1, 1);
                                 $tipoColors = ['TIMEOUT' => 'bg-orange-400', 'CONNECTION_REFUSED' => 'bg-red-500', 'SSL_ERROR' => 'bg-purple-400', 'DNS_ERROR' => 'bg-yellow-400', 'NETWORK_ERROR' => 'bg-pink-400', 'CURL_ERROR' => 'bg-slate-400'];
@@ -261,7 +305,7 @@
                     @if($vucemTopUsuarios->isNotEmpty())
                     <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
                         <h2 class="text-base font-black text-slate-800 mb-1">Top usuarios con errores</h2>
-                        <p class="text-xs text-slate-400 mb-5">Usuarios que más errores de conectividad VUCEM han tenido (últimos 7 días)</p>
+                        <p class="text-xs text-slate-400 mb-5">Usuarios que más errores de conectividad VUCEM han tenido (semana actual)</p>
                         <div class="overflow-x-auto">
                             <table class="w-full text-sm">
                                 <thead>

@@ -164,6 +164,8 @@ Route::middleware(['auth', 'license'])->group(function () {
             Route::get('/admin/settings', [App\Http\Controllers\AdminSettingsController::class, 'index'])->name('admin.settings');
             Route::patch('/admin/settings', [App\Http\Controllers\AdminSettingsController::class, 'update'])->name('admin.settings.update');
             Route::get('/admin/estadisticas', [App\Http\Controllers\AdminStatsController::class, 'index'])->name('admin.estadisticas');
+            Route::post('/admin/estadisticas/forzar-operando', [App\Http\Controllers\AdminStatsController::class, 'forzarOperando'])->name('admin.estadisticas.forzar-operando');
+            Route::post('/admin/estadisticas/limpiar-override', [App\Http\Controllers\AdminStatsController::class, 'limpiarOverride'])->name('admin.estadisticas.limpiar-override');
 
             // Debug digitalizador VUCEM (solo SuperAdmin, requiere PDF_DEBUG_ENABLED=true en .env)
             if (config('app.pdf_debug_enabled')) {
