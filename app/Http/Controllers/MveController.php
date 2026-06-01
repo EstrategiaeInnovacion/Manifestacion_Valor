@@ -2393,4 +2393,53 @@ class MveController extends Controller
             ->header('Content-Length', strlen($acuse->xml_declaracion));
     }
 
+    /**
+     * Mide la latencia de red hacia VUCEM y reporta si la conexión es lenta.
+     * Usado por el frontend para advertir al usuario antes de digitalizar o firmar MVE.
+     */
+    public function verificarRed()
+    {
+        $endpoint = 'https://www.ventanillaunica.gob.mx/ventanilla/DigitalizarDocumentoService';
+
+        $ch = curl_init($endpoint);
+        curl_setopt_array($ch, [
+            CURLOPT_NOBODY          => true,
+            CURLOPT_RETURNTRANSFER  => true,
+            CURLOPT_TIMEOUT         => 10,
+            CURLOPT_CONNECTTIMEOUT  => 10,
+            CURLOPT_SSL_VERIFYPEER  => false,
+            CURLOPT_SSL_VERIFYHOST  => 0,
+            CURLOPT_SSL_CIPHER_LIST => 'DEFAULT@SECLEVEL=0',
+        ]);
+        curl_exec($ch);
+        $connectTime    = (float) curl_getinfo($ch, CURLINFO_CONNECT_TIME);
+        $appconnectTime = (float) curl_getinfo($ch, CURLINFO_APPCONNECT_TIME);
+        curl_close($ch);
+
+        $latenciaMs = (($appconnectTime > 0) ? $appconnectTime : $connectTime) * 1000.0;
+
+        if ($latenciaMs <= 0) {
+            $clase = 'sin_medicion';
+            $lenta = false;
+        } elseif ($latenciaMs < 300) {
+            $clase = 'rapida';
+            $lenta = false;
+        } elseif ($latenciaMs < 1000) {
+            $clase = 'media';
+            $lenta = false;
+        } elseif ($latenciaMs < 3000) {
+            $clase = 'lenta';
+            $lenta = true;
+        } else {
+            $clase = 'muy_lenta';
+            $lenta = true;
+        }
+
+        return response()->json([
+            'latencia_ms' => round($latenciaMs, 1),
+            'clase'       => $clase,
+            'lenta'       => $lenta,
+        ]);
+    }
+
 }

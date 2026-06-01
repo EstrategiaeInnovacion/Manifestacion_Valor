@@ -76,9 +76,25 @@ class DigitalizarDocumentoService
                 $tagRfcConsulta = "<dig:rfcConsulta>{$rfcConsultaXml}</dig:rfcConsulta>";
             }
 
-            // Timestamp requerido por VUCEM
+            // Timestamp requerido por VUCEM — ventana dinámica según latencia de red y tamaño del XML
+            $latenciaMs = $this->medirLatenciaVucem();
+            $xmlEstimadoBytes = strlen($contenidoBase64) + 6000; // base64 + overhead del XML SOAP
+            $ventanaSeg = $this->calcularVentanaExpires($xmlEstimadoBytes, $latenciaMs);
+
+            Log::info('[DIGITALIZACION] Red medida para timestamp', [
+                'latencia_ms'        => round($latenciaMs, 1),
+                'xml_estimado_bytes' => $xmlEstimadoBytes,
+                'ventana_expires_seg' => $ventanaSeg,
+                'ventana_expires_min' => round($ventanaSeg / 60, 1),
+                'clase_red'          => $latenciaMs <= 0 ? 'NO_MEDIDA' : ($latenciaMs > 3000 ? 'MUY_LENTA' : ($latenciaMs > 1000 ? 'LENTA' : ($latenciaMs > 300 ? 'MEDIA' : 'RAPIDA'))),
+            ]);
+
+            if ($latenciaMs > 5000) {
+                Log::warning('[DIGITALIZACION] Red lenta detectada al servidor VUCEM', ['latencia_ms' => round($latenciaMs, 1)]);
+            }
+
             $created = gmdate("Y-m-d\TH:i:s\Z");
-            $expires = gmdate("Y-m-d\TH:i:s\Z", strtotime('+5 minutes'));
+            $expires = gmdate("Y-m-d\TH:i:s\Z", time() + $ventanaSeg);
 
             $xml = '<?xml version="1.0" encoding="UTF-8"?>
 <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:dig="' . self::NS_DIG . '" xmlns:res="' . self::NS_RES . '">
@@ -157,9 +173,19 @@ class DigitalizarDocumentoService
                 return $this->handleCurlError($curlError, 'DIGITALIZACION');
             }
 
-            // Detectar respuestas de infraestructura VUCEM (WebLogic, balanceador) antes de parsear SOAP.
-            // HTTP 5xx con HTML = servidores backend de VUCEM caídos o sin capacidad.
-            if ($httpCode >= 500 || ($httpCode > 0 && !str_contains($responseBody, '<S:Body') && str_contains($responseBody, '<HTML'))) {
+            // Detectar si la respuesta es SOAP o MTOM (XOP+XML multipart) aunque el HTTP code sea 5xx.
+            // VUCEM puede devolver HTTP 500 con un SOAP Fault válido (ej. "Unknown exception")
+            // en formato MTOM — en ese caso NO es caída de infraestructura sino un error puntual de VUCEM.
+            $isSoapMtom = str_contains($responseBody, '<S:Body')
+                || str_contains($responseBody, '<env:Body')
+                || str_contains($responseBody, 'application/xop+xml')
+                || str_contains($responseBody, '--uuid:')
+                || str_contains($responseBody, 'S:Fault')
+                || str_contains($responseBody, 'env:Fault');
+
+            // HTTP 5xx con HTML/texto plano (WebLogic, balanceador, timeout de red) = caída real.
+            if (($httpCode >= 500 && !$isSoapMtom)
+                || ($httpCode > 0 && !str_contains($responseBody, '<S:Body') && str_contains($responseBody, '<HTML'))) {
                 Log::warning('[DIGITALIZACION] VUCEM infraestructura no disponible', [
                     'http_code'    => $httpCode,
                     'body_preview' => substr(strip_tags($responseBody), 0, 200),
@@ -170,6 +196,27 @@ class DigitalizarDocumentoService
                     'connectivity_error' => true,
                     'message'            => 'El servicio VUCEM no está disponible en este momento (error ' . $httpCode . '). '
                                          . 'Esto es un problema del servicio externo, no del sistema. Intente de nuevo en unos minutos.',
+                ];
+            }
+
+            // HTTP 5xx con cuerpo SOAP/MTOM = SOAP Fault puntual de VUCEM (no es caída).
+            // Extraer el mensaje del fault y devolverlo como error normal (sin connectivity_error).
+            if ($httpCode >= 500 && $isSoapMtom) {
+                $faultMsg = 'Error interno de VUCEM';
+                if (preg_match('/<[:\w]*Text[^>]*>(.*?)<\/[:\w]*Text>/s', $responseBody, $faultM)) {
+                    $faultMsg = trim($faultM[1]);
+                } elseif (preg_match('/env:Server\s*(.*)/i', strip_tags($responseBody), $faultM)) {
+                    $faultMsg = trim($faultM[1]) ?: $faultMsg;
+                }
+                Log::warning('[DIGITALIZACION] VUCEM devolvió SOAP Fault (HTTP 500)', [
+                    'http_code'    => $httpCode,
+                    'fault_msg'    => $faultMsg,
+                    'body_preview' => substr($responseBody, 0, 500),
+                ]);
+                return [
+                    'success' => false,
+                    'message' => 'VUCEM rechazó la solicitud con un error interno: ' . $faultMsg
+                               . ' — Espere unos minutos e intente de nuevo.',
                 ];
             }
 
@@ -578,5 +625,64 @@ class DigitalizarDocumentoService
             Log::error('[DIGITALIZACION_EDOCUMENT] Excepción: ' . $msg);
             return ['success' => false, 'message' => 'Error al consultar el eDocument. Intente de nuevo.'];
         }
+    }
+
+    /**
+     * Mide la latencia de red hacia el endpoint de VUCEM haciendo una petición HEAD.
+     * Retorna milisegundos (TCP + SSL). Retorna 0.0 si la medición falla.
+     */
+    private function medirLatenciaVucem(): float
+    {
+        $ch = curl_init($this->endpoint);
+        curl_setopt_array($ch, [
+            CURLOPT_NOBODY         => true,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT        => 10,
+            CURLOPT_CONNECTTIMEOUT => 10,
+            CURLOPT_SSL_VERIFYPEER => false,
+            CURLOPT_SSL_VERIFYHOST => 0,
+            CURLOPT_SSL_CIPHER_LIST => 'DEFAULT@SECLEVEL=0',
+        ]);
+        curl_exec($ch);
+        $connectTime    = (float) curl_getinfo($ch, CURLINFO_CONNECT_TIME);    // TCP
+        $appconnectTime = (float) curl_getinfo($ch, CURLINFO_APPCONNECT_TIME); // TCP + SSL
+        curl_close($ch);
+
+        // appconnect incluye TCP, si está disponible es el más completo
+        $total = ($appconnectTime > 0) ? $appconnectTime : $connectTime;
+        return $total * 1000.0; // convertir a milisegundos
+    }
+
+    /**
+     * Calcula los segundos de ventana para el WS-Security Timestamp basándose en
+     * la latencia medida al servidor VUCEM y el tamaño estimado del XML a enviar.
+     *
+     * Lógica:
+     *   - Latencia alta → conexión lenta → velocidad de subida estimada baja
+     *   - Tamaño del XML grande → más tiempo para subir
+     *   - Se agrega buffer de 3 min para procesamiento en VUCEM
+     *   - Mínimo: 10 min | Máximo: 20 min
+     */
+    private function calcularVentanaExpires(int $xmlBytes, float $latenciaMs): int
+    {
+        // Velocidad de subida estimada según clase de latencia (bytes/segundo)
+        if ($latenciaMs <= 0) {
+            $velocidad = 40 * 1024;  // sin medición: asumir 40 KB/s (conservador)
+        } elseif ($latenciaMs < 300) {
+            $velocidad = 500 * 1024; // red rápida: ~500 KB/s
+        } elseif ($latenciaMs < 1000) {
+            $velocidad = 150 * 1024; // red media: ~150 KB/s
+        } elseif ($latenciaMs < 3000) {
+            $velocidad = 60 * 1024;  // red lenta: ~60 KB/s
+        } else {
+            $velocidad = 20 * 1024;  // red muy lenta: ~20 KB/s
+        }
+
+        $tiempoSubida = (int) ceil($xmlBytes / $velocidad);
+        $buffer       = 180; // 3 minutos de buffer para procesamiento VUCEM
+        $total        = $tiempoSubida + $buffer;
+
+        // Clamp: entre 10 minutos (600s) y 20 minutos (1200s)
+        return max(600, min(1200, $total));
     }
 }

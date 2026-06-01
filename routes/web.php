@@ -208,6 +208,7 @@ Route::middleware(['auth', 'license'])->group(function () {
         Route::post('/mve/digitalizar-documento/{applicant}', [MveController::class , 'digitalizarDocumento'])->name('mve.digitalizar-documento');
         Route::post('/mve/consultar-operacion/{applicant}', [MveController::class , 'consultarOperacion'])->name('mve.consultar-operacion');
         Route::post('/mve/validar-pdf', [MveController::class , 'validarPdf'])->name('mve.validar-pdf');
+        Route::get('/mve/verificar-red', [MveController::class , 'verificarRed'])->name('mve.verificar-red');
         Route::post('/mve/parse-pedimento-edocuments', [MveController::class , 'parsePedimentoEdocuments'])->name('mve.parse-pedimento-edocuments');
         Route::post('/mve/validate-edocument', [MveController::class , 'validateEdocument'])->name('mve.validate-edocument');
         Route::get('/mve/cove/info/{applicant}', [MveController::class , 'buscarCoveInfo'])->name('mve.cove.info');

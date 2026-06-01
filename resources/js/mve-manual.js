@@ -1227,11 +1227,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
 
-            // Validar tamaño (20MB max)
-            if (file.size > 20 * 1024 * 1024) {
-                statusDiv.innerHTML = `<div class="rounded-lg border border-red-200 bg-red-50 p-3 flex items-center gap-2">
-                    <i data-lucide="x-circle" class="w-4 h-4 text-red-500"></i>
-                    <span class="text-sm text-red-700">El archivo excede 20MB. Máximo permitido: 20MB.</span>
+            // Validar tamaño (máximo 3 MB, límite de VUCEM)
+            if (file.size > 3 * 1024 * 1024) {
+                const fileMB = (file.size / (1024 * 1024)).toFixed(2);
+                statusDiv.innerHTML = `<div class="rounded-lg border border-red-200 bg-red-50 p-3 flex items-start gap-2">
+                    <i data-lucide="x-circle" class="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5"></i>
+                    <span class="text-sm text-red-700"><strong>Archivo demasiado grande (${fileMB} MB).</strong> VUCEM solo acepta documentos de hasta 3 MB. Por favor reduzca el tamaño del PDF e intente de nuevo.</span>
                 </div>`;
                 statusDiv.classList.remove('hidden');
                 lucide.createIcons();
@@ -1407,6 +1408,35 @@ window.consultarOperacionPendiente = async function() {
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
+ * Muestra un banner amarillo de advertencia de red lenta en el área de digitalización.
+ * Solo visible para el usuario que está intentando digitalizar en ese momento.
+ * El banner se elimina automáticamente al completar la operación o puede cerrarse manualmente.
+ */
+function _mostrarAlertaRedLenta(latenciaMs) {
+    document.getElementById('alertaRedLenta')?.remove();
+    const lat = Math.round(latenciaMs);
+    const alerta = document.createElement('div');
+    alerta.id = 'alertaRedLenta';
+    alerta.className = 'rounded-lg border border-amber-300 bg-amber-50 p-3 mb-3 flex items-start gap-2';
+    alerta.innerHTML = `
+        <svg class="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+        </svg>
+        <div class="flex-1">
+            <p class="text-sm font-semibold text-amber-800">Red inestable detectada (${lat} ms)</p>
+            <p class="text-xs text-amber-700 mt-0.5">La conexión con VUCEM es lenta. El proceso de digitalización o la firma de la MVE puede fallar o tardar más de lo esperado. Se recomienda esperar a tener mejor conexión o intentar de nuevo más tarde.</p>
+        </div>
+        <button type="button" onclick="document.getElementById('alertaRedLenta')?.remove()" class="text-amber-400 hover:text-amber-600 flex-shrink-0 ml-1" title="Cerrar">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+    `;
+    const btnDigit = document.getElementById('btnDigitalizar');
+    if (btnDigit && btnDigit.parentElement) {
+        btnDigit.parentElement.insertBefore(alerta, btnDigit);
+    }
+}
+
+/**
  * Digitaliza el documento: firma y envía a VUCEM via AJAX.
  * Recibe el folio eDocument y lo agrega a la tabla.
  */
@@ -1432,6 +1462,19 @@ window.digitalizarDocumento = async function() {
     }
     if (!pdfValidado || !pdfValidado.file_content) {
         showNotification('Cargue y espere a que se valide el archivo PDF.', 'warning');
+        _digitalizando = false; return;
+    }
+
+    // Validar tamaño máximo permitido por VUCEM (3 MB)
+    const _tamanioBytes = pdfValidado.final_size || 0;
+    if (_tamanioBytes > 3 * 1024 * 1024) {
+        const _tamanioMB = (_tamanioBytes / (1024 * 1024)).toFixed(2);
+        showNotification(
+            `El archivo (${_tamanioMB} MB) supera el límite máximo permitido por VUCEM (3 MB). ` +
+            `Reduzca el tamaño del PDF e intente de nuevo.`,
+            'error',
+            'Archivo demasiado grande'
+        );
         _digitalizando = false; return;
     }
 
@@ -1477,6 +1520,21 @@ window.digitalizarDocumento = async function() {
     const btnDigit = document.getElementById('btnDigitalizar');
     const originalHTML = btnDigit.innerHTML;
     btnDigit.disabled = true;
+    btnDigit.innerHTML = '<span class="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span> Verificando red...';
+
+    // Medir latencia hacia VUCEM antes de enviar y advertir al usuario si es lenta
+    try {
+        const redResp = await fetch('/mve/verificar-red', {
+            headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' }
+        });
+        if (redResp.ok) {
+            const redData = await redResp.json();
+            if (redData.lenta) {
+                _mostrarAlertaRedLenta(redData.latencia_ms);
+            }
+        }
+    } catch (_) { /* continuar aunque falle el ping */ }
+
     btnDigit.innerHTML = '<span class="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span> Enviando a VUCEM...';
 
     try {
@@ -1497,6 +1555,8 @@ window.digitalizarDocumento = async function() {
             document.getElementById('pdfValidationStatus').classList.add('hidden');
             pdfValidado = null;
             closePdfPreview();
+            // Quitar alerta de red si estaba visible
+            document.getElementById('alertaRedLenta')?.remove();
 
             if (result.pending) {
                 // VUCEM aún está procesando — mostrar panel persistente con auto-reintentos
