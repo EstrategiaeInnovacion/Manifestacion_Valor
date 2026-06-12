@@ -207,6 +207,7 @@ Route::middleware(['auth', 'license'])->group(function () {
         Route::post('/mve/save-documentos/{applicant}', [MveController::class , 'saveDocumentos'])->name('mve.save-documentos');
         Route::post('/mve/digitalizar-documento/{applicant}', [MveController::class , 'digitalizarDocumento'])->name('mve.digitalizar-documento');
         Route::post('/mve/consultar-operacion/{applicant}', [MveController::class , 'consultarOperacion'])->name('mve.consultar-operacion');
+        Route::post('/mve/descartar-operacion/{applicant}', [MveController::class , 'descartarOperacion'])->name('mve.descartar-operacion');
         Route::post('/mve/validar-pdf', [MveController::class , 'validarPdf'])->name('mve.validar-pdf');
         Route::get('/mve/verificar-red', [MveController::class , 'verificarRed'])->name('mve.verificar-red');
         Route::post('/mve/parse-pedimento-edocuments', [MveController::class , 'parsePedimentoEdocuments'])->name('mve.parse-pedimento-edocuments');

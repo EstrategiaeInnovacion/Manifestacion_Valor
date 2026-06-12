@@ -88,7 +88,7 @@
                                     <span class="credential-label">Contraseña:</span>
                                     <div class="flex items-center gap-2">
                                         <span id="passwordDisplay" class="credential-value">{{ session('password') }}</span>
-                                        <button type="button" id="copyPassword" class="copy-button" data-password="{{ session('password') }}">
+                                        <button type="button" id="copyPassword" class="copy-button">
                                             <i data-lucide="copy" class="w-4 h-4"></i>
                                         </button>
                                     </div>

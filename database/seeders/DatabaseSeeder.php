@@ -23,7 +23,7 @@ class DatabaseSeeder extends Seeder
         [
             'full_name' => 'Amos Guillermo Aguilera Gonzalez',
             'email' => 'guillermo.aguilera@estrategiaeinnovacion.com.mx',
-            'password' => Hash::make('Estrategia1'),
+            'password' => Hash::make(env('SUPERADMIN_PASSWORD', 'Estrategia1')),
             'role' => 'SuperAdmin',
             'company' => 'Estrategia e Innovación',
         ]

@@ -836,6 +836,48 @@ class MveController extends Controller
     }
 
     /**
+     * Descarta una operación pendiente: elimina la entrada PENDIENTE-Op-{numero} de mv_documentos.
+     * El usuario decidió no esperar el folio y quiere reintentar o cancelar.
+     */
+    public function descartarOperacion(Request $request, $applicantId)
+    {
+        $applicant = MvClientApplicant::findOrFail($applicantId);
+
+        if (!auth()->user()->canAccessApplicant($applicant)) {
+            return response()->json(['success' => false, 'message' => 'Sin permiso.'], 403);
+        }
+
+        $numeroOperacion = $request->input('numero_operacion');
+        if (!$numeroOperacion) {
+            return response()->json(['success' => false, 'message' => 'Número de operación requerido.'], 422);
+        }
+
+        $mveId = $request->input('mve_id') ? (int)$request->input('mve_id') : null;
+
+        $mvDocumentos = $mveId
+            ? MvDocumentos::where('datos_manifestacion_id', $mveId)->first()
+            : MvDocumentos::where('applicant_id', $applicantId)->latest('id')->first();
+
+        if ($mvDocumentos) {
+            $folioKey = 'PENDIENTE-Op-' . $numeroOperacion;
+            $docs = array_values(array_filter(
+                $mvDocumentos->documentos ?? [],
+                fn($d) => ($d['folio_edocument'] ?? '') !== $folioKey
+            ));
+            $mvDocumentos->documentos = $docs ?: null;
+            $mvDocumentos->save();
+
+            Log::info('[DIGITALIZAR] Operación pendiente descartada por usuario', [
+                'applicant_id'     => $applicantId,
+                'numero_operacion' => $numeroOperacion,
+                'mve_id'           => $mveId,
+            ]);
+        }
+
+        return response()->json(['success' => true, 'message' => 'Operación pendiente descartada.']);
+    }
+
+    /**
      * Consulta el folio eDocument de una operación pendiente en VUCEM.
      * Usado cuando la primera digitalización devolvió numeroOperacion en lugar de eDocument.
      */
@@ -1284,7 +1326,10 @@ class MveController extends Controller
                     'guardado_en' => $informacionCove->updated_at->format('d/m/Y H:i:s')
                 ] : null,
                 'cadena_original' => $cadenaOriginal,
-                'documentos' => $documentos
+                'documentos' => array_values(array_filter(
+                    $documentos,
+                    fn($d) => !str_starts_with($d['folio_edocument'] ?? '', 'PENDIENTE-Op-')
+                ))
             ]);
             
         } catch (\Exception $e) {

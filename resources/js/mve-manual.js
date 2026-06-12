@@ -237,7 +237,11 @@ window.prevStep = async function() {
 window.guardarYVistaPrevia = async function() {
     const docRows = document.querySelectorAll('#edocumentsTableBody tr[data-edocument-row]');
     if (docRows.length === 0) {
-        showNotification('Debe digitalizar al menos un documento antes de continuar a la vista previa.', 'error');
+        if (_pendingOperacion) {
+            showNotification('Tiene un documento en proceso en VUCEM (Op: ' + _pendingOperacion + '). Consulte el folio o descarte la operación antes de continuar.', 'warning');
+        } else {
+            showNotification('Debe digitalizar al menos un documento antes de continuar a la vista previa.', 'error');
+        }
         return;
     }
     try {
@@ -1329,9 +1333,31 @@ function schedulePendingRetry() {
     _pendingRetryTimer = setTimeout(() => consultarOperacionPendiente(), PENDING_RETRY_INTERVAL);
 }
 
-window.cancelarOperacionPendiente = function() {
+window.cancelarOperacionPendiente = async function() {
     clearTimeout(_pendingRetryTimer);
+
+    // Eliminar la entrada PENDIENTE-Op- de la BD antes de ocultar el panel
+    const opADescartar = _pendingOperacion;
     _pendingOperacion = null;
+
+    if (opADescartar) {
+        try {
+            const applicantId = document.querySelector('[data-applicant-id]').getAttribute('data-applicant-id');
+            const csrfToken   = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            const formData    = new FormData();
+            formData.append('numero_operacion', opADescartar);
+            if (currentMveId) formData.append('mve_id', currentMveId);
+
+            await fetch(`/mve/descartar-operacion/${applicantId}`, {
+                method:  'POST',
+                headers: { 'X-CSRF-TOKEN': csrfToken },
+                body:    formData
+            });
+        } catch (_) {
+            // Fallo silencioso — el panel se oculta igual; el usuario puede borrar manualmente si hace falta
+        }
+    }
+
     const panel = document.getElementById('pendingOperationPanel');
     if (panel) panel.classList.add('hidden');
 };
@@ -4148,7 +4174,7 @@ function generarContenidoVistaPrevia(data) {
     const coves = data.informacion_cove?.informacion_cove || [];
     const valorAduana = data.valor_aduana?.valor_en_aduana_data || {};
     const personasConsulta = data.datos_manifestacion?.persona_consulta || [];
-    const documentos = data.documentos || [];
+    const documentos = (data.documentos || []).filter(d => !((d.folio_edocument || '').startsWith('PENDIENTE-Op-')));
     
     // Función helper para generar bloque de un COVE
     function generarBloqueCove(cove, index) {
