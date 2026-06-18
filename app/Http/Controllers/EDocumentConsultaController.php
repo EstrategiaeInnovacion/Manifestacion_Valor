@@ -287,7 +287,7 @@ class EDocumentConsultaController extends Controller
             
         } catch (\Exception $e) {
             Log::error('[COVE] Error:', ['msg' => $e->getMessage()]);
-            return back()->withErrors(['folio_edocument' => 'Error del sistema: ' . $e->getMessage()])->withInput();
+            return back()->withErrors(['folio_edocument' => 'Ocurrió un error al procesar la solicitud. Intente de nuevo.'])->withInput();
         }
     }
 
@@ -388,7 +388,7 @@ class EDocumentConsultaController extends Controller
 
         } catch (\Exception $e) {
             Log::error('[COVE_ACUSE] Error: ' . $e->getMessage());
-            return response()->json(['success' => false, 'message' => 'Error: ' . $e->getMessage()], 500);
+            return response()->json(['success' => false, 'message' => 'Error al generar el acuse. Intente de nuevo.'], 500);
         }
     }
 

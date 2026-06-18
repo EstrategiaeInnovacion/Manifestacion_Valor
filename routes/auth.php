@@ -25,6 +25,7 @@ Route::middleware('guest')->group(function () {
         ->name('password.request');
 
     Route::post('forgot-password', [PasswordRecoveryController::class, 'sendCode'])
+        ->middleware('throttle:5,1')
         ->name('password.email');
 
     // Paso 2: verificar código
@@ -32,9 +33,11 @@ Route::middleware('guest')->group(function () {
         ->name('password.verify');
 
     Route::post('verify-code', [PasswordRecoveryController::class, 'verifyCode'])
+        ->middleware('throttle:10,1')
         ->name('password.verify.store');
 
     Route::post('resend-code', [PasswordRecoveryController::class, 'resendCode'])
+        ->middleware('throttle:3,1')
         ->name('password.resend');
 
     // Paso 3: nueva contraseña
@@ -42,6 +45,7 @@ Route::middleware('guest')->group(function () {
         ->name('password.reset');
 
     Route::post('set-password', [PasswordRecoveryController::class, 'savePassword'])
+        ->middleware('throttle:5,1')
         ->name('password.store');
 });
 

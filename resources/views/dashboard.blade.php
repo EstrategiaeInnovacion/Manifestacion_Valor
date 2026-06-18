@@ -62,7 +62,7 @@
                 <div class="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center">
                     <div class="flex flex-col md:flex-row gap-8 w-full justify-between items-center">
                         <div class="flex items-center gap-3 mb-4">
-                            <span class="bg-[#001a4d] text-white text-[10px] font-bold px-2 py-1 tracking-[0.2em]">V2.3</span>
+                            <span class="bg-[#001a4d] text-white text-[10px] font-bold px-2 py-1 tracking-[0.2em]">V2.4</span>
                             <div class="h-px w-8 bg-slate-300"></div>
                             <span class="text-xs font-medium text-slate-400 uppercase tracking-widest">FILE</span>
                         </div>

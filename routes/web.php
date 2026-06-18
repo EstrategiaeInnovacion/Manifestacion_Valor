@@ -205,9 +205,14 @@ Route::middleware(['auth', 'license'])->group(function () {
         Route::post('/mve/save-informacion-cove/{applicant}', [MveController::class , 'saveInformacionCove'])->name('mve.save-informacion-cove');
         Route::post('/mve/save-valor-aduana/{applicant}', [MveController::class , 'saveValorAduana'])->name('mve.save-valor-aduana');
         Route::post('/mve/save-documentos/{applicant}', [MveController::class , 'saveDocumentos'])->name('mve.save-documentos');
-        Route::post('/mve/digitalizar-documento/{applicant}', [MveController::class , 'digitalizarDocumento'])->name('mve.digitalizar-documento');
-        Route::post('/mve/consultar-operacion/{applicant}', [MveController::class , 'consultarOperacion'])->name('mve.consultar-operacion');
+        Route::post('/mve/digitalizar-documento/{applicant}', [MveController::class , 'digitalizarDocumento'])->middleware('throttle:8,1')->name('mve.digitalizar-documento');
+        Route::post('/mve/consultar-operacion/{applicant}', [MveController::class , 'consultarOperacion'])->middleware('throttle:20,1')->name('mve.consultar-operacion');
         Route::post('/mve/descartar-operacion/{applicant}', [MveController::class , 'descartarOperacion'])->name('mve.descartar-operacion');
+        Route::post('/mve/staging-documento/{applicant}', [MveController::class , 'crearStagingDocumento'])->name('mve.staging.crear');
+        Route::get('/mve/staging-documentos/{applicant}', [MveController::class , 'listarStagingDocumentos'])->name('mve.staging.listar');
+        Route::post('/mve/staging-documento/{staging}/enviar', [MveController::class , 'enviarStagingAVucem'])->middleware('throttle:8,1')->name('mve.staging.enviar');
+        Route::get('/mve/staging-documento/{staging}/descargar', [MveController::class , 'descargarStagingDocumento'])->name('mve.staging.descargar');
+        Route::delete('/mve/staging-documento/{staging}', [MveController::class , 'eliminarStagingDocumento'])->name('mve.staging.eliminar');
         Route::post('/mve/validar-pdf', [MveController::class , 'validarPdf'])->name('mve.validar-pdf');
         Route::get('/mve/verificar-red', [MveController::class , 'verificarRed'])->name('mve.verificar-red');
         Route::post('/mve/parse-pedimento-edocuments', [MveController::class , 'parsePedimentoEdocuments'])->name('mve.parse-pedimento-edocuments');
@@ -260,7 +265,7 @@ Route::middleware(['auth', 'license'])->group(function () {
         Route::get('/mve/consultar/{acuse}/declaracion-xml', [MveController::class , 'downloadDeclaracionXml'])->name('mve.consultar.declaracion.xml');
 
         // Rutas para subida de documentos con validación/conversión VUCEM
-        Route::post('/documents/upload', [DocumentUploadController::class , 'uploadDocument'])->name('documents.upload');
+        Route::post('/documents/upload', [DocumentUploadController::class , 'uploadDocument'])->middleware('throttle:10,1')->name('documents.upload');
         Route::get('/documents/applicant/{applicant}', [DocumentUploadController::class , 'getDocuments'])->name('documents.list');
         Route::delete('/documents/{document}', [DocumentUploadController::class , 'deleteDocument'])->name('documents.delete');
         Route::get('/documents/download/{document}', [DocumentUploadController::class , 'downloadDocument'])->name('documents.download');

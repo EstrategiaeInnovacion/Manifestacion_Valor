@@ -12,6 +12,11 @@ class VucemEdocTest extends Command
 
     public function handle(): int
     {
+        if (!app()->environment(['local', 'testing'])) {
+            $this->error('Este comando de prueba solo puede ejecutarse en local/testing.');
+            return 1;
+        }
+
         $folio = (string) $this->argument('folio');
         $endpoint = (string) config('edocument.endpoint');
         $wsdlUrl = (string) config('edocument.wsdl_url');

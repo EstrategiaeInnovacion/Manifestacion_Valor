@@ -888,6 +888,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Cargar datos guardados
     window.loadSavedDataCallback();
+    cargarStagingDocumentos();
 });
 
 // ============================================
@@ -1269,7 +1270,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         file_content: result.file_content,
                         original_name: result.original_name,
                         was_converted: result.was_converted,
-                        final_size: result.final_size
+                        final_size: result.final_size,
+                        is_vucem_valid: result.is_vucem_valid
                     };
 
                     const sizeKB = (result.final_size / 1024).toFixed(1);
@@ -1353,6 +1355,20 @@ window.cancelarOperacionPendiente = async function() {
                 headers: { 'X-CSRF-TOKEN': csrfToken },
                 body:    formData
             });
+
+            // Si había una fila de staging asociada, el backend liberó su numero_operacion;
+            // re-renderizarla para que recupere el botón "Enviar a VUCEM".
+            const stagingRow = document.querySelector(`#stagingDocumentsTableBody tr[data-numero-operacion="${opADescartar}"]`);
+            if (stagingRow) {
+                addStagingRowToTable({
+                    id: stagingRow.dataset.stagingId,
+                    tipo_documento: stagingRow.dataset.tipoDocumento,
+                    nombre_documento: stagingRow.dataset.nombreDocumento,
+                    file_size: parseInt(stagingRow.dataset.fileSize || '0', 10),
+                    was_converted: stagingRow.dataset.wasConverted === '1',
+                    numero_operacion: null,
+                });
+            }
         } catch (_) {
             // Fallo silencioso — el panel se oculta igual; el usuario puede borrar manualmente si hace falta
         }
@@ -1405,7 +1421,11 @@ window.consultarOperacionPendiente = async function() {
             // ¡Folio obtenido! Agregar a la tabla y cerrar el panel pendiente
             const tipoDoc   = _pendingDocData?.tipo_documento   ?? result.tipo_documento   ?? '';
             const nombreDoc = _pendingDocData?.nombre_documento  ?? result.nombre_documento ?? '';
+            const opResuelta = _pendingOperacion;
             window.cancelarOperacionPendiente();
+
+            // El backend ya borró la fila de staging asociada (si existía); reflejarlo en la UI
+            removeStagingRowByOperacion(opResuelta);
 
             addEdocumentToTable({
                 tipo_documento:   tipoDoc,
@@ -1463,35 +1483,32 @@ function _mostrarAlertaRedLenta(latenciaMs) {
 }
 
 /**
- * Digitaliza el documento: firma y envía a VUCEM via AJAX.
- * Recibe el folio eDocument y lo agrega a la tabla.
+ * Procesa el PDF ya validado (pdfValidado) y lo guarda en la tabla de staging
+ * (servidor) para no perderlo si el envío a VUCEM falla más adelante.
  */
-let _digitalizando = false;
-window.digitalizarDocumento = async function() {
-    // Guard contra múltiples clics
-    if (_digitalizando) return;
-    _digitalizando = true;
+let _guardandoStaging = false;
+window.guardarDocumentoEnStaging = async function() {
+    if (_guardandoStaging) return;
+    _guardandoStaging = true;
 
     const nombreDoc = document.getElementById('documentName')?.value?.trim();
     const tipoDocSelect = document.getElementById('documentTypeSelect');
     const tipoDocId = tipoDocSelect?.value;
     const rfcConsulta = document.getElementById('rfcConsultaDigit')?.value?.trim() || '';
 
-    // Validaciones
     if (!nombreDoc) {
         showNotification('Ingrese el nombre del documento.', 'warning');
-        _digitalizando = false; return;
+        _guardandoStaging = false; return;
     }
     if (!tipoDocId) {
         showNotification('Seleccione el tipo de documento.', 'warning');
-        _digitalizando = false; return;
+        _guardandoStaging = false; return;
     }
     if (!pdfValidado || !pdfValidado.file_content) {
         showNotification('Cargue y espere a que se valide el archivo PDF.', 'warning');
-        _digitalizando = false; return;
+        _guardandoStaging = false; return;
     }
 
-    // Validar tamaño máximo permitido por VUCEM (3 MB)
     const _tamanioBytes = pdfValidado.final_size || 0;
     if (_tamanioBytes > 3 * 1024 * 1024) {
         const _tamanioMB = (_tamanioBytes / (1024 * 1024)).toFixed(2);
@@ -1501,29 +1518,196 @@ window.digitalizarDocumento = async function() {
             'error',
             'Archivo demasiado grande'
         );
-        _digitalizando = false; return;
+        _guardandoStaging = false; return;
     }
 
     const applicantId = document.querySelector('[data-applicant-id]').getAttribute('data-applicant-id');
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+    const formData = new FormData();
+    formData.append('tipo_documento', tipoDocId);
+    formData.append('nombre_documento', nombreDoc);
+    formData.append('file_content', pdfValidado.file_content);
+    formData.append('original_name', pdfValidado.original_name || '');
+    formData.append('was_converted', pdfValidado.was_converted ? '1' : '0');
+    formData.append('is_vucem_valid', pdfValidado.is_vucem_valid ? '1' : '0');
+    formData.append('rfc_consulta', rfcConsulta);
+    if (currentMveId) formData.append('mve_id', currentMveId);
+
+    const btnDigit = document.getElementById('btnDigitalizar');
+    const originalHTML = btnDigit.innerHTML;
+    btnDigit.disabled = true;
+    btnDigit.innerHTML = '<span class="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span> Guardando...';
+
+    try {
+        const response = await fetch(`/mve/staging-documento/${applicantId}`, {
+            method: 'POST',
+            headers: { 'X-CSRF-TOKEN': csrfToken },
+            body: formData
+        });
+        const result = await response.json();
+
+        if (result.success) {
+            addStagingRowToTable(result.staging);
+
+            document.getElementById('documentName').value = '';
+            document.getElementById('documentTypeSelect').value = '';
+            document.getElementById('pdfFileInput').value = '';
+            document.getElementById('rfcConsultaDigit').value = '';
+            document.getElementById('pdfValidationStatus').classList.add('hidden');
+            pdfValidado = null;
+            closePdfPreview();
+
+            showNotification('Documento procesado y guardado. Use "Enviar a VUCEM" cuando esté listo.', 'success');
+        } else {
+            showNotification(result.message || 'Error al guardar el documento.', 'error');
+        }
+    } catch (error) {
+        showNotification('Error de conexión al guardar el documento.', 'error');
+    } finally {
+        _guardandoStaging = false;
+        btnDigit.disabled = false;
+        btnDigit.innerHTML = originalHTML;
+        lucide.createIcons();
+    }
+};
+
+function _formatBytes(bytes) {
+    if (!bytes) return '0 KB';
+    const kb = bytes / 1024;
+    return kb < 1024 ? `${kb.toFixed(1)} KB` : `${(kb / 1024).toFixed(2)} MB`;
+}
+
+/**
+ * Agrega (o reemplaza si ya existe) una fila en la tabla de documentos en staging.
+ */
+function addStagingRowToTable(staging) {
+    const tbody = document.getElementById('stagingDocumentsTableBody');
+    if (!tbody) return;
+
+    const emptyMessage = tbody.querySelector('.table-empty');
+    if (emptyMessage) emptyMessage.parentElement.remove();
+
+    document.querySelector(`#stagingDocumentsTableBody tr[data-staging-id="${staging.id}"]`)?.remove();
+
+    const tiposDocMap = JSON.parse(document.getElementById('mveManualData')?.getAttribute('data-tipos-documento') || '{}');
+    const tipoNombre = tiposDocMap[staging.tipo_documento] || staging.tipo_documento || '';
+
+    const convertidoBadge = staging.was_converted
+        ? '<span class="inline-flex items-center gap-1 text-amber-700 font-semibold text-xs bg-amber-100 px-2 py-1 rounded-full"><i data-lucide="refresh-cw" class="w-3 h-3"></i>Convertido</span>'
+        : '<span class="inline-flex items-center gap-1 text-slate-600 font-semibold text-xs bg-slate-100 px-2 py-1 rounded-full"><i data-lucide="check" class="w-3 h-3"></i>Formato original</span>';
+
+    const accionEnviar = staging.numero_operacion
+        ? `<button type="button" data-action="consultar" onclick="consultarFolioStaging(${staging.id}, '${staging.numero_operacion}')" class="btn-icon text-amber-600 hover:text-amber-800" title="Consultar folio eDocument (Op: ${staging.numero_operacion})">
+               <i data-lucide="search-check" class="w-4 h-4"></i>
+           </button>`
+        : `<button type="button" data-action="enviar" onclick="enviarStagingAVucem(${staging.id})" class="btn-icon text-blue-600 hover:text-blue-800" title="Enviar a VUCEM">
+               <i data-lucide="upload-cloud" class="w-4 h-4"></i>
+           </button>`;
+
+    const row = document.createElement('tr');
+    row.className = 'table-row';
+    row.dataset.stagingId = staging.id;
+    row.dataset.numeroOperacion = staging.numero_operacion || '';
+    row.dataset.tipoDocumento = staging.tipo_documento || '';
+    row.dataset.nombreDocumento = staging.nombre_documento || '';
+    row.dataset.fileSize = staging.file_size || 0;
+    row.dataset.wasConverted = staging.was_converted ? '1' : '0';
+
+    row.innerHTML = `
+        <td class="table-cell">${staging.nombre_documento || ''}</td>
+        <td class="table-cell">${tipoNombre}</td>
+        <td class="table-cell">${_formatBytes(staging.file_size)}</td>
+        <td class="table-cell">${convertidoBadge}</td>
+        <td class="table-cell text-center">
+            <div class="flex items-center justify-center gap-2">
+                ${accionEnviar}
+                <button type="button" onclick="descargarStagingDocumento(${staging.id})" class="btn-icon text-slate-600 hover:text-slate-800" title="Descargar">
+                    <i data-lucide="download" class="w-4 h-4"></i>
+                </button>
+                <button type="button" onclick="eliminarStagingDocumento(${staging.id})" class="btn-icon-danger" title="Eliminar">
+                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                </button>
+            </div>
+        </td>
+    `;
+
+    tbody.appendChild(row);
+    setTimeout(() => lucide.createIcons(), 50);
+}
+
+function removeStagingRow(stagingId) {
+    const row = document.querySelector(`#stagingDocumentsTableBody tr[data-staging-id="${stagingId}"]`);
+    row?.remove();
+    const tbody = document.getElementById('stagingDocumentsTableBody');
+    if (tbody && tbody.children.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="6" class="table-empty">
+                    <i data-lucide="inbox" class="w-8 h-8 text-slate-300"></i>
+                    <p class="text-sm text-slate-400 mt-2">NO HAY DOCUMENTOS EN ESPERA DE ENVÍO</p>
+                </td>
+            </tr>`;
+        setTimeout(() => lucide.createIcons(), 50);
+    }
+}
+
+function removeStagingRowByOperacion(numOp) {
+    if (!numOp) return;
+    const row = document.querySelector(`#stagingDocumentsTableBody tr[data-numero-operacion="${numOp}"]`);
+    if (row) removeStagingRow(row.dataset.stagingId);
+}
+
+/**
+ * Carga las filas de staging existentes para la MVE actual al iniciar el paso 4.
+ */
+async function cargarStagingDocumentos() {
+    const applicantId = document.querySelector('[data-applicant-id]')?.getAttribute('data-applicant-id');
+    if (!applicantId) return;
+    try {
+        const url = currentMveId
+            ? `/mve/staging-documentos/${applicantId}?mve_id=${currentMveId}`
+            : `/mve/staging-documentos/${applicantId}`;
+        const resp = await fetch(url, { headers: { 'Accept': 'application/json' } });
+        const result = await resp.json();
+        if (result.success) {
+            (result.documentos || []).forEach(addStagingRowToTable);
+        }
+    } catch (_) { /* silencioso: no bloquea la carga del paso */ }
+}
+
+/**
+ * Envía a VUCEM un documento previamente guardado en staging.
+ */
+let _enviandoStaging = false;
+window.enviarStagingAVucem = async function(stagingId) {
+    if (_enviandoStaging) return;
+    _enviandoStaging = true;
+
+    const row = document.querySelector(`#stagingDocumentsTableBody tr[data-staging-id="${stagingId}"]`);
+    const btnEnviar = row?.querySelector('button[data-action="enviar"]');
+    const originalBtnHTML = btnEnviar?.innerHTML;
+
+    const restoreButton = () => {
+        if (btnEnviar && document.body.contains(btnEnviar)) {
+            btnEnviar.disabled = false;
+            btnEnviar.innerHTML = originalBtnHTML;
+            lucide.createIcons();
+        }
+    };
+
     const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
     const dataEl = document.getElementById('mveManualData');
     const hasStoredCreds = dataEl?.getAttribute('data-has-vucem-credentials') === 'true';
     const hasStoredWs = dataEl?.getAttribute('data-has-webservice-key') === 'true';
 
-    // Construir FormData
     const formData = new FormData();
-    formData.append('tipo_documento', tipoDocId);
-    formData.append('nombre_documento', nombreDoc);
-    formData.append('file_content', pdfValidado.file_content);
-    formData.append('rfc_consulta', rfcConsulta);
-    if (currentMveId) formData.append('mve_id', currentMveId);
 
-    // Credenciales manuales (solo si no están almacenadas)
     if (!hasStoredWs) {
         const claveWS = document.getElementById('digitClaveWS')?.value;
         if (!claveWS) {
             showNotification('Ingrese la Contraseña del Web Service VUCEM.', 'warning');
-            _digitalizando = false; return;
+            _enviandoStaging = false; return;
         }
         formData.append('clave_webservice', claveWS);
     }
@@ -1535,77 +1719,69 @@ window.digitalizarDocumento = async function() {
 
         if (!certFile || !keyFile || !keyPass) {
             showNotification('Ingrese los archivos de firma electrónica (.cer, .key) y la contraseña.', 'warning');
-            _digitalizando = false; return;
+            _enviandoStaging = false; return;
         }
         formData.append('certificado', certFile);
         formData.append('llave_privada', keyFile);
         formData.append('contrasena_llave', keyPass);
     }
 
-    // Deshabilitar botón y mostrar loading
-    const btnDigit = document.getElementById('btnDigitalizar');
-    const originalHTML = btnDigit.innerHTML;
-    btnDigit.disabled = true;
-    btnDigit.innerHTML = '<span class="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span> Verificando red...';
+    // Indicar visualmente que el envío está en curso — VUCEM puede tardar hasta ~30s (polling interno)
+    if (btnEnviar) {
+        btnEnviar.disabled = true;
+        btnEnviar.innerHTML = '<span class="inline-block w-4 h-4 border-2 border-blue-300 border-t-blue-600 rounded-full animate-spin"></span>';
+    }
+    showNotification('Enviando documento a VUCEM. Esto puede tardar hasta 30 segundos, por favor espere...', 'info');
 
-    // Medir latencia hacia VUCEM antes de enviar y advertir al usuario si es lenta
     try {
         const redResp = await fetch('/mve/verificar-red', {
             headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' }
         });
         if (redResp.ok) {
             const redData = await redResp.json();
-            if (redData.lenta) {
-                _mostrarAlertaRedLenta(redData.latencia_ms);
-            }
+            if (redData.lenta) _mostrarAlertaRedLenta(redData.latencia_ms);
         }
     } catch (_) { /* continuar aunque falle el ping */ }
 
-    btnDigit.innerHTML = '<span class="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span> Enviando a VUCEM...';
-
     try {
-        const response = await fetch(`/mve/digitalizar-documento/${applicantId}`, {
+        const response = await fetch(`/mve/staging-documento/${stagingId}/enviar`, {
             method: 'POST',
             headers: { 'X-CSRF-TOKEN': csrfToken },
             body: formData
         });
-
         const result = await response.json();
 
         if (result.success) {
-            // Limpiar campos
-            document.getElementById('documentName').value = '';
-            document.getElementById('documentTypeSelect').value = '';
-            document.getElementById('pdfFileInput').value = '';
-            document.getElementById('rfcConsultaDigit').value = '';
-            document.getElementById('pdfValidationStatus').classList.add('hidden');
-            pdfValidado = null;
-            closePdfPreview();
-            // Quitar alerta de red si estaba visible
             document.getElementById('alertaRedLenta')?.remove();
 
+            const tipoDocumento = row?.dataset.tipoDocumento || '';
+            const nombreDoc = row?.dataset.nombreDocumento || '';
+
             if (result.pending) {
-                // VUCEM aún está procesando — mostrar panel persistente con auto-reintentos
                 showPendingOperationPanel(result.numero_operacion, {
-                    tipo_documento:   tipoDocId,
+                    tipo_documento: tipoDocumento,
                     nombre_documento: nombreDoc
                 });
                 showNotification(`Documento enviado a VUCEM (Op: ${result.numero_operacion}). Consultando folio automáticamente cada 20 segundos...`, 'warning');
+                // Re-renderizar la fila en estado "en espera" (el backend conserva el registro de staging)
+                addStagingRowToTable({
+                    id: stagingId,
+                    tipo_documento: tipoDocumento,
+                    nombre_documento: nombreDoc,
+                    file_size: parseInt(row?.dataset.fileSize || '0', 10),
+                    was_converted: row?.dataset.wasConverted === '1',
+                    numero_operacion: result.numero_operacion,
+                });
             } else {
-                // Agregar a la tabla con folio real
                 addEdocumentToTable({
-                    tipo_documento: tipoDocId,
+                    tipo_documento: tipoDocumento,
                     nombre_documento: nombreDoc,
                     folio_edocument: result.eDocument,
                     created_at: new Date().toISOString()
                 });
-
-                const opInfo = result.numero_operacion 
-                    ? ` (Op: ${result.numero_operacion})` 
-                    : '';
+                removeStagingRow(stagingId);
+                const opInfo = result.numero_operacion ? ` (Op: ${result.numero_operacion})` : '';
                 showNotification(`Documento digitalizado. Folio eDocument: ${result.eDocument}${opInfo}`, 'success');
-
-                // Auto-guardar documentos (el servidor ya lo guardó, pero sincronizamos la tabla completa)
                 await saveDocumentos();
             }
         } else {
@@ -1614,14 +1790,129 @@ window.digitalizarDocumento = async function() {
             } else {
                 showNotification(result.message || 'Error al digitalizar documento.', 'error');
             }
+            restoreButton();
         }
     } catch (error) {
         showNotification('Error de conexión al enviar a VUCEM.', 'error');
+        restoreButton();
     } finally {
-        _digitalizando = false;
-        btnDigit.disabled = false;
-        btnDigit.innerHTML = originalHTML;
+        _enviandoStaging = false;
         lucide.createIcons();
+    }
+};
+
+/**
+ * Consulta directamente desde la tabla de staging si VUCEM ya resolvió el folio
+ * eDocument de una operación pendiente (sin depender del panel de auto-reintento).
+ */
+let _consultandoStaging = false;
+window.consultarFolioStaging = async function(stagingId, numeroOperacion) {
+    if (_consultandoStaging) return;
+    _consultandoStaging = true;
+
+    const row = document.querySelector(`#stagingDocumentsTableBody tr[data-staging-id="${stagingId}"]`);
+    const btnConsultar = row?.querySelector('button[data-action="consultar"]');
+    const originalBtnHTML = btnConsultar?.innerHTML;
+
+    const restoreButton = () => {
+        if (btnConsultar && document.body.contains(btnConsultar)) {
+            btnConsultar.disabled = false;
+            btnConsultar.innerHTML = originalBtnHTML;
+            lucide.createIcons();
+        }
+    };
+
+    const applicantId = document.querySelector('[data-applicant-id]').getAttribute('data-applicant-id');
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    const dataEl = document.getElementById('mveManualData');
+    const hasStoredCreds = dataEl?.getAttribute('data-has-vucem-credentials') === 'true';
+    const hasStoredWs = dataEl?.getAttribute('data-has-webservice-key') === 'true';
+
+    const formData = new FormData();
+    formData.append('numero_operacion', numeroOperacion);
+    if (currentMveId) formData.append('mve_id', currentMveId);
+
+    if (!hasStoredWs) {
+        const claveWS = document.getElementById('digitClaveWS')?.value;
+        if (claveWS) formData.append('clave_webservice', claveWS);
+    }
+    if (!hasStoredCreds) {
+        const certFile = document.getElementById('digitCertFile')?.files[0];
+        const keyFile = document.getElementById('digitKeyFile')?.files[0];
+        const keyPass = document.getElementById('digitKeyPassword')?.value;
+        if (certFile) formData.append('certificado', certFile);
+        if (keyFile) formData.append('llave_privada', keyFile);
+        if (keyPass) formData.append('contrasena_llave', keyPass);
+    }
+
+    if (btnConsultar) {
+        btnConsultar.disabled = true;
+        btnConsultar.innerHTML = '<span class="inline-block w-4 h-4 border-2 border-amber-300 border-t-amber-600 rounded-full animate-spin"></span>';
+    }
+
+    try {
+        const response = await fetch(`/mve/consultar-operacion/${applicantId}`, {
+            method: 'POST',
+            headers: { 'X-CSRF-TOKEN': csrfToken },
+            body: formData
+        });
+        const result = await response.json();
+
+        if (result.success && result.eDocument) {
+            const tipoDocumento = row?.dataset.tipoDocumento || result.tipo_documento || '';
+            const nombreDoc = row?.dataset.nombreDocumento || result.nombre_documento || '';
+
+            addEdocumentToTable({
+                tipo_documento: tipoDocumento,
+                nombre_documento: nombreDoc,
+                folio_edocument: result.eDocument,
+                created_at: new Date().toISOString()
+            });
+            removeStagingRow(stagingId);
+            showNotification(`Folio eDocument obtenido: ${result.eDocument}`, 'success');
+            await saveDocumentos();
+
+            // Si el panel de pendientes seguía esta misma operación, cerrarlo sin volver a consultar VUCEM
+            if (_pendingOperacion === numeroOperacion) {
+                clearTimeout(_pendingRetryTimer);
+                _pendingOperacion = null;
+                document.getElementById('pendingOperationPanel')?.classList.add('hidden');
+            }
+        } else {
+            showNotification(result.message || 'VUCEM aún está procesando. Intente de nuevo en unos segundos.', 'warning');
+            restoreButton();
+        }
+    } catch (error) {
+        showNotification('Error de conexión al consultar el folio.', 'error');
+        restoreButton();
+    } finally {
+        _consultandoStaging = false;
+        lucide.createIcons();
+    }
+};
+
+window.descargarStagingDocumento = function(stagingId) {
+    window.open(`/mve/staging-documento/${stagingId}/descargar`, '_blank');
+};
+
+window.eliminarStagingDocumento = async function(stagingId) {
+    if (!confirm('¿Eliminar este documento procesado? Deberá volver a subirlo si lo necesita.')) return;
+
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    try {
+        const response = await fetch(`/mve/staging-documento/${stagingId}`, {
+            method: 'DELETE',
+            headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' }
+        });
+        const result = await response.json();
+        if (result.success) {
+            removeStagingRow(stagingId);
+            showNotification('Documento eliminado.', 'success');
+        } else {
+            showNotification(result.message || 'No se pudo eliminar el documento.', 'error');
+        }
+    } catch (error) {
+        showNotification('Error de conexión al eliminar el documento.', 'error');
     }
 };
 

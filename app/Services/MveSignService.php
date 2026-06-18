@@ -8,6 +8,7 @@ use App\Models\MvDatosManifestacion;
 use App\Models\MvInformacionCove;
 use App\Models\MvDocumentos;
 use App\Traits\VucemConnectivityHandler;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
@@ -355,9 +356,9 @@ class MveSignService
 
             Log::info('MVE - Respuesta VUCEM recibida', ['http_code' => $httpCode, 'response_length' => strlen($response)]);
 
-            // --- DEBUG: VER RESPUESTA COMPLETA DE VUCEM ---
-            Log::info('MVE - RESPUESTA COMPLETA VUCEM: ' . $response);
-            // ----------------------------------------------
+            if (config('vucem.log_soap', false)) {
+                Log::info('MVE - RESPUESTA COMPLETA VUCEM: ' . $response);
+            }
 
             return $this->procesarRespuestaVucemXml($applicant, $datosManifestacion, $soapEnvelope, $response, $httpCode);
 
@@ -412,25 +413,32 @@ class MveSignService
         $folioReal = $numeroManifestacion ?: $numeroOperacion;
 
         if ($folioReal) {
-            $acuse = MvAcuse::create([
-                'applicant_id'           => $applicant->id,
-                'datos_manifestacion_id' => $datosManifestacion->id,
-                'created_by_user_id'     => $datosManifestacion->created_by_user_id,
-                'folio_interno'          => $datosManifestacion->folio_interno,
-                'folio_manifestacion'    => $folioReal, // Usar numeroManifestacion como folio principal
-                'numero_cove' => $numeroManifestacion ?: null, // eDocument/MNVA...
-                'numero_pedimento' => $datosManifestacion->pedimento,
-                'acuse_pdf' => $acusePdf, // Guardar acuse PDF si viene en respuesta
-                'xml_enviado' => $xmlEnviado,
-                'xml_respuesta' => $xmlRespuesta,
-                'status' => 'ENVIADO',
-                'fecha_envio' => now(),
-                'fecha_respuesta' => now(),
-            ]);
+            $acuse = DB::transaction(function () use (
+                $acusePdf, $datosManifestacion, $folioReal, $numeroManifestacion,
+                $xmlEnviado, $xmlRespuesta, $applicant
+            ) {
+                $acuse = MvAcuse::create([
+                    'applicant_id'           => $applicant->id,
+                    'datos_manifestacion_id' => $datosManifestacion->id,
+                    'created_by_user_id'     => $datosManifestacion->created_by_user_id,
+                    'folio_interno'          => $datosManifestacion->folio_interno,
+                    'folio_manifestacion'    => $folioReal,
+                    'numero_cove'            => $numeroManifestacion ?: null,
+                    'numero_pedimento'       => $datosManifestacion->pedimento,
+                    'acuse_pdf'              => $acusePdf,
+                    'xml_enviado'            => $xmlEnviado,
+                    'xml_respuesta'          => $xmlRespuesta,
+                    'status'                 => 'ENVIADO',
+                    'fecha_envio'            => now(),
+                    'fecha_respuesta'        => now(),
+                ]);
 
-            $datosManifestacion->update(['status' => 'enviado']);
-            MvInformacionCove::where('datos_manifestacion_id', $datosManifestacion->id)->update(['status' => 'enviado']);
-            MvDocumentos::where('datos_manifestacion_id', $datosManifestacion->id)->update(['status' => 'enviado']);
+                $datosManifestacion->update(['status' => 'enviado']);
+                MvInformacionCove::where('datos_manifestacion_id', $datosManifestacion->id)->update(['status' => 'enviado']);
+                MvDocumentos::where('datos_manifestacion_id', $datosManifestacion->id)->update(['status' => 'enviado']);
+
+                return $acuse;
+            });
 
             Log::info('[MVE] Manifestación enviada exitosamente', [
                 'folio_real' => $folioReal,

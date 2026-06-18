@@ -174,7 +174,9 @@ class ConsultarEdocumentService
                 $rawXml = $this->soapClient->__getLastResponse();
                 // Lo guardamos en el log. Si es muy grande, VUCEM suele mandar base64, 
                 // así que veremos un string largo, pero buscaremos las etiquetas <contenido> o <Archivo>
-                Log::info('XML RAW VUCEM:', ['xml' => $rawXml]);
+                if (config('vucem.log_soap', false)) {
+                    Log::info('XML RAW VUCEM:', ['xml' => $rawXml]);
+                }
             }
             catch (Exception $e) {
                 Log::warning('No se pudo obtener el XML raw: ' . $e->getMessage());

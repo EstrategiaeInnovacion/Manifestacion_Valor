@@ -12,6 +12,11 @@ class TestConsultaMve extends Command
 
     public function handle()
     {
+        if (!app()->environment(['local', 'testing'])) {
+            $this->error('Este comando de prueba solo puede ejecutarse en local/testing.');
+            return 1;
+        }
+
         $folio = $this->argument('folio');
         $rfc = $this->argument('rfc');
         $clave = $this->argument('clave');

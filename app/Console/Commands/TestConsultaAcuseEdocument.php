@@ -44,6 +44,11 @@ class TestConsultaAcuseEdocument extends Command
 
     public function handle(): int
     {
+        if (!app()->environment(['local', 'testing'])) {
+            $this->error('Este comando de prueba solo puede ejecutarse en local/testing.');
+            return self::FAILURE;
+        }
+
         $folio = trim($this->argument('folio'));
         $applicantId = (int) $this->option('applicant');
         $endpointOverride = $this->option('endpoint');

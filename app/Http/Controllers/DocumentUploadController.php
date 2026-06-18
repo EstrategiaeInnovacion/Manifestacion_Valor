@@ -38,7 +38,7 @@ class DocumentUploadController extends Controller
 
             // Verificar que el solicitante pertenece al usuario actual
             $applicant = MvClientApplicant::findOrFail($applicantId);
-            if ($applicant->user_email !== auth()->user()->getApplicantOwnerEmail()) {
+            if (!auth()->user()->canAccessApplicant($applicant)) {
                 return response()->json([
                     'success' => false,
                     'error' => 'No tienes permiso para subir documentos a este solicitante.'
@@ -128,7 +128,7 @@ class DocumentUploadController extends Controller
         try {
             // Verificar que el solicitante pertenece al usuario actual
             $applicant = MvClientApplicant::findOrFail($applicantId);
-            if ($applicant->user_email !== auth()->user()->getApplicantOwnerEmail()) {
+            if (!auth()->user()->canAccessApplicant($applicant)) {
                 return response()->json([
                     'success' => false,
                     'error' => 'No tienes permiso para ver los documentos de este solicitante.'
@@ -183,7 +183,7 @@ class DocumentUploadController extends Controller
 
             // Verificar que el documento pertenece al usuario actual
             $applicant = MvClientApplicant::findOrFail($document->applicant_id);
-            if ($applicant->user_email !== auth()->user()->getApplicantOwnerEmail()) {
+            if (!auth()->user()->canAccessApplicant($applicant)) {
                 return response()->json([
                     'success' => false,
                     'error' => 'No tienes permiso para eliminar este documento.'
@@ -228,7 +228,7 @@ class DocumentUploadController extends Controller
 
             // Verificar que el documento pertenece al usuario actual
             $applicant = MvClientApplicant::findOrFail($document->applicant_id);
-            if ($applicant->user_email !== auth()->user()->getApplicantOwnerEmail()) {
+            if (!auth()->user()->canAccessApplicant($applicant)) {
                 return response()->json([
                     'success' => false,
                     'error' => 'No tienes permiso para descargar este documento.'
@@ -276,7 +276,7 @@ class DocumentUploadController extends Controller
 
             // Verificar que el documento pertenece al usuario actual
             $applicant = MvClientApplicant::findOrFail($document->applicant_id);
-            if ($applicant->user_email !== auth()->user()->getApplicantOwnerEmail()) {
+            if (!auth()->user()->canAccessApplicant($applicant)) {
                 return response()->json([
                     'success' => false,
                     'error' => 'No tienes permiso para visualizar este documento.'

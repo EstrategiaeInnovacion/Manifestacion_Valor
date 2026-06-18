@@ -220,7 +220,7 @@ class DigitalizacionController extends Controller
 
         } catch (\Exception $e) {
             Log::error('[CONSULTA_OPERACION] Error: ' . $e->getMessage());
-            return response()->json(['success' => false, 'message' => $e->getMessage()]);
+            return response()->json(['success' => false, 'message' => 'Error al consultar la operación. Intente de nuevo.']);
         } finally {
             foreach ($tempPaths as $path) {
                 if ($path && file_exists($path)) @unlink($path);

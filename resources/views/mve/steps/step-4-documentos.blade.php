@@ -142,11 +142,11 @@
                 </div>
                 @endif
 
-                {{-- Botón Digitalizar --}}
+                {{-- Botón Procesar --}}
                 <div class="form-actions-inline">
-                    <button type="button" id="btnDigitalizar" onclick="digitalizarDocumento()" class="btn-add flex items-center gap-2">
-                        <i data-lucide="upload-cloud" class="w-4 h-4"></i>
-                        Digitalizar y Enviar a VUCEM
+                    <button type="button" id="btnDigitalizar" onclick="guardarDocumentoEnStaging()" class="btn-add flex items-center gap-2">
+                        <i data-lucide="file-check-2" class="w-4 h-4"></i>
+                        Procesar y Guardar Documento
                     </button>
                 </div>
 
@@ -174,6 +174,52 @@
                                 </button>
                             </div>
                         </div>
+                    </div>
+                </div>
+
+                <hr class="my-6 border-slate-200">
+
+                {{-- Tabla de documentos en staging: procesados localmente, listos para enviar a VUCEM --}}
+                <h4 class="text-sm font-bold text-slate-700 mb-3 flex items-center">
+                    <i data-lucide="hourglass" class="w-4 h-4 mr-2 text-amber-500"></i>
+                    Documentos Digitalizados Listos para Enviar
+                </h4>
+                <div class="flex flex-wrap items-center gap-4 mb-3 text-xs text-slate-500">
+                    <span class="font-semibold text-slate-600">Simbología:</span>
+                    <span class="flex items-center gap-1.5">
+                        <i data-lucide="upload-cloud" class="w-3.5 h-3.5 text-blue-600"></i> Enviar a VUCEM
+                    </span>
+                    <span class="flex items-center gap-1.5">
+                        <i data-lucide="search-check" class="w-3.5 h-3.5 text-amber-600"></i> Consultar folio eDocument
+                    </span>
+                    <span class="flex items-center gap-1.5">
+                        <i data-lucide="download" class="w-3.5 h-3.5 text-slate-600"></i> Descargar
+                    </span>
+                    <span class="flex items-center gap-1.5">
+                        <i data-lucide="trash-2" class="w-3.5 h-3.5 text-red-600"></i> Eliminar
+                    </span>
+                </div>
+                <div class="table-container mb-6">
+                    <div class="overflow-x-auto w-full">
+                        <table class="mve-table">
+                            <thead>
+                                <tr>
+                                    <th>NOMBRE</th>
+                                    <th>TIPO</th>
+                                    <th>TAMAÑO</th>
+                                    <th>CONVERTIDO</th>
+                                    <th>ACCIONES</th>
+                                </tr>
+                            </thead>
+                            <tbody id="stagingDocumentsTableBody">
+                                <tr>
+                                    <td colspan="5" class="table-empty">
+                                        <i data-lucide="inbox" class="w-8 h-8 text-slate-300"></i>
+                                        <p class="text-sm text-slate-400 mt-2">NO HAY DOCUMENTOS EN ESPERA DE ENVÍO</p>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
 

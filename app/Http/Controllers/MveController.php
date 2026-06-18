@@ -9,6 +9,7 @@ use App\Models\MvInformacionCove;
 use App\Models\MvDocumentos;
 use App\Models\EdocumentRegistrado;
 use App\Models\MvAcuse;
+use App\Models\MvDocumentoStaging;
 use App\Constants\VucemCatalogs;
 use App\Services\ManifestacionValorService;
 use App\Services\MveSignService;
@@ -20,6 +21,7 @@ use App\Mail\MveSubmitted;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 use App\Models\User;
 
@@ -427,13 +429,9 @@ class MveController extends Controller
             ], 403);
         }
 
-        // Debug log completo para verificar los datos recibidos
-        \Log::info('=== DATOS RECIBIDOS EN saveInformacionCove ===');
-        \Log::info('Applicant ID: ' . $applicantId);
-        \Log::info('Request all:', $request->all());
-        \Log::info('informacion_cove recibido:', [
-            'cantidad' => count($request->informacion_cove ?? []),
-            'datos' => $request->informacion_cove ?? []
+        \Log::info('saveInformacionCove', [
+            'applicant_id' => $applicantId,
+            'coves_count'  => count($request->informacion_cove ?? []),
         ]);
         
         // Buscar registro vinculado a esta MVE
@@ -674,10 +672,44 @@ class MveController extends Controller
             'contrasena_llave' => 'nullable|string',
         ]);
 
+        $rfcConsulta = $request->rfc_consulta ? strtoupper(trim($request->rfc_consulta)) : '';
+        $mveId = $request->input('mve_id') ? (int) $request->input('mve_id') : null;
+
+        $resultado = $this->ejecutarDigitalizacion(
+            $applicant,
+            $request,
+            $request->input('tipo_documento'),
+            $request->input('nombre_documento'),
+            $request->input('file_content'),
+            $rfcConsulta,
+            $mveId
+        );
+
+        $status = $resultado['success'] ? 200 : ($resultado['http_status'] ?? 422);
+        unset($resultado['http_status']);
+
+        return response()->json($resultado, $status);
+    }
+
+    /**
+     * Resuelve credenciales, firma con e.firma y envía un documento a VUCEM, dejando
+     * registro en EdocumentRegistrado y mv_documentos. Compartido por el flujo directo
+     * (digitalizarDocumento) y por el envío desde la tabla de staging (enviarStagingAVucem).
+     */
+    private function ejecutarDigitalizacion(
+        MvClientApplicant $applicant,
+        Request $request,
+        string $tipoDocumento,
+        string $nombreDocumento,
+        string $fileContentBase64,
+        string $rfcConsulta,
+        ?int $mveId
+    ): array {
+        $applicantId = $applicant->id;
+
         try {
             $rfc = $applicant->applicant_rfc;
             $email = $applicant->applicant_email ?? auth()->user()->email;
-            $rfcConsulta = $request->rfc_consulta ? strtoupper(trim($request->rfc_consulta)) : '';
 
             // Determinar credenciales: almacenadas vs manuales
             $useStoredCreds = $applicant->hasVucemCredentials() && !$request->hasFile('certificado');
@@ -688,7 +720,7 @@ class MveController extends Controller
                 : $request->input('clave_webservice');
 
             if (empty($claveWebService)) {
-                return response()->json(['success' => false, 'message' => 'Se requiere la clave del Web Service VUCEM.'], 422);
+                return ['success' => false, 'message' => 'Se requiere la clave del Web Service VUCEM.'];
             }
 
             // Preparar archivos de firma
@@ -703,7 +735,7 @@ class MveController extends Controller
                     $passwordLlave = trim($applicant->vucem_password ?? '');
 
                     if (!$certContent || !$keyContent || !$passwordLlave) {
-                        return response()->json(['success' => false, 'message' => 'Credenciales almacenadas incompletas.'], 422);
+                        return ['success' => false, 'message' => 'Credenciales almacenadas incompletas.'];
                     }
 
                     file_put_contents($tempCertPath, $certContent);
@@ -716,7 +748,7 @@ class MveController extends Controller
                     ]);
                 } else {
                     if (!$request->hasFile('certificado') || !$request->hasFile('llave_privada') || !$request->filled('contrasena_llave')) {
-                        return response()->json(['success' => false, 'message' => 'Se requieren los archivos de firma electrónica.'], 422);
+                        return ['success' => false, 'message' => 'Se requieren los archivos de firma electrónica.'];
                     }
                     file_put_contents($tempCertPath, $request->file('certificado')->get());
                     file_put_contents($tempKeyPath, $request->file('llave_privada')->get());
@@ -729,14 +761,14 @@ class MveController extends Controller
                     ]);
                 }
 
-                // Llamar al servicio de digitalizaciÃ³n
+                // Llamar al servicio de digitalización
                 $digitalizarService = app(DigitalizarDocumentoService::class);
                 $resultado = $digitalizarService->digitalizarDocumento(
                     $rfc,
                     $claveWebService,
-                    $request->input('tipo_documento'),
-                    $request->input('nombre_documento'),
-                    $request->input('file_content'), // base64 ya procesado
+                    $tipoDocumento,
+                    $nombreDocumento,
+                    $fileContentBase64,
                     $tempCertPath,
                     $tempKeyPath,
                     $passwordLlave,
@@ -756,14 +788,12 @@ class MveController extends Controller
                             ->getDiagnostico(auth()->id(), (int) $applicantId);
                     }
 
-                    return response()->json($responseData, 422);
+                    return $responseData;
                 }
 
                 $eDocument = $resultado['eDocument'];
                 $isPending = str_starts_with($eDocument, 'PENDIENTE-Op-');
                 $numeroOperacion = $resultado['numero_operacion'] ?? null;
-                $tipoDocumento = $request->input('tipo_documento');
-                $nombreDocumento = $request->input('nombre_documento');
 
                 // Guardar en edocuments_registrados (siempre, incluso pendientes para tracking)
                 EdocumentRegistrado::updateOrCreate(
@@ -781,7 +811,6 @@ class MveController extends Controller
                     ]
                 );
 
-                $digitMveId = $request->input('mve_id') ? (int)$request->input('mve_id') : null;
                 // Guardar en mv_documentos siempre, incluso pendientes (folio = 'PENDIENTE-Op-{numero}')
                 // para que el usuario pueda consultar/retomar el folio desde la MVE aunque recargue la página.
                 $this->agregarDocumentoAMve($applicantId, [
@@ -791,7 +820,7 @@ class MveController extends Controller
                     'numero_operacion' => $numeroOperacion,
                     'created_at' => now()->toDateTimeString(),
                     'updated_at' => now()->toDateTimeString(),
-                ], $digitMveId);
+                ], $mveId);
 
                 Log::info('[DIGITALIZAR] eDocument ' . ($isPending ? 'pendiente guardado' : 'guardado y asociado') . ' en MVE', [
                     'applicant_id' => $applicantId,
@@ -801,13 +830,13 @@ class MveController extends Controller
                     'pending' => $isPending,
                 ]);
 
-                return response()->json([
+                return [
                     'success' => true,
                     'eDocument' => $eDocument,
                     'numero_operacion' => $numeroOperacion,
                     'pending' => $isPending,
                     'message' => $resultado['mensaje'] ?? 'Documento digitalizado exitosamente.',
-                ]);
+                ];
             } finally {
                 if (file_exists($tempCertPath)) @unlink($tempCertPath);
                 if (file_exists($tempKeyPath)) @unlink($tempKeyPath);
@@ -823,15 +852,19 @@ class MveController extends Controller
                 || str_contains(strtolower($msg), 'curl');
 
             if ($esConectividad) {
-                return response()->json([
+                return [
                     'success' => false,
                     'message' => 'El servicio VUCEM no está disponible temporalmente. Esto no es un error del sistema. Intente de nuevo en unos minutos.',
                     'connectivity_error' => true,
                     'diagnostico' => (new VucemDiagnosticService())->getDiagnostico(auth()->id(), (int) $applicantId),
-                ], 422);
+                ];
             }
 
-            return response()->json(['success' => false, 'message' => 'Error al digitalizar el documento. Intente de nuevo.'], 500);
+            return [
+                'success' => false,
+                'message' => 'Error al digitalizar el documento. Intente de nuevo.',
+                'http_status' => 500,
+            ];
         }
     }
 
@@ -873,6 +906,12 @@ class MveController extends Controller
                 'mve_id'           => $mveId,
             ]);
         }
+
+        // La fila de staging vuelve a estar disponible para reintentar el envío
+        // (no se borra: el documento ya procesado no debe perderse).
+        MvDocumentoStaging::where('numero_operacion', $numeroOperacion)
+            ->where('applicant_id', $applicantId)
+            ->update(['numero_operacion' => null]);
 
         return response()->json(['success' => true, 'message' => 'Operación pendiente descartada.']);
     }
@@ -997,6 +1036,15 @@ class MveController extends Controller
                     }
                 }
 
+                // El folio real ya fue obtenido: la fila de staging (si existe) y su
+                // archivo físico ya no son necesarios.
+                $stagingRow = MvDocumentoStaging::where('numero_operacion', $numeroOperacion)
+                    ->where('applicant_id', $applicantId)
+                    ->first();
+                if ($stagingRow) {
+                    $stagingRow->deleteWithFile();
+                }
+
                 return response()->json([
                     'success'   => true,
                     'eDocument' => $eDocument,
@@ -1011,6 +1059,184 @@ class MveController extends Controller
             if (file_exists($tempCertPath)) @unlink($tempCertPath);
             if (file_exists($tempKeyPath))  @unlink($tempKeyPath);
         }
+    }
+
+    /**
+     * Procesa y valida un PDF (vía DocumentUploadService::processUploadedPdf, ya invocado
+     * por el frontend a través de /mve/validar-pdf) y lo persiste en la tabla de staging
+     * para que el documento procesado no se pierda si el envío a VUCEM falla más adelante.
+     */
+    public function crearStagingDocumento(Request $request, $applicantId)
+    {
+        $applicant = MvClientApplicant::findOrFail($applicantId);
+        if (!auth()->user()->canAccessApplicant($applicant)) {
+            return response()->json(['success' => false, 'message' => 'Sin permiso.'], 403);
+        }
+
+        $request->validate([
+            'tipo_documento' => 'required|string',
+            'nombre_documento' => 'required|string|max:45',
+            'file_content' => 'required|string',
+            'original_name' => 'nullable|string',
+            'was_converted' => 'nullable|boolean',
+            'is_vucem_valid' => 'nullable|boolean',
+            'rfc_consulta' => 'nullable|string|max:13',
+            'mve_id' => 'nullable|integer',
+        ]);
+
+        $binario = base64_decode($request->input('file_content'));
+        if ($binario === false || strlen($binario) === 0) {
+            return response()->json(['success' => false, 'message' => 'Contenido de archivo inválido.'], 422);
+        }
+
+        $relPath = 'staging-pdfs/' . $applicant->id . '/' . Str::uuid() . '.pdf';
+        Storage::put($relPath, $binario);
+
+        $staging = MvDocumentoStaging::create([
+            'applicant_id' => $applicant->id,
+            'datos_manifestacion_id' => $request->input('mve_id'),
+            'created_by_user_id' => auth()->id(),
+            'tipo_documento' => $request->input('tipo_documento'),
+            'nombre_documento' => $request->input('nombre_documento'),
+            'original_filename' => $request->input('original_name') ?: 'documento.pdf',
+            'file_path' => $relPath,
+            'file_size' => strlen($binario),
+            'is_vucem_compliant' => (bool) $request->input('is_vucem_valid'),
+            'was_converted' => (bool) $request->input('was_converted'),
+            'rfc_consulta' => $request->input('rfc_consulta') ?: null,
+        ]);
+
+        return response()->json(['success' => true, 'staging' => $this->stagingToArray($staging)]);
+    }
+
+    /**
+     * Lista los documentos en staging (procesados localmente, pendientes de enviar a VUCEM)
+     * de un solicitante, filtrados por MVE si se especifica.
+     */
+    public function listarStagingDocumentos(Request $request, $applicantId)
+    {
+        $applicant = MvClientApplicant::findOrFail($applicantId);
+        if (!auth()->user()->canAccessApplicant($applicant)) {
+            return response()->json(['success' => false, 'message' => 'Sin permiso.'], 403);
+        }
+
+        $mveId = $request->query('mve_id');
+        $query = MvDocumentoStaging::where('applicant_id', $applicantId);
+        $query = $mveId
+            ? $query->where('datos_manifestacion_id', (int) $mveId)
+            : $query->whereNull('datos_manifestacion_id');
+
+        $documentos = $query->orderByDesc('id')->get()->map(fn($s) => $this->stagingToArray($s));
+
+        return response()->json(['success' => true, 'documentos' => $documentos]);
+    }
+
+    /**
+     * Envía a VUCEM un documento previamente guardado en staging. Si VUCEM devuelve el
+     * folio real (inmediato o tras resolverse desde "pendiente"), la fila de staging y su
+     * archivo físico se eliminan. Si falla o queda pendiente, la fila se conserva.
+     */
+    public function enviarStagingAVucem(Request $request, MvDocumentoStaging $staging)
+    {
+        if (!auth()->user()->canAccessApplicant($staging->applicant)) {
+            return response()->json(['success' => false, 'message' => 'Sin permiso.'], 403);
+        }
+
+        $request->validate([
+            'clave_webservice' => 'nullable|string',
+            'certificado' => 'nullable|file',
+            'llave_privada' => 'nullable|file',
+            'contrasena_llave' => 'nullable|string',
+        ]);
+
+        if (!Storage::exists($staging->file_path)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'El archivo procesado ya no existe. Vuelva a procesar el documento.',
+            ], 404);
+        }
+
+        $fileContentBase64 = base64_encode(Storage::get($staging->file_path));
+
+        $resultado = $this->ejecutarDigitalizacion(
+            $staging->applicant,
+            $request,
+            $staging->tipo_documento,
+            $staging->nombre_documento,
+            $fileContentBase64,
+            $staging->rfc_consulta ?? '',
+            $staging->datos_manifestacion_id
+        );
+
+        if (!$resultado['success']) {
+            $staging->update(['last_error' => $resultado['message'] ?? 'Error al digitalizar.']);
+            $status = $resultado['http_status'] ?? 422;
+            unset($resultado['http_status']);
+            return response()->json($resultado, $status);
+        }
+
+        if (!empty($resultado['pending'])) {
+            $staging->update(['numero_operacion' => $resultado['numero_operacion'], 'last_error' => null]);
+        } else {
+            $staging->deleteWithFile();
+        }
+
+        return response()->json($resultado);
+    }
+
+    /**
+     * Descarga el PDF ya procesado de una fila de staging.
+     */
+    public function descargarStagingDocumento(MvDocumentoStaging $staging)
+    {
+        if (!auth()->user()->canAccessApplicant($staging->applicant)) {
+            abort(403);
+        }
+        if (!Storage::exists($staging->file_path)) {
+            abort(404, 'Archivo no encontrado.');
+        }
+        return Storage::download($staging->file_path, $staging->original_filename);
+    }
+
+    /**
+     * Elimina manualmente una fila de staging y su archivo. Rechaza si tiene una
+     * operación VUCEM pendiente asociada (debe descartarse esa operación primero).
+     */
+    public function eliminarStagingDocumento(MvDocumentoStaging $staging)
+    {
+        if (!auth()->user()->canAccessApplicant($staging->applicant)) {
+            return response()->json(['success' => false, 'message' => 'Sin permiso.'], 403);
+        }
+
+        if ($staging->numero_operacion) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Este documento tiene una operación pendiente en VUCEM. Descarte la operación desde el panel antes de eliminarlo.',
+            ], 422);
+        }
+
+        $staging->deleteWithFile();
+
+        return response()->json(['success' => true]);
+    }
+
+    /**
+     * Serializa una fila de staging para el frontend.
+     */
+    private function stagingToArray(MvDocumentoStaging $staging): array
+    {
+        return [
+            'id' => $staging->id,
+            'tipo_documento' => $staging->tipo_documento,
+            'nombre_documento' => $staging->nombre_documento,
+            'original_filename' => $staging->original_filename,
+            'file_size' => $staging->file_size,
+            'is_vucem_compliant' => $staging->is_vucem_compliant,
+            'was_converted' => $staging->was_converted,
+            'numero_operacion' => $staging->numero_operacion,
+            'last_error' => $staging->last_error,
+            'created_at' => $staging->created_at?->toDateTimeString(),
+        ];
     }
 
     /**

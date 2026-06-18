@@ -93,11 +93,16 @@ class VucemPdfConverter
      */
     public function convertToVucem(string $inputPath, string $outputPath, bool $splitEnabled = false, int $numberOfParts = 2, string $forceOrientation = 'auto'): array
     {
-        // Aumentar límite de tiempo y memoria de ejecución
-        set_time_limit(1200); // 20 minutos
+        set_time_limit(1200);
         ini_set('max_execution_time', '1200');
-        ini_set('memory_limit', '2048M'); // 2GB de memoria
-        
+
+        // Asignar memoria proporcional al tamaño del archivo (mín 256 MB, máx 1 GB)
+        if (file_exists($inputPath)) {
+            $fileMb = filesize($inputPath) / 1048576;
+            $memoryMb = min(1024, max(256, (int) ceil($fileMb * 10)));
+            ini_set('memory_limit', $memoryMb . 'M');
+        }
+
         if (!file_exists($inputPath)) {
             throw new RuntimeException("El archivo de entrada no existe: {$inputPath}");
         }

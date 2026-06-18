@@ -88,6 +88,11 @@ class TestConsultaOperacionDigitalizacion extends Command
 
     public function handle(): int
     {
+        if (!app()->environment(['local', 'testing'])) {
+            $this->error('Este comando de prueba solo puede ejecutarse en local/testing.');
+            return self::FAILURE;
+        }
+
         $operacion = trim($this->argument('operacion'));
         $applicantId = (int) $this->option('applicant');
         $fetchWsdl = $this->option('fetch-wsdl');

@@ -695,7 +695,9 @@ class MveConsultaService
             ]);
 
             // Log del XML para debug
-            Log::debug('[ACUSE_EDOCUMENT] XML Request', ['xml' => $xml]);
+            if (config('vucem.log_soap', false)) {
+                Log::debug('[ACUSE_EDOCUMENT] XML Request', ['xml' => $xml]);
+            }
 
             // Enviar petición SOAP
             $ch = curl_init($endpoint);
@@ -781,7 +783,9 @@ class MveConsultaService
                 'soapAction' => $soapAction
             ]);
 
-            Log::debug('[ACUSE_COVE] XML Request', ['xml' => $xml]);
+            if (config('vucem.log_soap', false)) {
+                Log::debug('[ACUSE_COVE] XML Request', ['xml' => $xml]);
+            }
 
             $ch = curl_init($endpoint);
             curl_setopt_array($ch, [

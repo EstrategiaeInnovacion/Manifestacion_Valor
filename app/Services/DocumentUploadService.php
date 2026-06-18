@@ -43,6 +43,12 @@ class DocumentUploadService
             $tempPath = $this->saveTemporaryFile($file);
             $fullTempPath = Storage::path($tempPath);
 
+            $maxBytes = config('pdftools.max_size_mb', 50) * 1024 * 1024;
+            if (filesize($fullTempPath) > $maxBytes) {
+                Storage::delete($tempPath);
+                throw new RuntimeException('El archivo excede el tamaño máximo permitido.');
+            }
+
             Log::info('DocumentUploadService: Procesando archivo', [
                 'original_name' => $file->getClientOriginalName(),
                 'size' => $file->getSize(),
@@ -83,7 +89,7 @@ class DocumentUploadService
             $tempValidationFullPath = Storage::path($tempValidationPath);
             file_put_contents($tempValidationFullPath, $finalContent);
 
-            $finalValidation = $this->validateVucemFormat($tempValidationFullPath);
+            $finalValidation = $this->validateVucemFormat($tempValidationFullPath, $wasConverted);
 
             // Log del resultado FINAL — aquí se confirma si quedó en escala de grises
             Log::info('DocumentUploadService: Resultado del documento FINAL (enviado a VUCEM)', [
@@ -134,7 +140,7 @@ class DocumentUploadService
     /**
      * Valida si el archivo cumple con los requisitos VUCEM
      */
-    public function validateVucemFormat(string $filePath): array
+    public function validateVucemFormat(string $filePath, bool $afterConversion = false): array
     {
         $errors = [];
         $isValid = true;
@@ -162,7 +168,7 @@ class DocumentUploadService
 
             // 3. Validar escala de grises
             if (config('pdftools.vucem.force_grayscale', true)) {
-                $colorCheck = $this->checkGrayscale($filePath);
+                $colorCheck = $this->checkGrayscale($filePath, $afterConversion);
                 if (!$colorCheck['is_grayscale']) {
                     $errors[] = "No está en escala de grises: {$colorCheck['detail']}";
                     $isValid = false;
@@ -325,7 +331,7 @@ class DocumentUploadService
     /**
      * Verifica si el PDF está en escala de grises
      */
-    protected function checkGrayscale(string $filePath): array
+    protected function checkGrayscale(string $filePath, bool $afterConversion = false): array
     {
         $gsPath = $this->findGhostscript();
 
@@ -369,8 +375,18 @@ class DocumentUploadService
             }
 
             // Output vacío con exit_code 0 = PDF de texto/vectores puro (inkcov no genera cobertura
-            // para contenido vectorial). No podemos saber si tiene color → forzar conversión por seguridad.
+            // para contenido vectorial). No podemos saber si tiene color.
             if (empty($output)) {
+                if ($afterConversion) {
+                    // Ya se forzó la conversión a escala de grises en el paso anterior; el contenido
+                    // vectorial/texto no tiene cobertura de color medible antes ni después, así que
+                    // repetir el rechazo aquí dejaría el documento en "no cumple" para siempre.
+                    Log::info('DocumentUploadService: checkGrayscale — inkcov sin cobertura tras conversión (PDF vectorial/texto). Se considera conforme.', [
+                        'archivo' => basename($filePath),
+                    ]);
+                    return ['is_grayscale' => true, 'detail' => 'PDF vectorial — sin color medible, conforme tras conversión'];
+                }
+
                 Log::info('DocumentUploadService: checkGrayscale — inkcov sin cobertura (PDF vectorial/texto). Forzando conversión a grises por seguridad.', [
                     'archivo' => basename($filePath),
                 ]);
