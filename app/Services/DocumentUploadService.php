@@ -219,8 +219,9 @@ class DocumentUploadService
             mkdir($convertedDir, 0755, true);
         }
 
-        // Convertir usando VucemPdfConverter
-        $this->converter->convertToVucem($inputPath, $convertedFullPath);
+        // Convertir usando VucemPdfConverter (Stage 1 preserva texto/vectores y evita
+        // rasterizar todo a 300 DPI; $allowAutoSplit=false garantiza un único PDF completo).
+        $this->converter->convertToVucemOptimized($inputPath, $convertedFullPath, false, 2, 'auto', false);
 
         // Leer contenido convertido
         $convertedContent = file_get_contents($convertedFullPath);

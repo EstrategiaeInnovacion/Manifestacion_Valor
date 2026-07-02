@@ -613,6 +613,161 @@ class VucemPdfConverter
         return $result;
     }
 
+    /**
+     * Detecta si el PDF es un escaneo bilevel (blanco y negro puro, 1 bit por
+     * componente) — típico de documentos escaneados/faxeados. En ese caso,
+     * conviene re-renderizar en blanco y negro con CCITT Group 4 en vez de
+     * convertir a JPEG en escala de grises (mucho menos eficiente para este
+     * tipo de contenido).
+     */
+    protected function isBilevelScan(string $pdfPath): bool
+    {
+        if (!$this->pdfimagesPath) {
+            return false;
+        }
+
+        try {
+            $process = new Process([$this->pdfimagesPath, '-list', $pdfPath]);
+            $process->setTimeout(60);
+            $process->run();
+
+            if (!$process->isSuccessful()) {
+                return false;
+            }
+        } catch (\Exception $e) {
+            return false;
+        }
+
+        $total = 0;
+        $bilevel = 0;
+
+        foreach (explode("\n", $process->getOutput()) as $line) {
+            if (preg_match('/^\s*(\d+)\s+(\d+)\s+(\w+)\s+(\d+)\s+(\d+)\s+(\w+)\s+(\d+)\s+(\d+)\s+/', $line, $m)) {
+                $total++;
+                if ((int) $m[8] === 1) {
+                    $bilevel++;
+                }
+            }
+        }
+
+        return $total > 0 && $bilevel === $total;
+    }
+
+    /**
+     * Rasteriza todas las páginas del PDF a bitmaps PBM (blanco y negro puro,
+     * sin comprimir) a la resolución indicada. Deshabilita el anti-aliasing
+     * para conservar el bilevel real (sin tonos de gris intermedios).
+     */
+    protected function rasterizeAtDpiMono(string $inputPath, string $pbmPattern, int $dpi): array
+    {
+        $dir = dirname($pbmPattern);
+        foreach (glob($dir . '/mono_*.pbm') ?: [] as $old) {
+            @unlink($old);
+        }
+
+        $this->executeGhostscript([
+            '-sDEVICE=pbmraw',
+            '-r' . $dpi,
+            '-dTextAlphaBits=1',
+            '-dGraphicsAlphaBits=1',
+            '-dNOPAUSE',
+            '-dBATCH',
+            '-dSAFER',
+            '-dQUIET',
+            '-sOutputFile=' . $pbmPattern,
+            $inputPath,
+        ]);
+
+        $pbmFiles = glob($dir . '/mono_*.pbm') ?: [];
+        sort($pbmFiles, SORT_NATURAL);
+        return $pbmFiles;
+    }
+
+    /**
+     * Reconstruye un PDF a partir de bitmaps PBM (blanco y negro), comprimiendo
+     * cada imagen con CCITT Group 4 vía Ghostscript. Igual que rebuildPdfFromJpegs
+     * pero para contenido bilevel: evita la pérdida de eficiencia de JPEG en
+     * texto escaneado en blanco y negro.
+     */
+    protected function rebuildPdfFromPbm(array $pbmFiles, string $outputPath, string $tempDir): bool
+    {
+        $psLines = [
+            '%!PS-Adobe-3.0',
+            '%%Pages: ' . count($pbmFiles),
+            '%%EndComments',
+        ];
+
+        $rawFiles = [];
+        $pageNum = 1;
+
+        foreach ($pbmFiles as $pbmFile) {
+            $raw = file_get_contents($pbmFile);
+
+            // Cabecera PBM raw (P4): "P4\n<width> <height>\n" (puede incluir comentarios "#...")
+            if (!preg_match('/^P4\s+(?:#[^\n]*\s+)*(\d+)\s+(\d+)\s/', $raw, $hm, PREG_OFFSET_CAPTURE)) {
+                throw new RuntimeException("Cabecera PBM inválida: {$pbmFile}");
+            }
+
+            $widthPx = (int) $hm[1][0];
+            $heightPx = (int) $hm[2][0];
+            $dataOffset = $hm[0][1] + strlen($hm[0][0]);
+            $bitmap = substr($raw, $dataOffset);
+
+            $rawPath = $tempDir . '/' . pathinfo($pbmFile, PATHINFO_FILENAME) . '.raw';
+            file_put_contents($rawPath, $bitmap);
+            $rawFiles[] = $rawPath;
+
+            $widthPt = round(($widthPx / 300) * 72, 4);
+            $heightPt = round(($heightPx / 300) * 72, 4);
+            $safePath = str_replace('\\', '/', $rawPath);
+
+            $psLines[] = "%%Page: {$pageNum} {$pageNum}";
+            $psLines[] = "<< /PageSize [{$widthPt} {$heightPt}] >> setpagedevice";
+            $psLines[] = "{$widthPt} {$heightPt} scale";
+            $psLines[] = '/DeviceGray setcolorspace';
+            $psLines[] = '<<';
+            $psLines[] = '  /ImageType 1';
+            $psLines[] = "  /Width {$widthPx}";
+            $psLines[] = "  /Height {$heightPx}";
+            $psLines[] = '  /BitsPerComponent 1';
+            // PBM: bit 1 = negro, bit 0 = blanco (invertido respecto a DeviceGray)
+            $psLines[] = '  /Decode [1 0]';
+            $psLines[] = "  /ImageMatrix [{$widthPx} 0 0 -{$heightPx} 0 {$heightPx}]";
+            $psLines[] = "  /DataSource ({$safePath}) (r) file";
+            $psLines[] = '>> image';
+            $psLines[] = 'showpage';
+            $pageNum++;
+        }
+        $psLines[] = '%%EOF';
+
+        $psPath = $tempDir . '/assembled_mono_' . uniqid() . '.ps';
+        file_put_contents($psPath, implode("\n", $psLines) . "\n");
+
+        try {
+            $this->executeGhostscript([
+                '-sDEVICE=pdfwrite',
+                '-dCompatibilityLevel=1.4',
+                '-dEncodeMonoImages=true',
+                '-dAutoFilterMonoImages=false',
+                '-dMonoImageFilter=/CCITTFaxEncode',
+                '-dNOPAUSE',
+                '-dBATCH',
+                '-dSAFER',
+                '-sOutputFile=' . $outputPath,
+                $psPath,
+            ]);
+        } finally {
+            if (file_exists($psPath)) {
+                @unlink($psPath);
+            }
+            foreach ($rawFiles as $rawFile) {
+                @unlink($rawFile);
+            }
+        }
+
+        return file_exists($outputPath) && filesize($outputPath) > 1000;
+    }
+
     protected function createTempDirectory(): string
     {
         $basePath = storage_path('app/tmp/vucem_convert');
@@ -1227,9 +1382,11 @@ class VucemPdfConverter
      * @param bool $splitEnabled Si se debe dividir el PDF en partes
      * @param int $numberOfParts Número de partes en las que dividir (2-8)
      * @param string $forceOrientation Orientación forzada: 'auto', 'portrait', 'landscape'
+     * @param bool $allowAutoSplit Si es false, nunca divide el PDF automáticamente aunque
+     *   supere el límite de tamaño VUCEM; siempre entrega un único archivo completo en $outputPath.
      * @return array Información detallada del proceso y resultado
      */
-    public function convertToVucemOptimized(string $inputPath, string $outputPath, bool $splitEnabled = false, int $numberOfParts = 2, string $forceOrientation = 'auto'): array
+    public function convertToVucemOptimized(string $inputPath, string $outputPath, bool $splitEnabled = false, int $numberOfParts = 2, string $forceOrientation = 'auto', bool $allowAutoSplit = true): array
     {
         set_time_limit(1200);
         ini_set('max_execution_time', '1200');
@@ -1247,7 +1404,7 @@ class VucemPdfConverter
         $originalSizeMB = round($originalSize / (1024 * 1024), 2);
         $maxSize = $this->getConfig('auto_split_threshold', 3 * 1024 * 1024);
         $warnSize = $this->getConfig('warn_size', 2.5 * 1024 * 1024);
-        $autoSplit = $this->getConfig('auto_split', true);
+        $autoSplit = $allowAutoSplit && $this->getConfig('auto_split', true);
 
         $tempDir = $this->createTempDirectory();
         $bestStage1Path = null;
@@ -1319,8 +1476,11 @@ class VucemPdfConverter
                 }
             }
 
-            // Evaluar si Stage 1 produjo un resultado válido
-            if ($bestStage1Path && $bestStage1Size < $originalSize) {
+            // Evaluar si Stage 1 produjo un resultado válido.
+            // No exigimos que sea más pequeño que el original: forzar escala de grises
+            // y 300 DPI puede crecer un poco un PDF de texto ya muy compacto; lo que
+            // importa es que quepa dentro del límite VUCEM ($maxSize).
+            if ($bestStage1Path) {
                 // Stage 1 NO puede subir DPI: imágenes originales a < 300 DPI quedan igual.
                 // Asumir no-cumple hasta verificar con pdfimages. Sin pdfimages no es seguro
                 // usar Stage 1 porque VUCEM puede rechazar imágenes que no estén a 300 DPI exactos.
@@ -1432,6 +1592,59 @@ class VucemPdfConverter
 
             if ($stage1Succeeded) {
                 return $result;
+            }
+
+            // =================================================================
+            // STAGE 1.5: Documento bilevel (escaneo en blanco y negro, tipo fax)
+            // a menos de 300 DPI. Stage 1 no puede resolverlo (no puede subir DPI
+            // de imágenes ya incrustadas), y rasterizar a JPEG en escala de grises
+            // (Stage 2) infla mucho el tamaño porque JPEG comprime muy mal texto
+            // en blanco y negro. En su lugar, se vuelve a renderizar cada página a
+            // exactamente 300 DPI en blanco y negro puro y se comprime con CCITT
+            // Group 4 — el mismo esquema de compresión que ya trae el original,
+            // mucho más eficiente que JPEG para este tipo de contenido.
+            // =================================================================
+            if (!$splitEnabled && $this->isBilevelScan($inputPath)) {
+                $monoPattern = $tempDir . '/mono_%03d.pbm';
+                $pbmFiles = $this->rasterizeAtDpiMono($inputPath, $monoPattern, 300);
+                $monoOutput = $tempDir . '/mono_output.pdf';
+
+                if (!empty($pbmFiles) && $this->rebuildPdfFromPbm($pbmFiles, $monoOutput, $tempDir)) {
+                    $monoSize = filesize($monoOutput);
+                    $monoDpiCheck = $this->validateDpi($monoOutput);
+
+                    Log::info('VucemConverter: Stage 1.5 - bilevel CCITT G4 a 300 DPI', [
+                        'size_mb' => round($monoSize / 1048576, 2),
+                        'dpi_valid' => $monoDpiCheck['valid'] ?? null,
+                    ]);
+
+                    if (($monoDpiCheck['valid'] ?? false) && $monoSize <= $maxSize) {
+                        copy($monoOutput, $outputPath);
+                        @unlink($monoOutput);
+
+                        $sizeChange = round((($monoSize - $originalSize) / $originalSize) * 100, 2);
+                        $result['converted_size'] = $monoSize;
+                        $result['converted_size_mb'] = round($monoSize / 1048576, 2);
+                        $result['size_change_percent'] = $sizeChange;
+                        $result['was_reduced'] = $monoSize < $originalSize;
+                        $result['final_quality'] = 'bilevel-ccitt';
+                        $result['success'] = true;
+                        $result['messages'][] = "📊 Original: {$originalSizeMB} MB | Convertido: {$result['converted_size_mb']} MB (" .
+                            ($sizeChange >= 0 ? '+' : '') . "{$sizeChange}%)";
+
+                        if ($result['converted_size_mb'] >= ($warnSize / 1048576)) {
+                            $result['exceeded_threshold'] = true;
+                            $result['warnings'][] = "⚠️ Archivo cerca del límite ({$result['converted_size_mb']} MB / " .
+                                round($maxSize / 1048576, 1) . " MB máximo)";
+                        }
+
+                        return $result;
+                    }
+                }
+
+                if (file_exists($monoOutput)) {
+                    @unlink($monoOutput);
+                }
             }
 
             // =================================================================
