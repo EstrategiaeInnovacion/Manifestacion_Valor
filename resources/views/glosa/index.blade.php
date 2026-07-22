@@ -243,6 +243,15 @@
                         </h3>
                         <p class="text-xs text-slate-500">Descarga el libro .xlsx estructurado por bóvedas con encabezados descriptivos y filtros activados</p>
                     </div>
+                    @if($imports->count() > 0)
+                    <form action="{{ route('glosa.purge-all') }}" method="POST" onsubmit="return confirm('¿Estás seguro de eliminar TODOS los paquetes Data Stage y sus registros acumulados? Esta acción no se puede deshacer.')">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold text-xs rounded-xl transition-all">
+                            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Limpiar Todo el Historial
+                        </button>
+                    </form>
+                    @endif
                 </div>
 
                 <div class="overflow-x-auto">
@@ -294,13 +303,20 @@
                                     @endif
                                 </td>
                                 <td class="py-3.5 px-4 text-center">
-                                    @if($imp->status === 'completed')
-                                    <a href="{{ route('glosa.export', $imp->id) }}" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] rounded-lg shadow-sm transition-all">
-                                        <i data-lucide="download" class="w-3.5 h-3.5"></i> Excel 26 Hojas
-                                    </a>
-                                    @else
-                                    <span class="text-slate-400 text-[10px]">-</span>
-                                    @endif
+                                    <div class="flex items-center justify-center gap-2">
+                                        @if($imp->status === 'completed')
+                                        <a href="{{ route('glosa.export', $imp->id) }}" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] rounded-lg shadow-sm transition-all" title="Descargar Excel 26 Hojas">
+                                            <i data-lucide="download" class="w-3.5 h-3.5"></i> Excel 26 Hojas
+                                        </a>
+                                        @endif
+                                        <form action="{{ route('glosa.destroy', $imp->id) }}" method="POST" onsubmit="return confirm('¿Eliminar el paquete \'{{ $imp->original_filename }}\' y todas sus bóvedas asociadas?')">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="inline-flex items-center justify-center p-1.5 bg-rose-50 hover:bg-rose-600 text-rose-600 hover:text-white rounded-lg border border-rose-200 transition-all" title="Eliminar Paquete">
+                                                <i data-lucide="trash" class="w-4 h-4"></i>
+                                            </button>
+                                        </form>
+                                    </div>
                                 </td>
                             </tr>
                             @empty

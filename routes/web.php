@@ -322,6 +322,8 @@ Route::middleware(['auth', 'license'])->group(function () {
         Route::post('/upload', [GlosaController::class, 'upload'])->name('upload');
         Route::get('/export/{import}', [GlosaController::class, 'exportExcel'])->name('export');
         Route::get('/metrics', [GlosaController::class, 'getDashboardMetrics'])->name('metrics');
+        Route::delete('/imports/{import}', [GlosaController::class, 'destroy'])->name('destroy');
+        Route::delete('/purge-all', [GlosaController::class, 'purgeAll'])->name('purge-all');
     });
 
 require __DIR__ . '/auth.php';

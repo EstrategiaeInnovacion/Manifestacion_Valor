@@ -207,4 +207,44 @@ class GlosaController extends Controller
             ]
         ]);
     }
+
+    /**
+     * Elimina un paquete de Data Stage específico y todas sus bóvedas asociadas
+     */
+    public function destroy(GlosaImport $import)
+    {
+        $user = auth()->user();
+        $adminId = ($user->role === 'Admin' || $user->role === 'SuperAdmin') 
+            ? $user->id 
+            : ($user->created_by ?? $user->id);
+
+        if ($import->admin_id !== $adminId && $user->role !== 'SuperAdmin') {
+            abort(403, 'No tiene autorización para eliminar este paquete.');
+        }
+
+        $filename = $import->original_filename;
+        $import->delete(); // Elimina en cascada las bóvedas
+
+        Log::info("[GLOSA CONTROLLER] Importación Data Stage ID {$import->id} ({$filename}) eliminada por usuario ID {$user->id}");
+
+        return redirect()->route('glosa.index')->with('success', "Paquete '{$filename}' y sus registros de bóvedas asociados fueron eliminados correctamente.");
+    }
+
+    /**
+     * Purga todos los paquetes e historial de Data Stage del administrador
+     */
+    public function purgeAll(Request $request)
+    {
+        $user = $request->user();
+        $adminId = ($user->role === 'Admin' || $user->role === 'SuperAdmin') 
+            ? $user->id 
+            : ($user->created_by ?? $user->id);
+
+        $count = GlosaImport::where('admin_id', $adminId)->count();
+        GlosaImport::where('admin_id', $adminId)->delete();
+
+        Log::info("[GLOSA CONTROLLER] Purga completa realizada por usuario ID {$user->id}. Total eliminados: {$count}");
+
+        return redirect()->route('glosa.index')->with('success', "Se han eliminado todos los paquetes ({$count}) y la información acumulada de Data Stage.");
+    }
 }

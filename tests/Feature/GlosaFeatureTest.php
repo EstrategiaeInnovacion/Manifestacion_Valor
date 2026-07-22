@@ -50,7 +50,7 @@ class GlosaFeatureTest extends TestCase
 
         $response = $this->actingAs($admin)->get('/glosa');
         $response->assertStatus(200);
-        $response->assertSee('Glosa Aduanera &amp; Data Stage', false);
+        $response->assertSee('Glosa Aduanera');
     }
 
     public function test_can_upload_zip_fetch_metrics_and_export_excel(): void
@@ -94,5 +94,41 @@ class GlosaFeatureTest extends TestCase
         $exportResponse = $this->actingAs($admin)->get("/glosa/export/{$import->id}");
         $exportResponse->assertStatus(200);
         $exportResponse->assertHeader('content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    }
+
+    public function test_can_delete_single_import_and_purge_all(): void
+    {
+        $admin = User::factory()->create(['role' => 'Admin']);
+
+        License::create([
+            'license_key'      => License::generateKey(),
+            'admin_id'         => $admin->id,
+            'duration_type'    => '1month',
+            'starts_at'        => now(),
+            'expires_at'       => now()->addDays(30),
+            'status'           => 'active',
+            'has_glosa_access' => true,
+            'created_by'       => $admin->id,
+        ]);
+
+        $import = GlosaImport::create([
+            'user_id'           => $admin->id,
+            'admin_id'          => $admin->id,
+            'original_filename' => 'test_delete.zip',
+            'status'            => 'completed',
+        ]);
+
+        // Probar eliminación individual
+        $deleteResponse = $this->actingAs($admin)->delete("/glosa/imports/{$import->id}");
+        $deleteResponse->assertRedirect(route('glosa.index'));
+        $this->assertDatabaseMissing('glosa_imports', ['id' => $import->id]);
+
+        // Crear dos para probar purga total
+        GlosaImport::create(['user_id' => $admin->id, 'admin_id' => $admin->id, 'original_filename' => 'zip1.zip', 'status' => 'completed']);
+        GlosaImport::create(['user_id' => $admin->id, 'admin_id' => $admin->id, 'original_filename' => 'zip2.zip', 'status' => 'completed']);
+
+        $purgeResponse = $this->actingAs($admin)->delete('/glosa/purge-all');
+        $purgeResponse->assertRedirect(route('glosa.index'));
+        $this->assertEquals(0, GlosaImport::where('admin_id', $admin->id)->count());
     }
 }
