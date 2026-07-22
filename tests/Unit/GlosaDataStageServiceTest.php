@@ -50,6 +50,7 @@ class GlosaDataStageServiceTest extends TestCase
         $this->assertEquals(26, $import->total_files);
         $this->assertGreaterThan(0, $import->total_pedimentos);
         $this->assertGreaterThan(0, $import->total_partidas);
+        $this->assertGreaterThan(0, $import->total_valor_dolares);
         $this->assertDatabaseHas('glosa_imports', [
             'id'     => $import->id,
             'status' => 'completed',

@@ -93,7 +93,8 @@ class GlosaDataStageService
             $contrib557Batch = [];
             $rectif701Batch = [];
 
-            $totalValorDolares = 0;
+            $totalValorDolares505 = 0;
+            $totalValorDolares551 = 0;
             $totalContribuciones = 0;
             $folio = null;
             $rfc = null;
@@ -180,7 +181,7 @@ class GlosaDataStageService
                         }
                     } elseif ($vaultCode === '505') {
                         $valUsd = $this->parseFloat($rowData['ValorDolares'] ?? $rowData['ValorFacturaUSD'] ?? '0');
-                        $totalValorDolares += $valUsd;
+                        $totalValorDolares505 += $valUsd;
                         $facturas505Batch[] = [
                             'import_id'         => $import->id,
                             'admin_id'          => $adminId,
@@ -214,6 +215,8 @@ class GlosaDataStageService
                         ];
                     } elseif ($vaultCode === '551') {
                         $fraccionVal = $rowData['Fraccion'] ?? $rowData['FraccionArancelaria'] ?? null;
+                        $valPartidaUsd = $this->parseFloat($rowData['ValorDolares'] ?? '0');
+                        $totalValorDolares551 += $valPartidaUsd;
                         $partidas551Batch[] = [
                             'import_id'            => $import->id,
                             'admin_id'             => $adminId,
@@ -225,7 +228,7 @@ class GlosaDataStageService
                             'precio_unitario'      => $this->parseFloat($rowData['PrecioUnitario'] ?? '0'),
                             'valor_aduana'         => $this->parseFloat($rowData['ValorAduana'] ?? '0'),
                             'valor_comercial'      => $this->parseFloat($rowData['ValorComercial'] ?? '0'),
-                            'valor_dolares'        => $this->parseFloat($rowData['ValorDolares'] ?? '0'),
+                            'valor_dolares'        => $valPartidaUsd,
                             'cantidad_umc'         => $this->parseFloat($rowData['CantidadUMComercial'] ?? $rowData['CantidadMercanciaUMC'] ?? '0'),
                             'umc'                  => $rowData['UnidadMedidaComercial'] ?? $rowData['ClaveUMC'] ?? null,
                             'cantidad_umt'         => $this->parseFloat($rowData['CantidadUMTarifa'] ?? $rowData['CantidadMercanciaUMT'] ?? '0'),
@@ -327,7 +330,7 @@ class GlosaDataStageService
                 'total_files'          => $filesCount,
                 'total_pedimentos'     => count($datos501Batch),
                 'total_partidas'       => count($partidas551Batch),
-                'total_valor_dolares'  => $totalValorDolares,
+                'total_valor_dolares'  => max($totalValorDolares505, $totalValorDolares551),
                 'total_contribuciones' => $totalContribuciones,
                 'status'               => 'completed',
             ]);
