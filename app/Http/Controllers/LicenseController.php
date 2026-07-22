@@ -30,9 +30,10 @@ class LicenseController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'admin_id'      => 'required|exists:users,id',
-            'duration_type'  => 'required|in:1min,1month,6months,1year',
-            'notes'         => 'nullable|string|max:500',
+            'admin_id'         => 'required|exists:users,id',
+            'duration_type'    => 'required|in:1min,1month,6months,1year',
+            'has_glosa_access' => 'nullable|boolean',
+            'notes'            => 'nullable|string|max:500',
         ]);
 
         $admin = User::findOrFail($request->admin_id);
@@ -50,21 +51,23 @@ class LicenseController extends Controller
         $expiresAt = License::calculateExpiration($request->duration_type, $startsAt);
 
         $license = License::create([
-            'license_key'   => License::generateKey(),
-            'admin_id'      => $admin->id,
-            'duration_type'  => $request->duration_type,
-            'starts_at'     => $startsAt,
-            'expires_at'    => $expiresAt,
-            'status'        => 'active',
-            'created_by'    => auth()->id(),
-            'notes'         => $request->notes,
+            'license_key'      => License::generateKey(),
+            'admin_id'         => $admin->id,
+            'duration_type'    => $request->duration_type,
+            'starts_at'        => $startsAt,
+            'expires_at'       => $expiresAt,
+            'status'           => 'active',
+            'has_glosa_access' => $request->boolean('has_glosa_access'),
+            'created_by'       => auth()->id(),
+            'notes'            => $request->notes,
         ]);
 
         Log::info('[LICENSE] Nueva licencia asignada', [
-            'license_key' => $license->license_key,
-            'admin'       => $admin->full_name,
-            'duration'    => $request->duration_type,
-            'expires_at'  => $expiresAt->toDateTimeString(),
+            'license_key'      => $license->license_key,
+            'admin'            => $admin->full_name,
+            'duration'         => $request->duration_type,
+            'has_glosa_access' => $license->has_glosa_access,
+            'expires_at'       => $expiresAt->toDateTimeString(),
         ]);
 
         // Enviar correo de notificación al admin
@@ -85,7 +88,8 @@ class LicenseController extends Controller
     public function renew(Request $request, License $license)
     {
         $request->validate([
-            'duration_type' => 'required|in:1min,1month,6months,1year',
+            'duration_type'    => 'required|in:1min,1month,6months,1year',
+            'has_glosa_access' => 'nullable|boolean',
         ]);
 
         // Revocar la actual
@@ -96,14 +100,15 @@ class LicenseController extends Controller
         $expiresAt = License::calculateExpiration($request->duration_type, $startsAt);
 
         $newLicense = License::create([
-            'license_key'   => License::generateKey(),
-            'admin_id'      => $license->admin_id,
-            'duration_type'  => $request->duration_type,
-            'starts_at'     => $startsAt,
-            'expires_at'    => $expiresAt,
-            'status'        => 'active',
-            'created_by'    => auth()->id(),
-            'notes'         => 'Renovación de licencia ' . $license->license_key,
+            'license_key'      => License::generateKey(),
+            'admin_id'         => $license->admin_id,
+            'duration_type'    => $request->duration_type,
+            'starts_at'        => $startsAt,
+            'expires_at'       => $expiresAt,
+            'status'           => 'active',
+            'has_glosa_access' => $request->has('has_glosa_access') ? $request->boolean('has_glosa_access') : $license->has_glosa_access,
+            'created_by'       => auth()->id(),
+            'notes'            => 'Renovación de licencia ' . $license->license_key,
         ]);
 
         Log::info('[LICENSE] Licencia renovada', [

@@ -165,6 +165,23 @@ class User extends Authenticatable
     }
 
     /**
+     * Verificar si el usuario tiene acceso al módulo de Glosa Aduanera / Data Stage.
+     */
+    public function hasGlosaAccess(): bool
+    {
+        if ($this->role === 'SuperAdmin') {
+            return true;
+        }
+
+        if (!$this->hasActiveLicense()) {
+            return false;
+        }
+
+        $license = $this->getEffectiveLicense();
+        return $license ? (bool)$license->has_glosa_access : false;
+    }
+
+    /**
      * Obtener el admin asociado a este usuario (para herencia de licencia).
      */
     public function getAdminOwner(): ?User

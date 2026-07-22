@@ -16,14 +16,16 @@ class License extends Model
         'starts_at',
         'expires_at',
         'status',
+        'has_glosa_access',
         'expiry_notified',
         'created_by',
         'notes',
     ];
 
     protected $casts = [
-        'starts_at'  => 'datetime',
-        'expires_at' => 'datetime',
+        'starts_at'        => 'datetime',
+        'expires_at'       => 'datetime',
+        'has_glosa_access' => 'boolean',
     ];
 
     /**
