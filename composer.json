@@ -11,6 +11,7 @@
         "laravel/framework": "^12.0",
         "laravel/tinker": "^2.10.1",
         "phpcfdi/credentials": "^1.3",
+        "phpoffice/phpspreadsheet": "^5.9",
         "robrichards/xmlseclibs": "^3.1",
         "setasign/fpdf": "^1.8",
         "setasign/fpdi": "^2.6",

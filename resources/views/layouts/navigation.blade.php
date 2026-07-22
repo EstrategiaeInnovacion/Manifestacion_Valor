@@ -15,6 +15,12 @@
                     <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
                         {{ __('Dashboard') }}
                     </x-nav-link>
+
+                    @if(auth()->check() && auth()->user()->hasGlosaAccess())
+                    <x-nav-link :href="route('glosa.index')" :active="request()->routeIs('glosa.*')">
+                        Glosa Data Stage
+                    </x-nav-link>
+                    @endif
                 </div>
             </div>
 

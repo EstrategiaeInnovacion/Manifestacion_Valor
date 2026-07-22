@@ -12,6 +12,7 @@ use App\Http\Controllers\SupportController;
 use App\Http\Controllers\TicketController;
 use App\Http\Controllers\LicenseController;
 use App\Http\Controllers\AnnouncementController;
+use App\Http\Controllers\GlosaController;
 use App\Models\MvClientApplicant;
 use App\Models\MvDatosManifestacion;
 use App\Models\User;
@@ -313,6 +314,14 @@ Route::middleware(['auth', 'license'])->group(function () {
 
         // Vista individual — accesible para todos los usuarios autenticados con licencia
         Route::get('/faqs/{faq}', [App\Http\Controllers\FaqController::class, 'show'])->name('faqs.show');
+    });
+
+    // ── Módulo de Glosa Aduanera & Data Stage (SAT / ANAM) ──────────────────────
+    Route::middleware(['auth', 'license', 'glosa.license'])->prefix('glosa')->name('glosa.')->group(function () {
+        Route::get('/', [GlosaController::class, 'index'])->name('index');
+        Route::post('/upload', [GlosaController::class, 'upload'])->name('upload');
+        Route::get('/export/{import}', [GlosaController::class, 'exportExcel'])->name('export');
+        Route::get('/metrics', [GlosaController::class, 'getDashboardMetrics'])->name('metrics');
     });
 
 require __DIR__ . '/auth.php';
