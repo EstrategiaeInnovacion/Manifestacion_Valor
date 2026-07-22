@@ -325,6 +325,7 @@
     </div>
 
     {{-- SCRIPTS INTERACTIVOS Y CHARTS --}}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         let chartTendencia = null;
         let chartAduanas = null;
