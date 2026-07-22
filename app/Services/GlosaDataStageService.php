@@ -144,7 +144,6 @@ class GlosaDataStageService
 
                     // Procesamiento específico por Bóveda
                     if ($vaultCode === '501') {
-                        $fval = $this->parseFloat($rowData['ValorDolares'] ?? $rowData['TotalFletes'] ?? '0');
                         $datos501Batch[] = [
                             'import_id'            => $import->id,
                             'admin_id'             => $adminId,
@@ -157,14 +156,14 @@ class GlosaDataStageService
                             'seccion_aduanera_entrada' => $rowData['SeccionAduaneraEntrada'] ?? null,
                             'curp_contribuyente'   => $rowData['CurpContribuyente'] ?? null,
                             'rfc'                  => $rowData['Rfc'] ?? null,
-                            'curp_agente'          => $rowData['CurpAgenteA'] ?? null,
+                            'curp_agente'          => $rowData['CurpAgenteA'] ?? $rowData['CurpAgente'] ?? null,
                             'tipo_cambio'          => $this->parseFloat($rowData['TipoCambio'] ?? '1'),
                             'total_fletes'         => $this->parseFloat($rowData['TotalFletes'] ?? '0'),
                             'total_seguros'        => $this->parseFloat($rowData['TotalSeguros'] ?? '0'),
                             'total_embalajes'      => $this->parseFloat($rowData['TotalEmbalajes'] ?? '0'),
                             'total_incrementables' => $this->parseFloat($rowData['TotalIncrementables'] ?? '0'),
                             'total_deducibles'     => $this->parseFloat($rowData['TotalDeducibles'] ?? '0'),
-                            'peso_bruto'           => $this->parseFloat($rowData['PesoBrutoMercancia'] ?? '0'),
+                            'peso_bruto'           => $this->parseFloat($rowData['PesoBrutoMercancia'] ?? $rowData['PesoBruto'] ?? '0'),
                             'medio_transporte_salida' => $rowData['MedioTransporteSalida'] ?? null,
                             'medio_transporte_arribo' => $rowData['MedioTransporteArribo'] ?? null,
                             'medio_transporte_entrada_salida' => $rowData['MedioTransporteEntrada_Salida'] ?? null,
@@ -180,7 +179,7 @@ class GlosaDataStageService
                             $rfc = $rowData['Rfc'];
                         }
                     } elseif ($vaultCode === '505') {
-                        $valUsd = $this->parseFloat($rowData['ValorDolares'] ?? '0');
+                        $valUsd = $this->parseFloat($rowData['ValorDolares'] ?? $rowData['ValorFacturaUSD'] ?? '0');
                         $totalValorDolares += $valUsd;
                         $facturas505Batch[] = [
                             'import_id'         => $import->id,
@@ -193,7 +192,7 @@ class GlosaDataStageService
                             'valor_dolares'     => $valUsd,
                             'valor_moneda_extranjera' => $this->parseFloat($rowData['ValorMonedaExtranjera'] ?? '0'),
                             'proveedor_nombre'  => $rowData['ProveedorMercancia'] ?? null,
-                            'proveedor_tax_id'  => $rowData['IdentificacionFiscalProveedor'] ?? null,
+                            'proveedor_tax_id'  => $rowData['IndentFiscalProveedor'] ?? $rowData['IdentificacionFiscalProveedor'] ?? null,
                             'raw_data'          => json_encode($rowData),
                             'created_at'        => now(),
                             'updated_at'        => now(),
@@ -206,7 +205,7 @@ class GlosaDataStageService
                             'admin_id'          => $adminId,
                             'clave_operacion'   => $claveOperacion,
                             'clave_contribucion'=> $rowData['ClaveContribucion'] ?? null,
-                            'forma_pago'        => $rowData['ClaveFormaPago'] ?? null,
+                            'forma_pago'        => $rowData['FormaPago'] ?? $rowData['ClaveFormaPago'] ?? null,
                             'importe'           => $imp,
                             'fecha_pago_real'   => $this->parseDate($rowData['FechaPagoReal'] ?? null),
                             'raw_data'          => json_encode($rowData),
@@ -214,22 +213,23 @@ class GlosaDataStageService
                             'updated_at'        => now(),
                         ];
                     } elseif ($vaultCode === '551') {
+                        $fraccionVal = $rowData['Fraccion'] ?? $rowData['FraccionArancelaria'] ?? null;
                         $partidas551Batch[] = [
                             'import_id'            => $import->id,
                             'admin_id'             => $adminId,
                             'clave_operacion'      => $claveOperacion,
-                            'secuencia'            => (int)($rowData['SecuenciaFraccionArancelaria'] ?? 1),
-                            'fraccion_arancelaria' => $rowData['FraccionArancelaria'] ?? null,
-                            'subdivision'          => $rowData['SubdivisionFraccionArancelaria'] ?? null,
+                            'secuencia'            => (int)($rowData['SecuenciaFraccion'] ?? $rowData['SecuenciaFraccionArancelaria'] ?? 1),
+                            'fraccion_arancelaria' => $fraccionVal,
+                            'subdivision'          => $rowData['SubdivisionFraccion'] ?? $rowData['SubdivisionFraccionArancelaria'] ?? null,
                             'descripcion_mercancia'=> $rowData['DescripcionMercancia'] ?? null,
                             'precio_unitario'      => $this->parseFloat($rowData['PrecioUnitario'] ?? '0'),
                             'valor_aduana'         => $this->parseFloat($rowData['ValorAduana'] ?? '0'),
                             'valor_comercial'      => $this->parseFloat($rowData['ValorComercial'] ?? '0'),
                             'valor_dolares'        => $this->parseFloat($rowData['ValorDolares'] ?? '0'),
-                            'cantidad_umc'         => $this->parseFloat($rowData['CantidadMercanciaUMC'] ?? '0'),
-                            'umc'                  => $rowData['ClaveUMC'] ?? null,
-                            'cantidad_umt'         => $this->parseFloat($rowData['CantidadMercanciaUMT'] ?? '0'),
-                            'umt'                  => $rowData['ClaveUMT'] ?? null,
+                            'cantidad_umc'         => $this->parseFloat($rowData['CantidadUMComercial'] ?? $rowData['CantidadMercanciaUMC'] ?? '0'),
+                            'umc'                  => $rowData['UnidadMedidaComercial'] ?? $rowData['ClaveUMC'] ?? null,
+                            'cantidad_umt'         => $this->parseFloat($rowData['CantidadUMTarifa'] ?? $rowData['CantidadMercanciaUMT'] ?? '0'),
+                            'umt'                  => $rowData['UnidadMedidaTarifa'] ?? $rowData['ClaveUMT'] ?? null,
                             'pais_origen_destino'  => $rowData['PaisOrigenDestino'] ?? null,
                             'fecha_pago_real'      => $this->parseDate($rowData['FechaPagoReal'] ?? null),
                             'raw_data'             => json_encode($rowData),
@@ -241,9 +241,9 @@ class GlosaDataStageService
                             'import_id'         => $import->id,
                             'admin_id'          => $adminId,
                             'clave_operacion'   => $claveOperacion,
-                            'secuencia'         => (int)($rowData['SecuenciaFraccionArancelaria'] ?? 1),
+                            'secuencia'         => (int)($rowData['SecuenciaFraccion'] ?? $rowData['SecuenciaFraccionArancelaria'] ?? 1),
                             'clave_contribucion'=> $rowData['ClaveContribucion'] ?? null,
-                            'forma_pago'        => $rowData['ClaveFormaPago'] ?? null,
+                            'forma_pago'        => $rowData['FormaPago'] ?? $rowData['ClaveFormaPago'] ?? null,
                             'importe'           => $this->parseFloat($rowData['ImportePago'] ?? '0'),
                             'fecha_pago_real'   => $this->parseDate($rowData['FechaPagoReal'] ?? null),
                             'raw_data'          => json_encode($rowData),

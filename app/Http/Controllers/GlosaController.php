@@ -136,8 +136,10 @@ class GlosaController extends Controller
         $totalImportaciones = (clone $query501)->where('tipo_operacion', '1')->count();
         $totalExportaciones = (clone $query501)->where('tipo_operacion', '2')->count();
 
-        // Valor Comercial en USD (Bóveda 505)
-        $valorComercialUSD = Glosa505Factura::whereIn('clave_operacion', $filteredClaves)->sum('valor_dolares');
+        // Valor Comercial en USD (tomando el acumulado entre Facturas 505 y Partidas 551)
+        $val505 = Glosa505Factura::whereIn('clave_operacion', $filteredClaves)->sum('valor_dolares');
+        $val551 = Glosa551Partida::whereIn('clave_operacion', $filteredClaves)->sum('valor_dolares');
+        $valorComercialUSD = max($val505, $val551);
 
         // Total Impuestos Pagados (Bóveda 510 y 557)
         $totalContribPedimento = Glosa510Contribucion::whereIn('clave_operacion', $filteredClaves)->sum('importe');
