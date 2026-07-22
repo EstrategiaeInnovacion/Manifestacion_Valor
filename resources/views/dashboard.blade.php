@@ -238,6 +238,40 @@
                             </div>
                         </div>
                     </a>
+
+                    {{-- GLOSA ADUANERA DATA STAGE --}}
+                    @if(auth()->user()->hasGlosaAccess())
+                    <a href="{{ route('glosa.index') }}" class="modern-card group border-t-4 border-t-violet-600 text-left w-full">
+                        <div class="card-content">
+                            <div class="icon-box bg-violet-50 text-violet-600 group-hover:bg-violet-600 group-hover:text-white transition-all duration-500">
+                                <i data-lucide="database" class="w-8 h-8"></i>
+                            </div>
+                            <h3 class="text-xl font-bold text-[#001a4d] mt-6">Glosa Aduanera & Data Stage</h3>
+                            <p class="text-slate-500 text-sm mt-3 leading-relaxed">
+                                Ingesta de ZIPs mensual, descompresión en memoria, Excel de 26 bóvedas y Dashboard analítico.
+                            </p>
+                            <div class="mt-8 flex items-center text-violet-600 font-bold text-sm">
+                                Explorar 
+                                <i data-lucide="arrow-right" class="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform"></i>
+                            </div>
+                        </div>
+                    </a>
+                    @else
+                    <div class="modern-card group border-t-4 border-t-slate-300 text-left w-full opacity-75">
+                        <div class="card-content">
+                            <div class="icon-box bg-slate-100 text-slate-400">
+                                <i data-lucide="lock" class="w-8 h-8"></i>
+                            </div>
+                            <h3 class="text-xl font-bold text-slate-700 mt-6">Glosa Aduanera & Data Stage</h3>
+                            <p class="text-slate-400 text-xs mt-3 leading-relaxed">
+                                Módulo no disponible en su licencia actual. Solicite una actualización para activarlo.
+                            </p>
+                            <div class="mt-8 flex items-center text-slate-400 font-bold text-xs">
+                                <i data-lucide="shield-alert" class="w-4 h-4 mr-1.5"></i> Requiere Licencia
+                            </div>
+                        </div>
+                    </div>
+                    @endif
                 </div>
             </div>
 
