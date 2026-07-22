@@ -1,0 +1,343 @@
+// ============================================================
+// DIAGRAMA BD — Manifestación de Valor (MVE)
+// Formato: DBML (Database Markup Language)
+// Compatible con: dbdiagram.io, VSCode (extensión DBML)
+// ============================================================
+
+// ========================
+// CORE — USUARIOS
+// ========================
+Table users {
+  id bigint [pk]
+  full_name varchar(255)
+  email varchar(255) [unique]
+  username varchar(255) [unique]
+  password varchar(255)
+  role varchar(255) [note: 'SuperAdmin | Admin | Usuario']
+  company varchar(255) [null]
+  rfc text [null]
+  max_users integer [default: 5]
+  max_applicants integer [default: 10]
+  load_edocs_from_m boolean [default: true]
+  created_by varchar(255) [null, note: 'FK lógica -> users.email']
+  remember_token varchar(100) [null]
+  created_at datetime [null]
+  updated_at datetime [null]
+}
+
+// ========================
+// MÓDULO MVE — SOLICITANTES
+// ========================
+Table mv_client_applicants {
+  id bigint [pk]
+  user_email varchar(255)
+  applicant_rfc text
+  business_name text
+  applicant_email text [null]
+  vucem_key_file text [null]
+  vucem_cert_file text [null]
+  vucem_cert_vigencia date [null]
+  seal_expiry_notified boolean [default: false]
+  vucem_password text [null]
+  vucem_webservice_key text [null]
+  privacy_consent boolean [default: false]
+  privacy_consent_at timestamp [null]
+  created_by_user_id bigint [null]
+  created_at datetime [null]
+  updated_at datetime [null]
+}
+
+Table mv_applicant_user_assignments {
+  id bigint [pk]
+  applicant_id bigint
+  user_id bigint
+  created_at datetime [null]
+  updated_at datetime [null]
+
+  indexes {
+    (applicant_id, user_id) [unique]
+  }
+}
+
+// ========================
+// MÓDULO MVE — MANIFESTACIÓN
+// ========================
+Table mv_datos_manifestacion {
+  id bigint [pk]
+  applicant_id bigint
+  folio_interno varchar(20) [null, unique]
+  created_by_user_id bigint [null]
+  status varchar(255) [default: 'borrador', note: 'borrador | completado | guardado | enviado | rechazado']
+  rfc_importador text [null]
+  metodo_valoracion text [null]
+  existe_vinculacion text [null]
+  pedimento text [null]
+  patente text [null]
+  aduana text [null]
+  persona_consulta text [null]
+  created_at datetime [null]
+  updated_at datetime [null]
+}
+
+Table mv_informacion_cove {
+  id bigint [pk]
+  applicant_id bigint
+  datos_manifestacion_id bigint [null]
+  status varchar(255) [default: 'borrador', note: 'borrador | completado | guardado | enviado | rechazado']
+  informacion_cove text [null]
+  pedimentos text [null]
+  precio_pagado text [null]
+  precio_por_pagar text [null]
+  compenso_pago text [null]
+  incrementables text [null]
+  decrementables text [null]
+  valor_en_aduana text [null]
+  created_at datetime [null]
+  updated_at datetime [null]
+}
+
+Table mv_documentos {
+  id bigint [pk]
+  applicant_id bigint
+  datos_manifestacion_id bigint [null]
+  status varchar(255) [default: 'borrador', note: 'borrador | completado | guardado | enviado | rechazado']
+  documentos text [null]
+  document_name varchar(255) [null]
+  tipo_documento varchar(255) [null]
+  folio_edocument varchar(30) [null]
+  original_filename varchar(255) [null]
+  file_size bigint [null]
+  is_vucem_compliant boolean [default: false]
+  was_converted boolean [default: false]
+  uploaded_by varchar(255) [null]
+  file_content_base64 text [null]
+  mime_type varchar(255) [null]
+  created_at datetime [null]
+  updated_at datetime [null]
+}
+
+Table mv_acuses {
+  id bigint [pk]
+  applicant_id bigint
+  datos_manifestacion_id bigint [null]
+  created_by_user_id bigint [null]
+  folio_interno varchar(30) [null]
+  folio_manifestacion varchar(50) [unique]
+  numero_pedimento varchar(20) [null]
+  numero_cove varchar(20) [null]
+  xml_enviado text
+  xml_respuesta text
+  xml_declaracion text [null]
+  acuse_pdf text [null]
+  status varchar(50) [default: 'ENVIADO']
+  mensaje_vucem text [null]
+  fecha_envio timestamp
+  fecha_respuesta timestamp [null]
+  created_at datetime [null]
+  updated_at datetime [null]
+}
+
+Table edocuments_registrados {
+  id bigint [pk]
+  applicant_id bigint [null]
+  folio_edocument varchar(30) [unique]
+  numero_operacion varchar(30) [null]
+  tipo_documento varchar(10) [null]
+  nombre_documento varchar(100) [null]
+  existe_en_vucem boolean [default: false]
+  fecha_ultima_consulta timestamp [null]
+  response_code varchar(50) [null]
+  response_message varchar(255) [null]
+  cove_data json [null]
+  created_at datetime [null]
+  updated_at datetime [null]
+}
+
+// ========================
+// MÓDULO — LICENCIAS
+// ========================
+Table licenses {
+  id bigint [pk]
+  license_key varchar(32) [unique]
+  admin_id bigint
+  duration_type varchar(255) [note: '1min | 1month | 6months | 1year']
+  starts_at timestamp [null]
+  expires_at timestamp [null]
+  status varchar(255) [default: 'active', note: 'active | expired | revoked']
+  expiry_notified boolean [default: false]
+  created_by bigint
+  notes text [null]
+  created_at datetime [null]
+  updated_at datetime [null]
+}
+
+// ========================
+// MÓDULO — SOPORTE
+// ========================
+Table support_tickets {
+  id bigint [pk]
+  user_id bigint
+  category varchar(100)
+  subject varchar(255)
+  description text
+  status varchar(255) [default: 'open', note: 'open | in_progress | closed | cancelled']
+  created_at datetime [null]
+  updated_at datetime [null]
+}
+
+Table support_ticket_messages {
+  id bigint [pk]
+  ticket_id bigint
+  sender_id bigint
+  body text
+  is_support_response boolean [default: false]
+  created_at datetime [null]
+  updated_at datetime [null]
+}
+
+Table support_ticket_attachments {
+  id bigint [pk]
+  message_id bigint
+  original_name varchar(255)
+  stored_name varchar(255)
+  mime_type varchar(100)
+  size bigint [default: 0]
+  created_at datetime [null]
+  updated_at datetime [null]
+}
+
+// ========================
+// MÓDULO — ANUNCIOS / MANUALES / FAQ
+// ========================
+Table announcements {
+  id bigint [pk]
+  title varchar(255)
+  body text
+  created_by bigint
+  created_at datetime [null]
+  updated_at datetime [null]
+}
+
+Table announcement_reads {
+  id bigint [pk]
+  announcement_id bigint
+  user_id bigint
+  read_at timestamp [null]
+  created_at datetime [null]
+  updated_at datetime [null]
+
+  indexes {
+    (announcement_id, user_id) [unique]
+  }
+}
+
+Table user_manuals {
+  id bigint [pk]
+  version varchar(50)
+  filename varchar(255)
+  original_name varchar(255)
+  uploaded_by bigint
+  created_at datetime [null]
+  updated_at datetime [null]
+}
+
+Table faqs {
+  id bigint [pk]
+  question text
+  answer text
+  sort_order integer [default: 0]
+  is_published boolean [default: true]
+  created_by bigint [null]
+  created_at datetime [null]
+  updated_at datetime [null]
+}
+
+Table faq_attachments {
+  id bigint [pk]
+  faq_id bigint
+  original_name varchar(255)
+  stored_name varchar(255)
+  mime_type varchar(100)
+  size bigint
+  created_at datetime [null]
+  updated_at datetime [null]
+}
+
+// ========================
+// TABLAS DE SISTEMA / LOG
+// ========================
+Table app_settings {
+  id bigint [pk]
+  key varchar(255) [unique]
+  value text [null]
+  created_at datetime [null]
+  updated_at datetime [null]
+}
+
+Table vucem_error_logs {
+  id bigint [pk]
+  user_id bigint [null]
+  applicant_id bigint [null]
+  servicio varchar(30) [note: 'MV_ENVIO | MV_CONSULTA | DIGITALIZACION | DIGITALIZACION_CONSULTA']
+  tipo_error varchar(50) [note: 'TIMEOUT | CONNECTION_REFUSED | SSL_ERROR | DNS_ERROR | CURL_ERROR']
+  curl_error_raw text [null]
+  created_at datetime [null]
+  updated_at datetime [null]
+}
+
+// ============================================================
+// RELACIONES
+// ============================================================
+
+// Core
+Ref: mv_client_applicants.user_email > users.email
+Ref: mv_client_applicants.created_by_user_id > users.id
+
+// Solicitantes <-> Usuarios (pivot)
+Ref: mv_applicant_user_assignments.applicant_id > mv_client_applicants.id
+Ref: mv_applicant_user_assignments.user_id > users.id
+
+// Manifestación
+Ref: mv_datos_manifestacion.applicant_id > mv_client_applicants.id
+Ref: mv_datos_manifestacion.created_by_user_id > users.id
+
+// COVE
+Ref: mv_informacion_cove.applicant_id > mv_client_applicants.id
+Ref: mv_informacion_cove.datos_manifestacion_id > mv_datos_manifestacion.id
+
+// Documentos
+Ref: mv_documentos.applicant_id > mv_client_applicants.id
+Ref: mv_documentos.datos_manifestacion_id > mv_datos_manifestacion.id
+
+// Acuses
+Ref: mv_acuses.applicant_id > mv_client_applicants.id
+Ref: mv_acuses.datos_manifestacion_id > mv_datos_manifestacion.id
+
+// eDocuments
+Ref: edocuments_registrados.applicant_id > mv_client_applicants.id
+
+// Licencias
+Ref: licenses.admin_id > users.id
+Ref: licenses.created_by > users.id
+
+// Soporte
+Ref: support_tickets.user_id > users.id
+Ref: support_ticket_messages.ticket_id > support_tickets.id
+Ref: support_ticket_messages.sender_id > users.id
+Ref: support_ticket_attachments.message_id > support_ticket_messages.id
+
+// Anuncios
+Ref: announcements.created_by > users.id
+Ref: announcement_reads.announcement_id > announcements.id
+Ref: announcement_reads.user_id > users.id
+
+// Manuales
+Ref: user_manuals.uploaded_by > users.id
+
+// FAQs
+Ref: faqs.created_by > users.id
+Ref: faq_attachments.faq_id > faqs.id
+
+// Logs
+Ref: vucem_error_logs.user_id > users.id
+Ref: vucem_error_logs.applicant_id > mv_client_applicants.id

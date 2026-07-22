@@ -16,6 +16,8 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        // Seed de unidades de medida para COVE
+        $this->call(CoveUnitSeeder::class);
         // Creamos el usuario SuperAdmin con el nombre completo corregido
         // Creamos el usuario SuperAdmin con el nombre completo corregido
         User::firstOrCreate(

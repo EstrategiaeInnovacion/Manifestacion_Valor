@@ -17,5 +17,11 @@ Schedule::command('seals:check-expiry')->dailyAt('08:00');
 // Limpieza diaria de logs a medianoche (archivos de log + tabla vucem_error_logs)
 Schedule::command('logs:limpiar')->dailyAt('00:00');
 
+// Consultar e-Document de COVEs enviados a VUCEM (polling cada 5 minutos)
+Schedule::job(new \App\Jobs\ConsultarRespuestaCoveJob)->everyFiveMinutes()
+    ->name('consultar-respuesta-cove')
+    ->withoutOverlapping()
+    ->onOneServer();
+
 // Registrar el comando de diagnóstico si no hay Kernel manual
 // (Los comandos en app/Console/Commands se auto-descubren por Laravel)

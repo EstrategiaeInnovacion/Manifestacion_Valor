@@ -3,6 +3,7 @@
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\UserManagementController;
 use App\Http\Controllers\ApplicantController;
+use App\Http\Controllers\CoveController;
 use App\Http\Controllers\MveController;
 use App\Http\Controllers\DocumentUploadController;
 use App\Http\Controllers\EDocumentConsultaController;
@@ -231,6 +232,21 @@ Route::middleware(['auth', 'license'])->group(function () {
         // Rutas para consultar y descargar PDF Acuse del COVE
         Route::post('/cove/acuse-pdf', [EDocumentConsultaController::class , 'consultarAcusePdf'])->name('cove.acuse.consultar');
         Route::get('/cove/acuse-pdf/{token}', [EDocumentConsultaController::class , 'descargarAcusePdf'])->name('cove.acuse.descargar');
+
+        // ==========================================================
+        // MÓDULO DE TRANSMISIÓN DE COVE (STANDALONE)
+        // ==========================================================
+        Route::get('/coves', [CoveController::class, 'index'])->name('coves.index');
+        Route::get('/coves/select-applicant', [CoveController::class, 'selectApplicant'])->name('coves.select-applicant');
+        Route::get('/coves/upload/{applicant}', [CoveController::class, 'uploadForm'])->name('coves.upload');
+        Route::get('/coves/manual/{applicant}', [CoveController::class, 'manualCreate'])->name('coves.manual-create');
+        Route::post('/coves/store/{applicant}', [CoveController::class, 'storeFromM'])->name('coves.store');
+        Route::get('/coves/{cove}/edit', [CoveController::class, 'edit'])->name('coves.edit');
+        Route::get('/coves/{cove}/preview', [CoveController::class, 'preview'])->name('coves.preview');
+        Route::put('/coves/{cove}', [CoveController::class, 'update'])->name('coves.update');
+        Route::post('/coves/{cove}/transmit', [CoveController::class, 'transmit'])->name('coves.transmit');
+        Route::post('/coves/{cove}/register-edocument', [CoveController::class, 'registerEdocument'])->name('coves.register-edocument');
+        Route::delete('/coves/{cove}', [CoveController::class, 'destroy'])->name('coves.destroy');
 
         // Verificación de completitud y guardado final
         Route::get('/mve/check-completion/{applicant}', [MveController::class , 'checkCompletion'])->name('mve.check-completion');

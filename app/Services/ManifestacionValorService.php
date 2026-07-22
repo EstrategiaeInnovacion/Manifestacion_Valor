@@ -350,6 +350,7 @@ class ManifestacionValorService
             'incrementables' => [],
             'decrementables' => [],
             'fechas_expedicion' => [], // Fechas del registro 506 indexadas por secuencia
+            'marcas_partidas' => [], // Descripciones específicas del registro 553
         ];
 
         // Normalizar saltos de línea
@@ -447,6 +448,9 @@ class ManifestacionValorService
                     $proveedor = [
                         'numero_cove' => trim($fields[3] ?? ''),
                         'incoterm' => $incotermValue,
+                        'moneda' => trim($fields[5] ?? ''),
+                        'valor_factura' => $this->parseNumeroArchivoM($fields[6] ?? ''),
+                        'valor_dolares' => $this->parseNumeroArchivoM($fields[7] ?? ''),
                         'id_fiscal' => trim($fields[10] ?? ''),
                         'nombre' => trim($fields[11] ?? ''),
                     ];
@@ -466,6 +470,9 @@ class ManifestacionValorService
                         $result['informacion_cove'][] = [
                             'numero_cove' => $proveedor['numero_cove'],
                             'incoterm' => $proveedor['incoterm'],
+                            'moneda' => $proveedor['moneda'],
+                            'valor_factura' => $proveedor['valor_factura'],
+                            'valor_dolares' => $proveedor['valor_dolares'],
                             'emisor_original' => $emisor,
                             'id_fiscal_emisor' => $proveedor['id_fiscal'],
                             'nombre_emisor' => $proveedor['nombre'],
@@ -501,15 +508,19 @@ class ManifestacionValorService
 
                 case '551':
                     // 551|num_pedimento|fraccion|secuencia|unidad_tarifa|descripcion|valor_dolares|val_comercial|val_aduana|precio_unitario|cantidad|unidad_medida|peso_kg|...|vinculacion(16)|...
+                    $cantidad = $this->parseNumeroArchivoM($fields[10] ?? '');
+                    $valorComercial = $this->parseNumeroArchivoM($fields[7] ?? '');
+                    $precioUnitario = $this->parseNumeroArchivoM($fields[9] ?? ''); // Usar valor exacto del archivo M
+
                     $mercancia = [
                         'fraccion' => trim($fields[2] ?? ''),
                         'secuencia' => trim($fields[3] ?? ''),
                         'descripcion' => trim($fields[5] ?? ''),
-                        'valor_dolares' => $this->parseNumeroArchivoM($fields[6] ?? ''),
-                        'valor_comercial' => $this->parseNumeroArchivoM($fields[7] ?? ''),
+                        'valor_dolares' => $valorComercial, // Tomar el valor comercial total en dólares
+                        'valor_comercial' => $valorComercial,
                         'valor_aduana' => $this->parseNumeroArchivoM($fields[8] ?? ''),
-                        'precio_unitario' => $this->parseNumeroArchivoM($fields[9] ?? ''),
-                        'cantidad' => $this->parseNumeroArchivoM($fields[10] ?? ''),
+                        'precio_unitario' => $precioUnitario,
+                        'cantidad' => $cantidad,
                         'unidad' => trim($fields[11] ?? ''),
                     ];
 
@@ -526,6 +537,26 @@ class ManifestacionValorService
                         }
                     } elseif (!isset($result['vinculacion'])) {
                         $result['vinculacion'] = '0';
+                    }
+                    break;
+
+                case '553':
+                    // 553|pedimento|fraccion|secuencia|subdivision|tipo_id|marca|modelo|submodelo|numero_serie|...
+                    $fraccion = trim($fields[2] ?? '');
+                    $secuencia = trim($fields[3] ?? '');
+                    $marca = trim($fields[6] ?? '');
+                    $modelo = trim($fields[7] ?? '');
+                    $submodelo = trim($fields[8] ?? '');
+                    $serie = trim($fields[9] ?? '');
+
+                    if (!empty($fraccion) && !empty($secuencia)) {
+                        $key = $fraccion . '_' . $secuencia;
+                        $result['marcas_partidas'][$key][] = [
+                            'marca' => $marca,
+                            'modelo' => $modelo,
+                            'subModelo' => $submodelo,
+                            'numeroSerie' => $serie,
+                        ];
                     }
                     break;
 
@@ -552,17 +583,65 @@ class ManifestacionValorService
                         ];
                     }
                     break;
+
+                case '558':
+                    // 558|pedimento|fraccion|secuencia|tipo_caso|texto_observaciones
+                    $fraccion = trim($fields[2] ?? '');
+                    $secuencia = trim($fields[3] ?? '');
+                    $texto = trim($fields[5] ?? '');
+
+                    if (!empty($fraccion) && !empty($secuencia) && !empty($texto)) {
+                        $key = $fraccion . '_' . $secuencia;
+                        
+                        $marca = '';
+                        $serie = '';
+                        $modelo = '';
+                        $submodelo = '';
+
+                        // Intentar parsear el formato: MARCA: [valor], NUM. PARTE: [valor] o similares
+                        if (preg_match('/MARCA\s*:\s*([^,]+)/i', $texto, $m)) {
+                            $marca = trim($m[1]);
+                        }
+                        if (preg_match('/(?:NUM\.\s*PARTE|NUM\s*PARTE|SERIE|N[UÚ]MERO\s*DE\s*SERIE)\s*:\s*([^,]+)/i', $texto, $m)) {
+                            $serie = trim($m[1]);
+                        }
+
+                        // Si no pudimos parsear de forma estructurada pero hay texto, lo asignamos a la marca/serie para que el usuario no lo pierda
+                        if (empty($marca) && empty($serie)) {
+                            $marca = $texto;
+                        }
+
+                        $result['marcas_partidas'][$key][] = [
+                            'marca' => $marca,
+                            'modelo' => $modelo,
+                            'subModelo' => $submodelo,
+                            'numeroSerie' => $serie,
+                        ];
+                    }
+                    break;
             }
         }
 
         // Calcular totales si hay mercancías
         if (!empty($result['mercancias'])) {
             $totalValorAduana = 0;
-            foreach ($result['mercancias'] as $mercancia) {
+            foreach ($result['mercancias'] as &$mercancia) {
                 $totalValorAduana += floatval($mercancia['valor_aduana'] ?? 0);
+                
+                // Mapear marcas del registro 553 vinculadas
+                $key = $mercancia['fraccion'] . '_' . $mercancia['secuencia'];
+                if (isset($result['marcas_partidas'][$key])) {
+                    $mercancia['descripciones_especificas'] = $result['marcas_partidas'][$key];
+                } else {
+                    $mercancia['descripciones_especificas'] = [];
+                }
             }
+            unset($mercancia);
             $result['datos_manifestacion']['total_valor_aduana'] = $totalValorAduana;
         }
+
+        // Limpiar variables temporales del resultado final
+        unset($result['marcas_partidas']);
 
         // Post-procesamiento: asignar fecha expedición (506) y destinatario (501) a cada COVE
         $destinatario = '';

@@ -23,20 +23,22 @@ return new class extends Migration
                   ->onDelete('cascade');
         });
 
-        // Backfill: link existing records by applicant_id match
-        DB::statement("
-            UPDATE mv_informacion_cove ic
-            JOIN mv_datos_manifestacion dm ON dm.applicant_id = ic.applicant_id
-            SET ic.datos_manifestacion_id = dm.id
-            WHERE ic.datos_manifestacion_id IS NULL
-        ");
+        if (Schema::getConnection()->getDriverName() !== 'sqlite') {
+            // Backfill: link existing records by applicant_id match
+            DB::statement("
+                UPDATE mv_informacion_cove ic
+                JOIN mv_datos_manifestacion dm ON dm.applicant_id = ic.applicant_id
+                SET ic.datos_manifestacion_id = dm.id
+                WHERE ic.datos_manifestacion_id IS NULL
+            ");
 
-        DB::statement("
-            UPDATE mv_documentos d
-            JOIN mv_datos_manifestacion dm ON dm.applicant_id = d.applicant_id
-            SET d.datos_manifestacion_id = dm.id
-            WHERE d.datos_manifestacion_id IS NULL
-        ");
+            DB::statement("
+                UPDATE mv_documentos d
+                JOIN mv_datos_manifestacion dm ON dm.applicant_id = d.applicant_id
+                SET d.datos_manifestacion_id = dm.id
+                WHERE d.datos_manifestacion_id IS NULL
+            ");
+        }
     }
 
     public function down(): void

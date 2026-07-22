@@ -28,6 +28,15 @@ return [
     */
     'cove_recibir_enabled' => env('COVE_RECIBIR_ENABLED', false),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Configuración del Servicio RecibirCove
+    |--------------------------------------------------------------------------
+    */
+    'recibir_cove' => [
+        'endpoint' => env('VUCEM_RECIBIR_COVE_ENDPOINT', 'https://www.ventanillaunica.gob.mx/ventanilla/RecibirCoveService'),
+    ],
+
     // RFC para el sello digital (RFC de prueba oficial SAT)
     'rfc' => env('VUCEM_RFC', 'GWT921026L97'),
 
@@ -59,7 +68,7 @@ return [
     | Puerto 8110 es específico para este servicio según WSDL oficial
     */
     'consultar_respuesta_cove' => [
-        'endpoint' => env('VUCEM_CONSULTAR_COVE_ENDPOINT', 'https://www.ventanillaunica.gob.mx:8110/ventanilla/ConsultarRespuestaCoveService'),
+        'endpoint' => env('VUCEM_CONSULTAR_COVE_ENDPOINT', 'https://www.ventanillaunica.gob.mx/ventanilla/ConsultarRespuestaCoveService'),
         'soap_action' => env('VUCEM_CONSULTAR_COVE_ACTION', 'http://www.ventanillaunica.gob.mx/ConsultarRespuestaCove'),
         'wsdl_path' => base_path('wsdl/vucem/COVE/ConsultarRespuestaCoveService.wsdl'),
         

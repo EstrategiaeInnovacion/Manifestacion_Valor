@@ -1,0 +1,4826 @@
+[
+    {
+        "code": "05",
+        "name": "lift"
+    },
+    {
+        "code": "06",
+        "name": "small spray"
+    },
+    {
+        "code": "08",
+        "name": "heat lot"
+    },
+    {
+        "code": "10_1",
+        "name": "group"
+    },
+    {
+        "code": "11_1",
+        "name": "outfit"
+    },
+    {
+        "code": "13_1",
+        "name": "ration"
+    },
+    {
+        "code": "14_1",
+        "name": "shot"
+    },
+    {
+        "code": "15_1",
+        "name": "stick, military"
+    },
+    {
+        "code": "16_1",
+        "name": "hundred fifteen kg drum"
+    },
+    {
+        "code": "17_1",
+        "name": "hundred lb drum"
+    },
+    {
+        "code": "18_1",
+        "name": "fiftyfive gallon (US) drum"
+    },
+    {
+        "code": "19_1",
+        "name": "tank truck"
+    },
+    {
+        "code": "1A",
+        "name": "car mile"
+    },
+    {
+        "code": "1B",
+        "name": "car count"
+    },
+    {
+        "code": "1C",
+        "name": "locomotive count"
+    },
+    {
+        "code": "1D",
+        "name": "caboose count"
+    },
+    {
+        "code": "1E",
+        "name": "empy car"
+    },
+    {
+        "code": "1F",
+        "name": "train mile"
+    },
+    {
+        "code": "1G",
+        "name": "fuel usage gallon (US)"
+    },
+    {
+        "code": "1H",
+        "name": "caboose mile"
+    },
+    {
+        "code": "1I",
+        "name": "fixed rate"
+    },
+    {
+        "code": "1J",
+        "name": "ton mile"
+    },
+    {
+        "code": "1K",
+        "name": "locomotive mile"
+    },
+    {
+        "code": "1L",
+        "name": "total car count"
+    },
+    {
+        "code": "1M",
+        "name": "total car mile"
+    },
+    {
+        "code": "1X",
+        "name": "quarter mile"
+    },
+    {
+        "code": "20_1",
+        "name": "twenty foot container"
+    },
+    {
+        "code": "21_1",
+        "name": "forty foot container"
+    },
+    {
+        "code": "22",
+        "name": "decilitre per gram"
+    },
+    {
+        "code": "23",
+        "name": "gram per cubic centimetre"
+    },
+    {
+        "code": "24",
+        "name": "theoretical pound"
+    },
+    {
+        "code": "25",
+        "name": "gram per square centimetre"
+    },
+    {
+        "code": "26",
+        "name": "acual ton"
+    },
+    {
+        "code": "27",
+        "name": "theoretical ton"
+    },
+    {
+        "code": "28",
+        "name": "kilogram per square metre"
+    },
+    {
+        "code": "29",
+        "name": "pund per thousand square feet"
+    },
+    {
+        "code": "2A",
+        "name": "radian per second"
+    },
+    {
+        "code": "2B",
+        "name": "radian per second squared"
+    },
+    {
+        "code": "2C",
+        "name": "roentgen"
+    },
+    {
+        "code": "2I",
+        "name": "British thermal unit per hour"
+    },
+    {
+        "code": "2J",
+        "name": "cubic centimetre per second"
+    },
+    {
+        "code": "2K",
+        "name": "cubic foot per hour"
+    },
+    {
+        "code": "2L",
+        "name": "cubic foot per minute"
+    },
+    {
+        "code": "2M",
+        "name": "centimetre per second"
+    },
+    {
+        "code": "2N",
+        "name": "decibel"
+    },
+    {
+        "code": "2P",
+        "name": "kilobyte"
+    },
+    {
+        "code": "2Q",
+        "name": "kilobecquerel"
+    },
+    {
+        "code": "2R",
+        "name": "kilocurie"
+    },
+    {
+        "code": "2U",
+        "name": "megagram"
+    },
+    {
+        "code": "2V",
+        "name": "megagram per hour"
+    },
+    {
+        "code": "2W",
+        "name": "bin"
+    },
+    {
+        "code": "2X",
+        "name": "metre per minute"
+    },
+    {
+        "code": "2Y",
+        "name": "milliröntgen"
+    },
+    {
+        "code": "2Z",
+        "name": "millivolt"
+    },
+    {
+        "code": "30",
+        "name": "horse power dar per air dry metric ton"
+    },
+    {
+        "code": "31",
+        "name": "catch weight"
+    },
+    {
+        "code": "32",
+        "name": "kilogram per air dry metric ton"
+    },
+    {
+        "code": "33",
+        "name": "kilopascal square metres per gram"
+    },
+    {
+        "code": "34",
+        "name": "kilopascals per millimetre"
+    },
+    {
+        "code": "35",
+        "name": "millilitres per square centimetre second"
+    },
+    {
+        "code": "36",
+        "name": "cubic feet per minute per square foot"
+    },
+    {
+        "code": "37",
+        "name": "ounce per square foot"
+    },
+    {
+        "code": "38",
+        "name": "ounces per square foot per 0,01 inch"
+    },
+    {
+        "code": "3B",
+        "name": "megajoule"
+    },
+    {
+        "code": "3C",
+        "name": "manmonth"
+    },
+    {
+        "code": "3E",
+        "name": "pund per pund of product"
+    },
+    {
+        "code": "3G",
+        "name": "pound per piece of product"
+    },
+    {
+        "code": "3H",
+        "name": "kilogram per kilogram of product"
+    },
+    {
+        "code": "3I",
+        "name": "kilogram per piece of product"
+    },
+    {
+        "code": "40",
+        "name": "millilitre per second"
+    },
+    {
+        "code": "41",
+        "name": "millilitre per minute"
+    },
+    {
+        "code": "43",
+        "name": "super bulk bag"
+    },
+    {
+        "code": "44",
+        "name": "fivehundred kg bulk bag"
+    },
+    {
+        "code": "45",
+        "name": "threehundred kg bulk bag"
+    },
+    {
+        "code": "46",
+        "name": "fifty lb bulk bag"
+    },
+    {
+        "code": "47",
+        "name": "fifty lb bag"
+    },
+    {
+        "code": "48",
+        "name": "bulk car load"
+    },
+    {
+        "code": "4A",
+        "name": "bobbin"
+    },
+    {
+        "code": "4B",
+        "name": "cap"
+    },
+    {
+        "code": "4C",
+        "name": "centistokes"
+    },
+    {
+        "code": "4E",
+        "name": "twenty pack"
+    },
+    {
+        "code": "4G",
+        "name": "microlitre"
+    },
+    {
+        "code": "4H",
+        "name": "micrometre (micron)"
+    },
+    {
+        "code": "4K",
+        "name": "milliampere"
+    },
+    {
+        "code": "4L",
+        "name": "megabyte"
+    },
+    {
+        "code": "4M",
+        "name": "milligram per hour"
+    },
+    {
+        "code": "4N",
+        "name": "megabecquerel"
+    },
+    {
+        "code": "4O",
+        "name": "microfarad"
+    },
+    {
+        "code": "4P",
+        "name": "newton per metre"
+    },
+    {
+        "code": "4Q",
+        "name": "ounce inche"
+    },
+    {
+        "code": "4R",
+        "name": "ounce foot"
+    },
+    {
+        "code": "4T",
+        "name": "picofarad"
+    },
+    {
+        "code": "4U",
+        "name": "pund per hour"
+    },
+    {
+        "code": "4W",
+        "name": "ton (US) per hour"
+    },
+    {
+        "code": "4X",
+        "name": "kilolitre per hour"
+    },
+    {
+        "code": "53",
+        "name": "theoretical kilograms"
+    },
+    {
+        "code": "54",
+        "name": "theoretical tonne"
+    },
+    {
+        "code": "56",
+        "name": "sitas"
+    },
+    {
+        "code": "57",
+        "name": "mesh"
+    },
+    {
+        "code": "58",
+        "name": "net kilogram"
+    },
+    {
+        "code": "59",
+        "name": "part per million"
+    },
+    {
+        "code": "5A",
+        "name": "barrel (US) per minute"
+    },
+    {
+        "code": "5B",
+        "name": "batch"
+    },
+    {
+        "code": "5C",
+        "name": "gallon (US) per thousand"
+    },
+    {
+        "code": "5E",
+        "name": "MMSCF/day"
+    },
+    {
+        "code": "5F",
+        "name": "pounds per thousand"
+    },
+    {
+        "code": "5G",
+        "name": "pump"
+    },
+    {
+        "code": "5H",
+        "name": "stage"
+    },
+    {
+        "code": "5I",
+        "name": "standard cubic foot"
+    },
+    {
+        "code": "5J",
+        "name": "hydraulic horse power"
+    },
+    {
+        "code": "5K",
+        "name": "count per minute"
+    },
+    {
+        "code": "5P",
+        "name": "seismic level"
+    },
+    {
+        "code": "5Q",
+        "name": "seismic line"
+    },
+    {
+        "code": "60",
+        "name": "percen weight"
+    },
+    {
+        "code": "61",
+        "name": "part per billion (US)"
+    },
+    {
+        "code": "62",
+        "name": "percent per 1000 hour"
+    },
+    {
+        "code": "63",
+        "name": "failure rate in time"
+    },
+    {
+        "code": "64",
+        "name": "pound per square inch, gauge"
+    },
+    {
+        "code": "66",
+        "name": "oersted"
+    },
+    {
+        "code": "69",
+        "name": "test specific scale"
+    },
+    {
+        "code": "71",
+        "name": "volt ampere per pund"
+    },
+    {
+        "code": "72",
+        "name": "watt per pound"
+    },
+    {
+        "code": "73",
+        "name": "ampere tum per centimetre"
+    },
+    {
+        "code": "74",
+        "name": "millipascal"
+    },
+    {
+        "code": "76",
+        "name": "gauss"
+    },
+    {
+        "code": "77",
+        "name": "milli-inch"
+    },
+    {
+        "code": "78",
+        "name": "kilogauss"
+    },
+    {
+        "code": "80",
+        "name": "pounds per sauqre inche absoulte"
+    },
+    {
+        "code": "81",
+        "name": "henry"
+    },
+    {
+        "code": "84",
+        "name": "kilopound per square inch"
+    },
+    {
+        "code": "85",
+        "name": "foot pound-force"
+    },
+    {
+        "code": "87",
+        "name": "pound per cubic foot"
+    },
+    {
+        "code": "89",
+        "name": "poise"
+    },
+    {
+        "code": "90",
+        "name": "saybold universal second"
+    },
+    {
+        "code": "91",
+        "name": "stokes"
+    },
+    {
+        "code": "92",
+        "name": "calorie per cubic centimetre"
+    },
+    {
+        "code": "93",
+        "name": "calorie per gram"
+    },
+    {
+        "code": "94",
+        "name": "curl unit"
+    },
+    {
+        "code": "95",
+        "name": "twenty thousand gallon (US) tankcar"
+    },
+    {
+        "code": "96",
+        "name": "ten thousand gallon (US) tankcar"
+    },
+    {
+        "code": "97",
+        "name": "ten kg drum"
+    },
+    {
+        "code": "98",
+        "name": "fifteen kg drum"
+    },
+    {
+        "code": "A1",
+        "name": "15° C Calorie"
+    },
+    {
+        "code": "A10",
+        "name": "ampere square metre per joule second"
+    },
+    {
+        "code": "A11",
+        "name": "angstrom"
+    },
+    {
+        "code": "A12",
+        "name": "astronomical unit"
+    },
+    {
+        "code": "A13",
+        "name": "attojoule"
+    },
+    {
+        "code": "A14",
+        "name": "barn"
+    },
+    {
+        "code": "A15",
+        "name": "barn per electron volt"
+    },
+    {
+        "code": "A16",
+        "name": "barn per steradian electronvolt"
+    },
+    {
+        "code": "A17",
+        "name": "barn per steradian"
+    },
+    {
+        "code": "A18",
+        "name": "becquerel per kilogram"
+    },
+    {
+        "code": "A19",
+        "name": "becquerel per metre cubed"
+    },
+    {
+        "code": "A2",
+        "name": "ampere per centimetre"
+    },
+    {
+        "code": "A20",
+        "name": "British thermal unit per second square foot degree Rankin"
+    },
+    {
+        "code": "A21",
+        "name": "British thermal unit per pound degree Rankin"
+    },
+    {
+        "code": "A22",
+        "name": "British thermal unit per second foot degree Rankin"
+    },
+    {
+        "code": "A23",
+        "name": "Brithis thermal unit per hour square foot degree Rankin"
+    },
+    {
+        "code": "A24",
+        "name": "candela per square metre"
+    },
+    {
+        "code": "A25",
+        "name": "cheval vapeur"
+    },
+    {
+        "code": "A26",
+        "name": "coulomb metre"
+    },
+    {
+        "code": "A27",
+        "name": "coulomb metre squared per volt"
+    },
+    {
+        "code": "A28",
+        "name": "coulomb per cubic centimetre"
+    },
+    {
+        "code": "A29",
+        "name": "coulomb per cubic metre"
+    },
+    {
+        "code": "A3",
+        "name": "ampere per millimetre"
+    },
+    {
+        "code": "A30",
+        "name": "coulomb per cubic millimetre"
+    },
+    {
+        "code": "A31",
+        "name": "coulomb per kilogram second"
+    },
+    {
+        "code": "A32",
+        "name": "coulomb per mole"
+    },
+    {
+        "code": "A33",
+        "name": "coulomb per square centimetre"
+    },
+    {
+        "code": "A34",
+        "name": "coulomb per square metre"
+    },
+    {
+        "code": "A35",
+        "name": "coulomb per square millimetre"
+    },
+    {
+        "code": "A36",
+        "name": "cubic centimetre per mole"
+    },
+    {
+        "code": "A37",
+        "name": "cubic decimetre per mole"
+    },
+    {
+        "code": "A38",
+        "name": "cubic metre per coulomb"
+    },
+    {
+        "code": "A39",
+        "name": "cubic metre per kilogram"
+    },
+    {
+        "code": "A4",
+        "name": "ampere per squre centrimetre"
+    },
+    {
+        "code": "A40",
+        "name": "cubic metre per mole"
+    },
+    {
+        "code": "A41",
+        "name": "ampere per square metre"
+    },
+    {
+        "code": "A42",
+        "name": "curie per kilogram"
+    },
+    {
+        "code": "A43",
+        "name": "deadweight tonnage"
+    },
+    {
+        "code": "A44",
+        "name": "decalitre"
+    },
+    {
+        "code": "A45",
+        "name": "decametre"
+    },
+    {
+        "code": "A47",
+        "name": "decitex"
+    },
+    {
+        "code": "A48",
+        "name": "degree Rankin"
+    },
+    {
+        "code": "A49",
+        "name": "denier"
+    },
+    {
+        "code": "A5",
+        "name": "ampere square metre"
+    },
+    {
+        "code": "A50",
+        "name": "dyne second per cubic centimetre"
+    },
+    {
+        "code": "A51",
+        "name": "dyne second per centimetre"
+    },
+    {
+        "code": "A52",
+        "name": "dyne second per centimetre to the fifth power"
+    },
+    {
+        "code": "A53",
+        "name": "electronvolt"
+    },
+    {
+        "code": "A54",
+        "name": "electronvolt per metre"
+    },
+    {
+        "code": "A55",
+        "name": "electronvolt square metre"
+    },
+    {
+        "code": "A56",
+        "name": "electronvolt square metre per kilogram"
+    },
+    {
+        "code": "A57",
+        "name": "erg"
+    },
+    {
+        "code": "A58",
+        "name": "erg per centimetre"
+    },
+    {
+        "code": "A59",
+        "name": "8-part cloud cover"
+    },
+    {
+        "code": "A6",
+        "name": "ampere per square metre kelvin squared"
+    },
+    {
+        "code": "A60",
+        "name": "erg per cubic centimetre"
+    },
+    {
+        "code": "A61",
+        "name": "erg per gram"
+    },
+    {
+        "code": "A62",
+        "name": "erg per gram second"
+    },
+    {
+        "code": "A63",
+        "name": "erg per second"
+    },
+    {
+        "code": "A64",
+        "name": "erg per second square centimetre"
+    },
+    {
+        "code": "A65",
+        "name": "erg per square centimetre second"
+    },
+    {
+        "code": "A66",
+        "name": "erg square centimetre"
+    },
+    {
+        "code": "A67",
+        "name": "erg sqtuare centimetre per gram"
+    },
+    {
+        "code": "A68",
+        "name": "exajoule"
+    },
+    {
+        "code": "A69",
+        "name": "farad per metre"
+    },
+    {
+        "code": "A7",
+        "name": "ampere per square millimetre"
+    },
+    {
+        "code": "A70",
+        "name": "femtojoule"
+    },
+    {
+        "code": "A71",
+        "name": "femtometre"
+    },
+    {
+        "code": "A73",
+        "name": "foot per second squared"
+    },
+    {
+        "code": "A74",
+        "name": "foot pound-force per second"
+    },
+    {
+        "code": "A75",
+        "name": "freight ton"
+    },
+    {
+        "code": "A76",
+        "name": "gallon (US) per thousand"
+    },
+    {
+        "code": "A77",
+        "name": "Gaussian CGS unit of displacement"
+    },
+    {
+        "code": "A78",
+        "name": "Gaussian CGS unit of electric current"
+    },
+    {
+        "code": "A79",
+        "name": "Gaussian CGS unit of electric charge"
+    },
+    {
+        "code": "A8",
+        "name": "ampere second"
+    },
+    {
+        "code": "A80",
+        "name": "Gaussian CGS unit of electric field strenght"
+    },
+    {
+        "code": "A81",
+        "name": "Gaussian CGS unit of electric polarization"
+    },
+    {
+        "code": "A82",
+        "name": "Gaussian CGS unit of electric potencial"
+    },
+    {
+        "code": "A83",
+        "name": "Gaussian CGS unit of magnetization"
+    },
+    {
+        "code": "A84",
+        "name": "gigacoulomb per cubic metre"
+    },
+    {
+        "code": "A85",
+        "name": "gigaelectronvolt"
+    },
+    {
+        "code": "A86",
+        "name": "gigahertz"
+    },
+    {
+        "code": "A87",
+        "name": "gigaohm"
+    },
+    {
+        "code": "A88",
+        "name": "gigaohm metre"
+    },
+    {
+        "code": "A89",
+        "name": "gigapascal"
+    },
+    {
+        "code": "A9",
+        "name": "rate"
+    },
+    {
+        "code": "A90",
+        "name": "gigawatt"
+    },
+    {
+        "code": "A91",
+        "name": "gon"
+    },
+    {
+        "code": "A92",
+        "name": "grade"
+    },
+    {
+        "code": "A93",
+        "name": "gram per cubic metre"
+    },
+    {
+        "code": "A94",
+        "name": "gram per mole"
+    },
+    {
+        "code": "A95",
+        "name": "gray"
+    },
+    {
+        "code": "A96",
+        "name": "gray per second"
+    },
+    {
+        "code": "A97",
+        "name": "hectopascal"
+    },
+    {
+        "code": "A98",
+        "name": "henry per metre"
+    },
+    {
+        "code": "A99",
+        "name": "bit"
+    },
+    {
+        "code": "AA",
+        "name": "ball"
+    },
+    {
+        "code": "AB",
+        "name": "bulk pack"
+    },
+    {
+        "code": "ACR",
+        "name": "acre"
+    },
+    {
+        "code": "ACT",
+        "name": "activity"
+    },
+    {
+        "code": "AD",
+        "name": "byte"
+    },
+    {
+        "code": "AE",
+        "name": "ampere per metre"
+    },
+    {
+        "code": "AH",
+        "name": "additional minute"
+    },
+    {
+        "code": "AI",
+        "name": "average minute per call"
+    },
+    {
+        "code": "AJ",
+        "name": "cop"
+    },
+    {
+        "code": "AK",
+        "name": "fathom"
+    },
+    {
+        "code": "AL",
+        "name": "access line"
+    },
+    {
+        "code": "AM",
+        "name": "ampoule"
+    },
+    {
+        "code": "AMH",
+        "name": "apere hour"
+    },
+    {
+        "code": "AMP",
+        "name": "ampere"
+    },
+    {
+        "code": "ANN",
+        "name": "year"
+    },
+    {
+        "code": "AP",
+        "name": "aluminum pound only"
+    },
+    {
+        "code": "APZ",
+        "name": "troy ounce ot apothecary ounce"
+    },
+    {
+        "code": "AQ",
+        "name": "anti-hemophilic factor (AHF) unit"
+    },
+    {
+        "code": "AR",
+        "name": "suppository"
+    },
+    {
+        "code": "ARE",
+        "name": "are"
+    },
+    {
+        "code": "AS",
+        "name": "assortment"
+    },
+    {
+        "code": "ASM",
+        "name": "alcoholic strenght by mass"
+    },
+    {
+        "code": "ASU",
+        "name": "alcoholic strenght by volume"
+    },
+    {
+        "code": "ATM",
+        "name": "standard atmosphere"
+    },
+    {
+        "code": "ATT",
+        "name": "technical atmosphere"
+    },
+    {
+        "code": "AV",
+        "name": "capsule"
+    },
+    {
+        "code": "AW",
+        "name": "powder filled vial"
+    },
+    {
+        "code": "AY",
+        "name": "assembly"
+    },
+    {
+        "code": "AZ",
+        "name": "Brithis thermal unit per pound"
+    },
+    {
+        "code": "B0",
+        "name": "Btu per cubic foot"
+    },
+    {
+        "code": "B1",
+        "name": "barrel (US) per day"
+    },
+    {
+        "code": "B10",
+        "name": "bit per second"
+    },
+    {
+        "code": "B11",
+        "name": "joule per kilogram kelvin"
+    },
+    {
+        "code": "B12",
+        "name": "joule per metre"
+    },
+    {
+        "code": "B13",
+        "name": "joule per metre squared"
+    },
+    {
+        "code": "B13_1",
+        "name": "joule per square metre"
+    },
+    {
+        "code": "B14",
+        "name": "joule per metre to the fourth power"
+    },
+    {
+        "code": "B15",
+        "name": "joule per mole"
+    },
+    {
+        "code": "B16",
+        "name": "joule per mole kelvin"
+    },
+    {
+        "code": "B17",
+        "name": "credit"
+    },
+    {
+        "code": "B18",
+        "name": "joule second"
+    },
+    {
+        "code": "B19",
+        "name": "digit"
+    },
+    {
+        "code": "B2",
+        "name": "bunk"
+    },
+    {
+        "code": "B20",
+        "name": "joule square metre per kilogram"
+    },
+    {
+        "code": "B21",
+        "name": "kelvin per watt"
+    },
+    {
+        "code": "B22",
+        "name": "kiloampere"
+    },
+    {
+        "code": "B23",
+        "name": "kiloampere per square metre"
+    },
+    {
+        "code": "B24",
+        "name": "kiloampere per metre"
+    },
+    {
+        "code": "B25",
+        "name": "kilobecquerel per kilogram"
+    },
+    {
+        "code": "B26",
+        "name": "kilocoulomb"
+    },
+    {
+        "code": "B27",
+        "name": "kilocoulomb per cubic metre"
+    },
+    {
+        "code": "B28",
+        "name": "kilocoulomb per square metre"
+    },
+    {
+        "code": "B29",
+        "name": "kiloelectronvolt"
+    },
+    {
+        "code": "B3",
+        "name": "battin pound"
+    },
+    {
+        "code": "B30",
+        "name": "gidibit"
+    },
+    {
+        "code": "B31",
+        "name": "kilogram metre per second"
+    },
+    {
+        "code": "B32",
+        "name": "kilogram metre squared"
+    },
+    {
+        "code": "B33",
+        "name": "kilogram metre squared per second"
+    },
+    {
+        "code": "B34",
+        "name": "kilogram per cubic decimetre"
+    },
+    {
+        "code": "B35",
+        "name": "kilogram per litre"
+    },
+    {
+        "code": "B35_1",
+        "name": "kilogram per litre of product"
+    },
+    {
+        "code": "B36",
+        "name": "thermochemical calorie per gram"
+    },
+    {
+        "code": "B37",
+        "name": "kilogram-force"
+    },
+    {
+        "code": "B38",
+        "name": "kilogram-force metre"
+    },
+    {
+        "code": "B39",
+        "name": "kilogram-force metre per second"
+    },
+    {
+        "code": "B4",
+        "name": "barrel,imperial"
+    },
+    {
+        "code": "B40",
+        "name": "kilogram-force per square metre"
+    },
+    {
+        "code": "B41",
+        "name": "kilojoule per kelvin"
+    },
+    {
+        "code": "B42",
+        "name": "kilojoule per kilogram"
+    },
+    {
+        "code": "B43",
+        "name": "kilojoule per kilogram kelvin"
+    },
+    {
+        "code": "B44",
+        "name": "kilojoule per mole"
+    },
+    {
+        "code": "B45",
+        "name": "kilomole"
+    },
+    {
+        "code": "B46",
+        "name": "kilomole per cubic metre"
+    },
+    {
+        "code": "B47",
+        "name": "kilonewton"
+    },
+    {
+        "code": "B48",
+        "name": "kilonewton metre"
+    },
+    {
+        "code": "B49",
+        "name": "kiloohm"
+    },
+    {
+        "code": "B5",
+        "name": "billet"
+    },
+    {
+        "code": "B50",
+        "name": "kiloohm metre"
+    },
+    {
+        "code": "B51",
+        "name": "kilopond"
+    },
+    {
+        "code": "B52",
+        "name": "kilosecond"
+    },
+    {
+        "code": "B53",
+        "name": "kilosiemens"
+    },
+    {
+        "code": "B54",
+        "name": "kilosiemens pe rmetre"
+    },
+    {
+        "code": "B55",
+        "name": "kilovolt per metre"
+    },
+    {
+        "code": "B56",
+        "name": "kiloweber per metre"
+    },
+    {
+        "code": "B57",
+        "name": "light year"
+    },
+    {
+        "code": "B58",
+        "name": "litre per mole"
+    },
+    {
+        "code": "B59",
+        "name": "lumen hour"
+    },
+    {
+        "code": "B6",
+        "name": "bunk"
+    },
+    {
+        "code": "B60",
+        "name": "lumen per square metre"
+    },
+    {
+        "code": "B61",
+        "name": "lumen per watt"
+    },
+    {
+        "code": "B62",
+        "name": "lumen second"
+    },
+    {
+        "code": "B63",
+        "name": "lux hour"
+    },
+    {
+        "code": "B64",
+        "name": "lux second"
+    },
+    {
+        "code": "B65",
+        "name": "maxwell"
+    },
+    {
+        "code": "B66",
+        "name": "megaampere per square metre"
+    },
+    {
+        "code": "B67",
+        "name": "megabecquerel per kilogram"
+    },
+    {
+        "code": "B68",
+        "name": "gigabit"
+    },
+    {
+        "code": "B69",
+        "name": "megacoulomb per cubic metre"
+    },
+    {
+        "code": "B7",
+        "name": "cycle"
+    },
+    {
+        "code": "B70",
+        "name": "megacoulomb per square metre"
+    },
+    {
+        "code": "B71",
+        "name": "megaelectronvolt"
+    },
+    {
+        "code": "B72",
+        "name": "megagram per cubic metre"
+    },
+    {
+        "code": "B73",
+        "name": "meganewton"
+    },
+    {
+        "code": "B74",
+        "name": "meganewton metre"
+    },
+    {
+        "code": "B75",
+        "name": "megaohm"
+    },
+    {
+        "code": "B76",
+        "name": "megaohm metre"
+    },
+    {
+        "code": "B77",
+        "name": "megasiemens per metre"
+    },
+    {
+        "code": "B78",
+        "name": "megavolt"
+    },
+    {
+        "code": "B79",
+        "name": "megavolt per metre"
+    },
+    {
+        "code": "B8",
+        "name": "joule per cubic metre"
+    },
+    {
+        "code": "B80",
+        "name": "gigabit per second"
+    },
+    {
+        "code": "B81",
+        "name": "reciprocal metre squared reciprocal second"
+    },
+    {
+        "code": "B82",
+        "name": "inche per linear foot"
+    },
+    {
+        "code": "B83",
+        "name": "metre to the fourth power"
+    },
+    {
+        "code": "B84",
+        "name": "microampere"
+    },
+    {
+        "code": "B85",
+        "name": "microbar"
+    },
+    {
+        "code": "B86",
+        "name": "microcoulomb"
+    },
+    {
+        "code": "B87",
+        "name": "microcoulomb per cubic metre"
+    },
+    {
+        "code": "B88",
+        "name": "microcoulomb per square metre"
+    },
+    {
+        "code": "B89",
+        "name": "microfarad per metre"
+    },
+    {
+        "code": "B9",
+        "name": "battin pound"
+    },
+    {
+        "code": "B90",
+        "name": "microhenry"
+    },
+    {
+        "code": "B91",
+        "name": "microhenry per metre"
+    },
+    {
+        "code": "B92",
+        "name": "micronewton"
+    },
+    {
+        "code": "B93",
+        "name": "micronewton metre"
+    },
+    {
+        "code": "B94",
+        "name": "miocroohm"
+    },
+    {
+        "code": "B95",
+        "name": "microohm metre"
+    },
+    {
+        "code": "B96",
+        "name": "micropascal"
+    },
+    {
+        "code": "B97",
+        "name": "microradian"
+    },
+    {
+        "code": "B98",
+        "name": "microsecond"
+    },
+    {
+        "code": "B99",
+        "name": "microsiemens"
+    },
+    {
+        "code": "BAR",
+        "name": "bar [unit of pressure]"
+    },
+    {
+        "code": "BB",
+        "name": "base box"
+    },
+    {
+        "code": "BD",
+        "name": "board"
+    },
+    {
+        "code": "BE",
+        "name": "bundle"
+    },
+    {
+        "code": "BFT",
+        "name": "board foot"
+    },
+    {
+        "code": "BG",
+        "name": "bag"
+    },
+    {
+        "code": "BH",
+        "name": "brush"
+    },
+    {
+        "code": "BHP",
+        "name": "brake horse power"
+    },
+    {
+        "code": "BIL_EUR",
+        "name": "billion (EUR)"
+    },
+    {
+        "code": "BIL_US",
+        "name": "trillion (US)"
+    },
+    {
+        "code": "BJ",
+        "name": "bucket"
+    },
+    {
+        "code": "BK",
+        "name": "basket"
+    },
+    {
+        "code": "BL",
+        "name": "bale"
+    },
+    {
+        "code": "BLD",
+        "name": "dry barrel (S)"
+    },
+    {
+        "code": "BLL",
+        "name": "barrel (US)"
+    },
+    {
+        "code": "BO",
+        "name": "bottle"
+    },
+    {
+        "code": "BP",
+        "name": "hundred board feet"
+    },
+    {
+        "code": "BQL",
+        "name": "becquerel"
+    },
+    {
+        "code": "BR",
+        "name": "bar [unit of packaging]"
+    },
+    {
+        "code": "BT",
+        "name": "bolt"
+    },
+    {
+        "code": "BTU",
+        "name": "British thermal unit"
+    },
+    {
+        "code": "BUA",
+        "name": "bushel (US)"
+    },
+    {
+        "code": "BUI",
+        "name": "bushel (UK)"
+    },
+    {
+        "code": "BW",
+        "name": "base weight"
+    },
+    {
+        "code": "BX",
+        "name": "box"
+    },
+    {
+        "code": "BZ",
+        "name": "million BTUs"
+    },
+    {
+        "code": "C0",
+        "name": "call"
+    },
+    {
+        "code": "C1",
+        "name": "composite product pound (total weight)"
+    },
+    {
+        "code": "C10",
+        "name": "millifarad"
+    },
+    {
+        "code": "C10_1",
+        "name": "millivolt per metre"
+    },
+    {
+        "code": "C11",
+        "name": "milligal"
+    },
+    {
+        "code": "C12",
+        "name": "milligram per metre"
+    },
+    {
+        "code": "C13",
+        "name": "milligray"
+    },
+    {
+        "code": "C14",
+        "name": "millihenry"
+    },
+    {
+        "code": "C15",
+        "name": "millijoule"
+    },
+    {
+        "code": "C16",
+        "name": "millimetre per second"
+    },
+    {
+        "code": "C17",
+        "name": "millimetre squared per second"
+    },
+    {
+        "code": "C18",
+        "name": "millimole"
+    },
+    {
+        "code": "C19",
+        "name": "mole per kilogram"
+    },
+    {
+        "code": "C2",
+        "name": "carset"
+    },
+    {
+        "code": "C20",
+        "name": "millnewton"
+    },
+    {
+        "code": "C21",
+        "name": "kibibit"
+    },
+    {
+        "code": "C22",
+        "name": "millinewton per metre"
+    },
+    {
+        "code": "C23",
+        "name": "milliohm metre"
+    },
+    {
+        "code": "C24",
+        "name": "millipascal second"
+    },
+    {
+        "code": "C25",
+        "name": "milliradian"
+    },
+    {
+        "code": "C26",
+        "name": "millisecond"
+    },
+    {
+        "code": "C27",
+        "name": "millisiemens"
+    },
+    {
+        "code": "C28",
+        "name": "millisievert"
+    },
+    {
+        "code": "C29",
+        "name": "millitesla"
+    },
+    {
+        "code": "C3",
+        "name": "microvolt per metre"
+    },
+    {
+        "code": "C31",
+        "name": "milliwatt"
+    },
+    {
+        "code": "C32",
+        "name": "milliwatt per square metre"
+    },
+    {
+        "code": "C33",
+        "name": "milliweber"
+    },
+    {
+        "code": "C34",
+        "name": "mole"
+    },
+    {
+        "code": "C35",
+        "name": "mole per cubic decimetre"
+    },
+    {
+        "code": "C36",
+        "name": "mole per cubic metre"
+    },
+    {
+        "code": "C37",
+        "name": "kilobit"
+    },
+    {
+        "code": "C38",
+        "name": "mole per litre"
+    },
+    {
+        "code": "C39",
+        "name": "nanoampere"
+    },
+    {
+        "code": "C4",
+        "name": "carload"
+    },
+    {
+        "code": "C40",
+        "name": "nanocoulomb"
+    },
+    {
+        "code": "C41",
+        "name": "nanofarad"
+    },
+    {
+        "code": "C42",
+        "name": "nanofarad per metre"
+    },
+    {
+        "code": "C43",
+        "name": "nanohenry"
+    },
+    {
+        "code": "C44",
+        "name": "nanohenry per metre"
+    },
+    {
+        "code": "C45",
+        "name": "nanometre"
+    },
+    {
+        "code": "C46",
+        "name": "nanoohm metre"
+    },
+    {
+        "code": "C47",
+        "name": "nanosecond"
+    },
+    {
+        "code": "C48",
+        "name": "nanotesla"
+    },
+    {
+        "code": "C49",
+        "name": "nanowatt"
+    },
+    {
+        "code": "C5",
+        "name": "cost"
+    },
+    {
+        "code": "C50",
+        "name": "neper"
+    },
+    {
+        "code": "C51",
+        "name": "neper per second"
+    },
+    {
+        "code": "C52",
+        "name": "picometre"
+    },
+    {
+        "code": "C53",
+        "name": "newton metre second"
+    },
+    {
+        "code": "C54",
+        "name": "newton metre squared kilogram squared"
+    },
+    {
+        "code": "C55",
+        "name": "newton per square metre"
+    },
+    {
+        "code": "C56",
+        "name": "newton per square millimetre"
+    },
+    {
+        "code": "C57",
+        "name": "newton second"
+    },
+    {
+        "code": "C58",
+        "name": "newton second per metre"
+    },
+    {
+        "code": "C59",
+        "name": "octave"
+    },
+    {
+        "code": "C6",
+        "name": "cell"
+    },
+    {
+        "code": "C60",
+        "name": "ohm centimetre"
+    },
+    {
+        "code": "C61",
+        "name": "ohm metre"
+    },
+    {
+        "code": "C62",
+        "name": "one"
+    },
+    {
+        "code": "C62_1",
+        "name": "piece"
+    },
+    {
+        "code": "C62_2",
+        "name": "unit"
+    },
+    {
+        "code": "C63",
+        "name": "parsec"
+    },
+    {
+        "code": "C64",
+        "name": "pascal per kelvin"
+    },
+    {
+        "code": "C65",
+        "name": "pascal per second"
+    },
+    {
+        "code": "C66",
+        "name": "pascal second per cubic metre"
+    },
+    {
+        "code": "C67",
+        "name": "pascal second per metre"
+    },
+    {
+        "code": "C68",
+        "name": "petajoule"
+    },
+    {
+        "code": "C69",
+        "name": "phon"
+    },
+    {
+        "code": "C7",
+        "name": "centipoise"
+    },
+    {
+        "code": "C70",
+        "name": "picoampere"
+    },
+    {
+        "code": "C71",
+        "name": "picocoulomb"
+    },
+    {
+        "code": "C72",
+        "name": "picofarad per metre"
+    },
+    {
+        "code": "C73",
+        "name": "picohenry"
+    },
+    {
+        "code": "C74",
+        "name": "kilobit per second"
+    },
+    {
+        "code": "C75",
+        "name": "picowatt"
+    },
+    {
+        "code": "C76",
+        "name": "picowatt per square metre"
+    },
+    {
+        "code": "C77",
+        "name": "pund page"
+    },
+    {
+        "code": "C78",
+        "name": "pund-force"
+    },
+    {
+        "code": "C79",
+        "name": "kilovolt ampere hour"
+    },
+    {
+        "code": "C8",
+        "name": "millicoulomb per kilogram"
+    },
+    {
+        "code": "C80",
+        "name": "rad"
+    },
+    {
+        "code": "C81",
+        "name": "radian"
+    },
+    {
+        "code": "C82",
+        "name": "radian square metre per mole"
+    },
+    {
+        "code": "C83",
+        "name": "radian square metre per kilogram"
+    },
+    {
+        "code": "C84",
+        "name": "radian per metre"
+    },
+    {
+        "code": "C85",
+        "name": "reciprocal angstrom"
+    },
+    {
+        "code": "C86",
+        "name": "reciprocal cubic metre"
+    },
+    {
+        "code": "C87",
+        "name": "reciprocal cubic metre per second"
+    },
+    {
+        "code": "C88",
+        "name": "reciprocal electron volt per cubic metre"
+    },
+    {
+        "code": "C89",
+        "name": "reciprocal henry"
+    },
+    {
+        "code": "C9",
+        "name": "coil group"
+    },
+    {
+        "code": "C90",
+        "name": "reciprocal joul eper cubic metre"
+    },
+    {
+        "code": "C91",
+        "name": "reciprocal kelvin or kelvin to the power minus one"
+    },
+    {
+        "code": "C92",
+        "name": "reciprocal metre"
+    },
+    {
+        "code": "C93",
+        "name": "reciprocal metre squared"
+    },
+    {
+        "code": "C93_1",
+        "name": "reciprocal squared metre"
+    },
+    {
+        "code": "C94",
+        "name": "reciprocal minute"
+    },
+    {
+        "code": "C95",
+        "name": "reciprocal mole"
+    },
+    {
+        "code": "C96",
+        "name": "reciprocal pascal or pascal to the power minus one"
+    },
+    {
+        "code": "C97",
+        "name": "reciprocal second"
+    },
+    {
+        "code": "C98",
+        "name": "reciprocal second per cubic metre"
+    },
+    {
+        "code": "C99",
+        "name": "reciprocal second per metre squared"
+    },
+    {
+        "code": "CA",
+        "name": "can"
+    },
+    {
+        "code": "CCT",
+        "name": "carrying capacity in metric ton"
+    },
+    {
+        "code": "CDL",
+        "name": "candela"
+    },
+    {
+        "code": "CEL",
+        "name": "degree Celsius"
+    },
+    {
+        "code": "CEN",
+        "name": "hundred"
+    },
+    {
+        "code": "CG",
+        "name": "card"
+    },
+    {
+        "code": "CGM",
+        "name": "centigram"
+    },
+    {
+        "code": "CH",
+        "name": "container"
+    },
+    {
+        "code": "CJ",
+        "name": "cone"
+    },
+    {
+        "code": "CK",
+        "name": "connector"
+    },
+    {
+        "code": "CKG",
+        "name": "coulomb per kilogram"
+    },
+    {
+        "code": "CL",
+        "name": "coil"
+    },
+    {
+        "code": "CLF",
+        "name": "hundred leave"
+    },
+    {
+        "code": "CLT",
+        "name": "centilitre"
+    },
+    {
+        "code": "CMK",
+        "name": "square centimetre"
+    },
+    {
+        "code": "CMQ",
+        "name": "cubic centrimetre"
+    },
+    {
+        "code": "CMT",
+        "name": "centimetre"
+    },
+    {
+        "code": "CNP",
+        "name": "hundred pack"
+    },
+    {
+        "code": "CNT",
+        "name": "cental (UK)"
+    },
+    {
+        "code": "CO",
+        "name": "carboy"
+    },
+    {
+        "code": "COU",
+        "name": "coulomb"
+    },
+    {
+        "code": "CQ",
+        "name": "cartridge"
+    },
+    {
+        "code": "CR",
+        "name": "crate"
+    },
+    {
+        "code": "CS",
+        "name": "case"
+    },
+    {
+        "code": "CT",
+        "name": "carton"
+    },
+    {
+        "code": "CTG",
+        "name": "content gram"
+    },
+    {
+        "code": "CTM",
+        "name": "metric carat"
+    },
+    {
+        "code": "CTN",
+        "name": "content ton (metric)"
+    },
+    {
+        "code": "CU",
+        "name": "cup"
+    },
+    {
+        "code": "CUR",
+        "name": "curie"
+    },
+    {
+        "code": "CV",
+        "name": "cover"
+    },
+    {
+        "code": "CWA",
+        "name": "hundred pounds (cwt)/hundred weight (US)"
+    },
+    {
+        "code": "CWI",
+        "name": "hundred weight (UK)"
+    },
+    {
+        "code": "CY",
+        "name": "cylinder"
+    },
+    {
+        "code": "CZ",
+        "name": "combo"
+    },
+    {
+        "code": "D03",
+        "name": "kilowatt hour per hour"
+    },
+    {
+        "code": "D04",
+        "name": "lot [unit of weight]"
+    },
+    {
+        "code": "D1",
+        "name": "reciprocal second per steradian"
+    },
+    {
+        "code": "D10",
+        "name": "siemens per metre"
+    },
+    {
+        "code": "D11",
+        "name": "mebibit"
+    },
+    {
+        "code": "D12",
+        "name": "siemens square metre per mole"
+    },
+    {
+        "code": "D13",
+        "name": "sievert"
+    },
+    {
+        "code": "D14",
+        "name": "thousand linear yard"
+    },
+    {
+        "code": "D15",
+        "name": "sone"
+    },
+    {
+        "code": "D16",
+        "name": "square centimetre per erg"
+    },
+    {
+        "code": "D17",
+        "name": "square centimetre per steradian erg"
+    },
+    {
+        "code": "D18",
+        "name": "metre kelvin"
+    },
+    {
+        "code": "D19",
+        "name": "square metre kelvin per watt"
+    },
+    {
+        "code": "D2",
+        "name": "reciprocal second per steradian metre squared"
+    },
+    {
+        "code": "D20",
+        "name": "square metre per joule"
+    },
+    {
+        "code": "D21",
+        "name": "square metre per kilogram"
+    },
+    {
+        "code": "D22",
+        "name": "square metre per mole"
+    },
+    {
+        "code": "D23",
+        "name": "pen gram (protein)"
+    },
+    {
+        "code": "D24",
+        "name": "square metre per steradian"
+    },
+    {
+        "code": "D25",
+        "name": "square metre per steradian joule"
+    },
+    {
+        "code": "D26",
+        "name": "square metre per volt second"
+    },
+    {
+        "code": "D27",
+        "name": "steradian"
+    },
+    {
+        "code": "D28",
+        "name": "syphon"
+    },
+    {
+        "code": "D29",
+        "name": "terahertz"
+    },
+    {
+        "code": "D30",
+        "name": "terajoule"
+    },
+    {
+        "code": "D31",
+        "name": "terawatt"
+    },
+    {
+        "code": "D32",
+        "name": "terawatt hour"
+    },
+    {
+        "code": "D33",
+        "name": "tesla"
+    },
+    {
+        "code": "D34",
+        "name": "tex"
+    },
+    {
+        "code": "D35",
+        "name": "thermochemical calorie"
+    },
+    {
+        "code": "D36",
+        "name": "megabit"
+    },
+    {
+        "code": "D37",
+        "name": "thermochemical calorie per gram kelvin"
+    },
+    {
+        "code": "D38",
+        "name": "thermochemical calorie per second centimetre kelvin"
+    },
+    {
+        "code": "D39",
+        "name": "thermochemical calorie per second sqaure centimetre kelvin"
+    },
+    {
+        "code": "D40",
+        "name": "thousand litre"
+    },
+    {
+        "code": "D41",
+        "name": "tonne per cubic metre"
+    },
+    {
+        "code": "D42",
+        "name": "tropical year"
+    },
+    {
+        "code": "D43",
+        "name": "unified atomic mass unit"
+    },
+    {
+        "code": "D44",
+        "name": "var"
+    },
+    {
+        "code": "D45",
+        "name": "volt squared per kelvin squared"
+    },
+    {
+        "code": "D46",
+        "name": "volt-ampere"
+    },
+    {
+        "code": "D47",
+        "name": "volt per centimetre"
+    },
+    {
+        "code": "D48",
+        "name": "volt per kelvin"
+    },
+    {
+        "code": "D49",
+        "name": "milivolt per kelvin"
+    },
+    {
+        "code": "D5",
+        "name": "kilogram per square centimetre"
+    },
+    {
+        "code": "D50",
+        "name": "volt per metre"
+    },
+    {
+        "code": "D51",
+        "name": "volt per millimetre"
+    },
+    {
+        "code": "D52",
+        "name": "watt per kelvin"
+    },
+    {
+        "code": "D53",
+        "name": "wat per metre kelvin"
+    },
+    {
+        "code": "D54",
+        "name": "watt per square metre"
+    },
+    {
+        "code": "D55",
+        "name": "watt per square metre kelvin"
+    },
+    {
+        "code": "D56",
+        "name": "watt per square metre kelvin to the fourth power"
+    },
+    {
+        "code": "D57",
+        "name": "watt per steradian"
+    },
+    {
+        "code": "D58",
+        "name": "watt per steradian square metre"
+    },
+    {
+        "code": "D59",
+        "name": "weber per metre"
+    },
+    {
+        "code": "D6",
+        "name": "roentgen per second"
+    },
+    {
+        "code": "D60",
+        "name": "weber per millimetre"
+    },
+    {
+        "code": "D61",
+        "name": "minute [unit of angle]"
+    },
+    {
+        "code": "D62",
+        "name": "second [unit of angle]"
+    },
+    {
+        "code": "D63",
+        "name": "book"
+    },
+    {
+        "code": "D64",
+        "name": "block"
+    },
+    {
+        "code": "D65",
+        "name": "round"
+    },
+    {
+        "code": "D66",
+        "name": "cassette"
+    },
+    {
+        "code": "D67",
+        "name": "dollar per hour"
+    },
+    {
+        "code": "D68",
+        "name": "number of words"
+    },
+    {
+        "code": "D69",
+        "name": "inch to the fourth power"
+    },
+    {
+        "code": "D7",
+        "name": "sandwich"
+    },
+    {
+        "code": "D70",
+        "name": "International Table (IT) calorie)"
+    },
+    {
+        "code": "D71",
+        "name": "International Table (IT) calorie per second centimetre kelvin"
+    },
+    {
+        "code": "D72",
+        "name": "International Table (IT) calorie per second square centimetre kelvin"
+    },
+    {
+        "code": "D73",
+        "name": "joule square metre per kilogram"
+    },
+    {
+        "code": "D74",
+        "name": "kilogram per mole"
+    },
+    {
+        "code": "D75",
+        "name": "International Table (IT) calorie per gram"
+    },
+    {
+        "code": "D76",
+        "name": "International Table (IT) calorie per gram kelvin"
+    },
+    {
+        "code": "D77",
+        "name": "megacoulomb"
+    },
+    {
+        "code": "D78",
+        "name": "megajoule per second"
+    },
+    {
+        "code": "D79",
+        "name": "beam"
+    },
+    {
+        "code": "D8",
+        "name": "draize score"
+    },
+    {
+        "code": "D80",
+        "name": "microwatt"
+    },
+    {
+        "code": "D81",
+        "name": "microtesla"
+    },
+    {
+        "code": "D82",
+        "name": "microvolt per metre"
+    },
+    {
+        "code": "D83",
+        "name": "millinewton metre"
+    },
+    {
+        "code": "D85",
+        "name": "microwatt per square metre"
+    },
+    {
+        "code": "D86",
+        "name": "millicoulomb per kilogram"
+    },
+    {
+        "code": "D87",
+        "name": "millimole per kilogram"
+    },
+    {
+        "code": "D88",
+        "name": "millicoulomb per cubic metre"
+    },
+    {
+        "code": "D89",
+        "name": "millicoulomb per square metre"
+    },
+    {
+        "code": "D9",
+        "name": "dyne per square centimetre"
+    },
+    {
+        "code": "D90",
+        "name": "cubic metre (net"
+    },
+    {
+        "code": "D91",
+        "name": "rem"
+    },
+    {
+        "code": "D92",
+        "name": "band"
+    },
+    {
+        "code": "D93",
+        "name": "second per cubic metre"
+    },
+    {
+        "code": "D94",
+        "name": "second per radian cubic metre"
+    },
+    {
+        "code": "D95",
+        "name": "joule per gram"
+    },
+    {
+        "code": "D96",
+        "name": "pound gross"
+    },
+    {
+        "code": "D97",
+        "name": "pallet/unit load"
+    },
+    {
+        "code": "D98",
+        "name": "mass pound"
+    },
+    {
+        "code": "D99",
+        "name": "sleeve"
+    },
+    {
+        "code": "DAA",
+        "name": "decare"
+    },
+    {
+        "code": "DAD",
+        "name": "ten day"
+    },
+    {
+        "code": "DAY",
+        "name": "day"
+    },
+    {
+        "code": "DB",
+        "name": "dry pound"
+    },
+    {
+        "code": "DC",
+        "name": "disk (disc)"
+    },
+    {
+        "code": "DD",
+        "name": "degree Celsius hundred"
+    },
+    {
+        "code": "DD_1",
+        "name": "degree [unit of angle]"
+    },
+    {
+        "code": "DE",
+        "name": "deal"
+    },
+    {
+        "code": "DEC",
+        "name": "decade"
+    },
+    {
+        "code": "DG",
+        "name": "decigram"
+    },
+    {
+        "code": "DI",
+        "name": "dispense"
+    },
+    {
+        "code": "DJ",
+        "name": "decagram"
+    },
+    {
+        "code": "DKW",
+        "name": "kilogram drained net weight"
+    },
+    {
+        "code": "DLT",
+        "name": "decilitre"
+    },
+    {
+        "code": "DMK",
+        "name": "square decimetre"
+    },
+    {
+        "code": "DMO",
+        "name": "standard kilolitre"
+    },
+    {
+        "code": "DMQ",
+        "name": "cubic decimetre per mole"
+    },
+    {
+        "code": "DMT",
+        "name": "decimetre"
+    },
+    {
+        "code": "DN",
+        "name": "decinewton metre"
+    },
+    {
+        "code": "DPC",
+        "name": "dozen piece"
+    },
+    {
+        "code": "DPR",
+        "name": "dozen pair"
+    },
+    {
+        "code": "DPT",
+        "name": "displacement tonnage"
+    },
+    {
+        "code": "DQ",
+        "name": "data record"
+    },
+    {
+        "code": "DR",
+        "name": "drum"
+    },
+    {
+        "code": "DRA",
+        "name": "dram (US)"
+    },
+    {
+        "code": "DRI",
+        "name": "dram (UK)"
+    },
+    {
+        "code": "DRL",
+        "name": "dozen roll"
+    },
+    {
+        "code": "DRM",
+        "name": "drachm (UK)"
+    },
+    {
+        "code": "DS",
+        "name": "display"
+    },
+    {
+        "code": "DT",
+        "name": "dry ton"
+    },
+    {
+        "code": "DTN",
+        "name": "centner, metric 100kg"
+    },
+    {
+        "code": "DTN_1",
+        "name": "decitonne"
+    },
+    {
+        "code": "DTN_2",
+        "name": "quintal, metric 100kg"
+    },
+    {
+        "code": "DU",
+        "name": "dyne"
+    },
+    {
+        "code": "DWT",
+        "name": "pennyweight"
+    },
+    {
+        "code": "DX",
+        "name": "dyne per centimetre"
+    },
+    {
+        "code": "DY",
+        "name": "directory book"
+    },
+    {
+        "code": "DZN",
+        "name": "dozen"
+    },
+    {
+        "code": "DZP",
+        "name": "dozen pack"
+    },
+    {
+        "code": "E01",
+        "name": "newton per square centimetre"
+    },
+    {
+        "code": "E07",
+        "name": "megawatt hour per hour"
+    },
+    {
+        "code": "E08",
+        "name": "megawatt per hertz"
+    },
+    {
+        "code": "E09",
+        "name": "milliampere hour"
+    },
+    {
+        "code": "E10",
+        "name": "degree days"
+    },
+    {
+        "code": "E11",
+        "name": "gigacalorie"
+    },
+    {
+        "code": "E12",
+        "name": "mille"
+    },
+    {
+        "code": "E14",
+        "name": "kilocalorie (IT)"
+    },
+    {
+        "code": "E15",
+        "name": "kilocalorie (TH) per hour"
+    },
+    {
+        "code": "E16",
+        "name": "million BTU (IT) per hour"
+    },
+    {
+        "code": "E17",
+        "name": "cubic foot per second"
+    },
+    {
+        "code": "E18",
+        "name": "tonne per hour"
+    },
+    {
+        "code": "E19",
+        "name": "ping"
+    },
+    {
+        "code": "E2",
+        "name": "belt"
+    },
+    {
+        "code": "E20",
+        "name": "megabit per second"
+    },
+    {
+        "code": "E21",
+        "name": "shares"
+    },
+    {
+        "code": "E22",
+        "name": "TEU"
+    },
+    {
+        "code": "E23",
+        "name": "tyre"
+    },
+    {
+        "code": "E25",
+        "name": "active unit"
+    },
+    {
+        "code": "E27",
+        "name": "dose"
+    },
+    {
+        "code": "E28",
+        "name": "air dry ton"
+    },
+    {
+        "code": "E3",
+        "name": "trailer"
+    },
+    {
+        "code": "E30",
+        "name": "strand"
+    },
+    {
+        "code": "E31",
+        "name": "square metre per litre"
+    },
+    {
+        "code": "E32",
+        "name": "litre per hour"
+    },
+    {
+        "code": "E33",
+        "name": "foot per thousand"
+    },
+    {
+        "code": "E34",
+        "name": "gigabyte"
+    },
+    {
+        "code": "E35",
+        "name": "terabyte"
+    },
+    {
+        "code": "E36",
+        "name": "petabyte"
+    },
+    {
+        "code": "E37",
+        "name": "pixel"
+    },
+    {
+        "code": "E38",
+        "name": "megapixel"
+    },
+    {
+        "code": "E39",
+        "name": "dots per inch"
+    },
+    {
+        "code": "E4",
+        "name": "gross kilogram"
+    },
+    {
+        "code": "E40",
+        "name": "part per hundred thousand"
+    },
+    {
+        "code": "E41",
+        "name": "kilogram force per square millimetre"
+    },
+    {
+        "code": "E42",
+        "name": "kilogram force per square centimetre"
+    },
+    {
+        "code": "E43",
+        "name": "joule per square centimetre"
+    },
+    {
+        "code": "E44",
+        "name": "kilogram-force metre per square centimetre"
+    },
+    {
+        "code": "E5",
+        "name": "metric long ton"
+    },
+    {
+        "code": "EA",
+        "name": "each"
+    },
+    {
+        "code": "EB",
+        "name": "electronica mail box"
+    },
+    {
+        "code": "EC",
+        "name": "each per month"
+    },
+    {
+        "code": "EP",
+        "name": "eleven pack"
+    },
+    {
+        "code": "EQ",
+        "name": "equivalen gallon"
+    },
+    {
+        "code": "EV",
+        "name": "envelope"
+    },
+    {
+        "code": "F1",
+        "name": "thousand cubic feet per day"
+    },
+    {
+        "code": "F9",
+        "name": "fibre per cubic centimetre of air"
+    },
+    {
+        "code": "FAH",
+        "name": "degree Fahrenheit"
+    },
+    {
+        "code": "FAR",
+        "name": "farad"
+    },
+    {
+        "code": "FB",
+        "name": "field"
+    },
+    {
+        "code": "FBM",
+        "name": "fibre metre"
+    },
+    {
+        "code": "FC",
+        "name": "thousand cubic feet"
+    },
+    {
+        "code": "FD",
+        "name": "million particle per cubic foot"
+    },
+    {
+        "code": "FE",
+        "name": "track foot"
+    },
+    {
+        "code": "FF",
+        "name": "hundred cubic metre"
+    },
+    {
+        "code": "FG",
+        "name": "transdermal patch"
+    },
+    {
+        "code": "FH",
+        "name": "micromole"
+    },
+    {
+        "code": "FL",
+        "name": "flake ton"
+    },
+    {
+        "code": "FM",
+        "name": "million cubic feet"
+    },
+    {
+        "code": "FOT",
+        "name": "foot per thousand"
+    },
+    {
+        "code": "FP",
+        "name": "pound per square foot"
+    },
+    {
+        "code": "FR",
+        "name": "foot per minute"
+    },
+    {
+        "code": "FS",
+        "name": "foot per second squared"
+    },
+    {
+        "code": "FTK",
+        "name": "square foot"
+    },
+    {
+        "code": "FTQ",
+        "name": "cubic foot"
+    },
+    {
+        "code": "G2",
+        "name": "US gallon per minute"
+    },
+    {
+        "code": "G3",
+        "name": "Imperial gallon per minute"
+    },
+    {
+        "code": "G7",
+        "name": "microfiche sheet"
+    },
+    {
+        "code": "GB",
+        "name": "gallon (US) per day"
+    },
+    {
+        "code": "GBQ",
+        "name": "gigabecquerel"
+    },
+    {
+        "code": "GC",
+        "name": "gram per 100 gram"
+    },
+    {
+        "code": "GD",
+        "name": "gross barrel"
+    },
+    {
+        "code": "GDW",
+        "name": "gram, dry weight"
+    },
+    {
+        "code": "GE",
+        "name": "pound per gallon (US)"
+    },
+    {
+        "code": "GF",
+        "name": "gram per metre (gram per 100 centimetres"
+    },
+    {
+        "code": "GFI",
+        "name": "gram of fissile isotope"
+    },
+    {
+        "code": "GGR",
+        "name": "great gross"
+    },
+    {
+        "code": "GH",
+        "name": "half gallon"
+    },
+    {
+        "code": "GIA",
+        "name": "gill"
+    },
+    {
+        "code": "GIC",
+        "name": "gram, including container"
+    },
+    {
+        "code": "GII",
+        "name": "gill (UK)"
+    },
+    {
+        "code": "GIP",
+        "name": "gram, including inner packaging"
+    },
+    {
+        "code": "GJ",
+        "name": "gram per millilitre"
+    },
+    {
+        "code": "GK",
+        "name": "gram per kilogram"
+    },
+    {
+        "code": "GL",
+        "name": "gram per litre"
+    },
+    {
+        "code": "GLD",
+        "name": "dry gallon (S)"
+    },
+    {
+        "code": "GLI",
+        "name": "gallon (UK)"
+    },
+    {
+        "code": "GLL",
+        "name": "gallon (US)"
+    },
+    {
+        "code": "GM",
+        "name": "gram per square metre"
+    },
+    {
+        "code": "GN",
+        "name": "gross gallon"
+    },
+    {
+        "code": "GO",
+        "name": "milligrams per square metre"
+    },
+    {
+        "code": "GP",
+        "name": "milligrams per cubic metre"
+    },
+    {
+        "code": "GQ",
+        "name": "microgram per cubic metre"
+    },
+    {
+        "code": "GRM",
+        "name": "gram"
+    },
+    {
+        "code": "GRN",
+        "name": "grain"
+    },
+    {
+        "code": "GRO",
+        "name": "gross"
+    },
+    {
+        "code": "GRT",
+        "name": "gross register ton"
+    },
+    {
+        "code": "GT",
+        "name": "gross ton"
+    },
+    {
+        "code": "GT_1",
+        "name": "metric gross ton"
+    },
+    {
+        "code": "GV",
+        "name": "gigajoule"
+    },
+    {
+        "code": "GW",
+        "name": "gallon per thousand cubic feet"
+    },
+    {
+        "code": "GWH",
+        "name": "gigawatt hour"
+    },
+    {
+        "code": "GY",
+        "name": "gross yard"
+    },
+    {
+        "code": "GZ",
+        "name": "gage-system"
+    },
+    {
+        "code": "H1",
+        "name": "half page- electronic"
+    },
+    {
+        "code": "H2",
+        "name": "half litr"
+    },
+    {
+        "code": "HA",
+        "name": "hank"
+    },
+    {
+        "code": "HAR",
+        "name": "hecare"
+    },
+    {
+        "code": "HBA",
+        "name": "hectobar"
+    },
+    {
+        "code": "HBX",
+        "name": "hundred boxes"
+    },
+    {
+        "code": "HC",
+        "name": "hundred count"
+    },
+    {
+        "code": "HD",
+        "name": "half dozen"
+    },
+    {
+        "code": "HDW",
+        "name": "hundred kilogram, dry wieight"
+    },
+    {
+        "code": "HE",
+        "name": "hundredth of a carat"
+    },
+    {
+        "code": "HF",
+        "name": "hundred feet"
+    },
+    {
+        "code": "HGM",
+        "name": "hectogram"
+    },
+    {
+        "code": "HH",
+        "name": "hundred cubic feet"
+    },
+    {
+        "code": "HI",
+        "name": "hundred sheet"
+    },
+    {
+        "code": "HIU",
+        "name": "hundred international unit"
+    },
+    {
+        "code": "HJ",
+        "name": "metric horse power"
+    },
+    {
+        "code": "HK",
+        "name": "hundred kilogram, dry wieight"
+    },
+    {
+        "code": "HKM",
+        "name": "hundred kilogram, net mass"
+    },
+    {
+        "code": "HL",
+        "name": "hundred feet (linear)"
+    },
+    {
+        "code": "HLT",
+        "name": "hectolitre"
+    },
+    {
+        "code": "HM",
+        "name": "mile per hour"
+    },
+    {
+        "code": "HMQ",
+        "name": "million cubic metre"
+    },
+    {
+        "code": "HMT",
+        "name": "hectometre"
+    },
+    {
+        "code": "HN",
+        "name": "conventional millimetre of mercury"
+    },
+    {
+        "code": "HO",
+        "name": "hundred troy ounce"
+    },
+    {
+        "code": "HP",
+        "name": "conventional millimetre of water"
+    },
+    {
+        "code": "HPA",
+        "name": "hectolitre of pure alcohol"
+    },
+    {
+        "code": "HS",
+        "name": "hundred square feet"
+    },
+    {
+        "code": "HT",
+        "name": "half hour"
+    },
+    {
+        "code": "HTZ",
+        "name": "hertz"
+    },
+    {
+        "code": "HUR",
+        "name": "hour"
+    },
+    {
+        "code": "HY",
+        "name": "hundred yard"
+    },
+    {
+        "code": "IA",
+        "name": "inche pound (pound inch)"
+    },
+    {
+        "code": "IC",
+        "name": "count per inche"
+    },
+    {
+        "code": "IE",
+        "name": "person"
+    },
+    {
+        "code": "IF",
+        "name": "inches of water"
+    },
+    {
+        "code": "II",
+        "name": "column inch"
+    },
+    {
+        "code": "IL",
+        "name": "inche per minute"
+    },
+    {
+        "code": "IM",
+        "name": "impression inch"
+    },
+    {
+        "code": "INH",
+        "name": "inch"
+    },
+    {
+        "code": "INK",
+        "name": "square inch"
+    },
+    {
+        "code": "INQ",
+        "name": "cubic inch"
+    },
+    {
+        "code": "INQ_1",
+        "name": "inch cubed"
+    },
+    {
+        "code": "IP",
+        "name": "insurance policy"
+    },
+    {
+        "code": "ISD",
+        "name": "international sugar degree"
+    },
+    {
+        "code": "IT",
+        "name": "count per centimetre"
+    },
+    {
+        "code": "IU",
+        "name": "inche per second"
+    },
+    {
+        "code": "IU_1",
+        "name": "inch per second (vibration)"
+    },
+    {
+        "code": "IV",
+        "name": "inch per second squared"
+    },
+    {
+        "code": "IV",
+        "name": "inch per second squared (acceleration)"
+    },
+    {
+        "code": "J2",
+        "name": "joule per kilogram"
+    },
+    {
+        "code": "JB",
+        "name": "jumbo"
+    },
+    {
+        "code": "JE",
+        "name": "joule per kelvin"
+    },
+    {
+        "code": "JG",
+        "name": "jug"
+    },
+    {
+        "code": "JK",
+        "name": "megajoule per kilogram"
+    },
+    {
+        "code": "JM",
+        "name": "megajoule per cubic metre"
+    },
+    {
+        "code": "JO",
+        "name": "joint"
+    },
+    {
+        "code": "JOU",
+        "name": "joule"
+    },
+    {
+        "code": "JPS",
+        "name": "hundred metre"
+    },
+    {
+        "code": "JR",
+        "name": "jar"
+    },
+    {
+        "code": "JWL",
+        "name": "number of jewels"
+    },
+    {
+        "code": "K1",
+        "name": "kilowatt demand"
+    },
+    {
+        "code": "K2",
+        "name": "kilovolt ampere reactive demand"
+    },
+    {
+        "code": "K3",
+        "name": "kilovolt ampere reactive hour"
+    },
+    {
+        "code": "K5",
+        "name": "kilovolt ampere (reactive)"
+    },
+    {
+        "code": "K6",
+        "name": "kilolitre"
+    },
+    {
+        "code": "KA",
+        "name": "cake"
+    },
+    {
+        "code": "KB",
+        "name": "kilocharacter"
+    },
+    {
+        "code": "KBA",
+        "name": "kilobar"
+    },
+    {
+        "code": "KCC",
+        "name": "kilogram of choline chloride"
+    },
+    {
+        "code": "KD",
+        "name": "kilogram decimal"
+    },
+    {
+        "code": "KEL",
+        "name": "kelvin"
+    },
+    {
+        "code": "KF",
+        "name": "kilopacket"
+    },
+    {
+        "code": "KG",
+        "name": "keg"
+    },
+    {
+        "code": "KGM",
+        "name": "kilogram"
+    },
+    {
+        "code": "KGS",
+        "name": "kilogram per second"
+    },
+    {
+        "code": "KHY",
+        "name": "kilogram of hydrogen peroxide"
+    },
+    {
+        "code": "KHZ",
+        "name": "kilohertz"
+    },
+    {
+        "code": "KI",
+        "name": "kilogram per millimetre widht"
+    },
+    {
+        "code": "KIC",
+        "name": "kilogram, including container"
+    },
+    {
+        "code": "KIP",
+        "name": "kilogram, including inner packaging"
+    },
+    {
+        "code": "KJ",
+        "name": "kilosegment"
+    },
+    {
+        "code": "KJO",
+        "name": "kilojoule"
+    },
+    {
+        "code": "KL",
+        "name": "kilogram per metre"
+    },
+    {
+        "code": "KLK",
+        "name": "lactic dry material percentage"
+    },
+    {
+        "code": "KMA",
+        "name": "kilogram of methylamine"
+    },
+    {
+        "code": "KMH",
+        "name": "kilometre per hour"
+    },
+    {
+        "code": "KMK",
+        "name": "square kilometre"
+    },
+    {
+        "code": "KMQ",
+        "name": "kilogram per cubic metre"
+    },
+    {
+        "code": "KMT",
+        "name": "kilometre per hour"
+    },
+    {
+        "code": "KNI",
+        "name": "kilogram of nitrogen"
+    },
+    {
+        "code": "KNS",
+        "name": "kilogram named substance"
+    },
+    {
+        "code": "KNT",
+        "name": "knot"
+    },
+    {
+        "code": "KO",
+        "name": "milliequivalence caustic potash per gram of product"
+    },
+    {
+        "code": "KPA",
+        "name": "kilopascal"
+    },
+    {
+        "code": "KPH",
+        "name": "kilogram of potassium hydroxide (caustic potash)"
+    },
+    {
+        "code": "KPO",
+        "name": "kilogram of potassium oxide"
+    },
+    {
+        "code": "KPP",
+        "name": "kilogram of phosphorus pentoxide (phosphoric anhydride)"
+    },
+    {
+        "code": "KR",
+        "name": "kiloroentgen"
+    },
+    {
+        "code": "KS",
+        "name": "thousand pound per square inch"
+    },
+    {
+        "code": "KSD",
+        "name": "kilogram of substance 90% dry"
+    },
+    {
+        "code": "KSH",
+        "name": "kilogram of sodium hydroxide (caustic soda)"
+    },
+    {
+        "code": "KT",
+        "name": "kit"
+    },
+    {
+        "code": "KTM",
+        "name": "kilometre per hour"
+    },
+    {
+        "code": "KTN",
+        "name": "kilotonne"
+    },
+    {
+        "code": "KUR",
+        "name": "kilogram of uranium"
+    },
+    {
+        "code": "KVA",
+        "name": "kilovolt-ampere"
+    },
+    {
+        "code": "KVR",
+        "name": "kilovar"
+    },
+    {
+        "code": "KVT",
+        "name": "kilovolt"
+    },
+    {
+        "code": "KW",
+        "name": "kilograms per millimetre"
+    },
+    {
+        "code": "KWH",
+        "name": "kilowatt hour"
+    },
+    {
+        "code": "KWO",
+        "name": "kilogram of tungsten trioxide"
+    },
+    {
+        "code": "KWT",
+        "name": "kilowatt"
+    },
+    {
+        "code": "KX",
+        "name": "millilitre per kilogram"
+    },
+    {
+        "code": "L2",
+        "name": "litre per minute"
+    },
+    {
+        "code": "LA",
+        "name": "pound per cubic inch"
+    },
+    {
+        "code": "LAC",
+        "name": "lactose excess percentage"
+    },
+    {
+        "code": "LBR",
+        "name": "pound"
+    },
+    {
+        "code": "LBR_1",
+        "name": "pound decimal"
+    },
+    {
+        "code": "LBT",
+        "name": "troy pound (US)"
+    },
+    {
+        "code": "LC",
+        "name": "linear centimetre"
+    },
+    {
+        "code": "LD",
+        "name": "litre per day"
+    },
+    {
+        "code": "LE",
+        "name": "lite"
+    },
+    {
+        "code": "LEF",
+        "name": "leaf"
+    },
+    {
+        "code": "LF",
+        "name": "linear foot"
+    },
+    {
+        "code": "LH",
+        "name": "labour hour"
+    },
+    {
+        "code": "LI",
+        "name": "linear inch"
+    },
+    {
+        "code": "LJ",
+        "name": "large spray"
+    },
+    {
+        "code": "LK",
+        "name": "link"
+    },
+    {
+        "code": "LM",
+        "name": "linear metre"
+    },
+    {
+        "code": "LN",
+        "name": "length"
+    },
+    {
+        "code": "LO",
+        "name": "lot [unit of procurement]"
+    },
+    {
+        "code": "LP",
+        "name": "liquid pound"
+    },
+    {
+        "code": "LPA",
+        "name": "litre of pure alcohol"
+    },
+    {
+        "code": "LR",
+        "name": "layer"
+    },
+    {
+        "code": "LS",
+        "name": "lump sum"
+    },
+    {
+        "code": "LTN",
+        "name": "ton (UK) or long ton (US)"
+    },
+    {
+        "code": "LTR",
+        "name": "litre"
+    },
+    {
+        "code": "LUB",
+        "name": "metric ton, lubricating oil"
+    },
+    {
+        "code": "LUM",
+        "name": "lumen"
+    },
+    {
+        "code": "LUX",
+        "name": "lux"
+    },
+    {
+        "code": "LX",
+        "name": "linear yard per pound"
+    },
+    {
+        "code": "LY",
+        "name": "linar yard"
+    },
+    {
+        "code": "M1",
+        "name": "milligram per litre"
+    },
+    {
+        "code": "M4",
+        "name": "monetary value"
+    },
+    {
+        "code": "M5",
+        "name": "microcurie"
+    },
+    {
+        "code": "M7",
+        "name": "micro-inch"
+    },
+    {
+        "code": "M9",
+        "name": "million Btu per 1000 cubic feet"
+    },
+    {
+        "code": "MA",
+        "name": "machine per unit"
+    },
+    {
+        "code": "MAH",
+        "name": "megavolt ampere reactive hours"
+    },
+    {
+        "code": "MAL",
+        "name": "mega litre"
+    },
+    {
+        "code": "MAM",
+        "name": "megametre"
+    },
+    {
+        "code": "MAR",
+        "name": "mevavolt ampere reactive"
+    },
+    {
+        "code": "MAW",
+        "name": "megawatt"
+    },
+    {
+        "code": "MBE",
+        "name": "thousand standard brick equivalent"
+    },
+    {
+        "code": "MBF",
+        "name": "thousand board feet"
+    },
+    {
+        "code": "MBR",
+        "name": "millibar"
+    },
+    {
+        "code": "MC",
+        "name": "microgram"
+    },
+    {
+        "code": "MCU",
+        "name": "millicurie"
+    },
+    {
+        "code": "MD",
+        "name": "air dry metric tone"
+    },
+    {
+        "code": "MF",
+        "name": "milligram per square foot per side"
+    },
+    {
+        "code": "MGM",
+        "name": "milligram"
+    },
+    {
+        "code": "MHZ",
+        "name": "megahertz"
+    },
+    {
+        "code": "MIK",
+        "name": "square mile"
+    },
+    {
+        "code": "MIL",
+        "name": "thousand"
+    },
+    {
+        "code": "MIN",
+        "name": "minute [unit of time]"
+    },
+    {
+        "code": "MIO",
+        "name": "million"
+    },
+    {
+        "code": "MIU",
+        "name": "million international unit"
+    },
+    {
+        "code": "MK",
+        "name": "milligram per square inch"
+    },
+    {
+        "code": "MLD",
+        "name": "billion (US)"
+    },
+    {
+        "code": "MLD_1",
+        "name": "milliard"
+    },
+    {
+        "code": "MLT",
+        "name": "millilitre per kilogram"
+    },
+    {
+        "code": "MMK",
+        "name": "square millimetre"
+    },
+    {
+        "code": "MMQ",
+        "name": "cubic millimetre"
+    },
+    {
+        "code": "MMT",
+        "name": "millimetre"
+    },
+    {
+        "code": "MND",
+        "name": "kilogra, dry weight"
+    },
+    {
+        "code": "MO",
+        "name": "magnetic tape"
+    },
+    {
+        "code": "MON",
+        "name": "month"
+    },
+    {
+        "code": "MPA",
+        "name": "megapascal"
+    },
+    {
+        "code": "MQ",
+        "name": "thousand metre"
+    },
+    {
+        "code": "MQH",
+        "name": "cunic metre per hour"
+    },
+    {
+        "code": "MQS",
+        "name": "cubic metre per second"
+    },
+    {
+        "code": "MSK",
+        "name": "metre per second squared"
+    },
+    {
+        "code": "MT",
+        "name": "mat"
+    },
+    {
+        "code": "MTK",
+        "name": "square metre"
+    },
+    {
+        "code": "MTQ",
+        "name": "cubic metre"
+    },
+    {
+        "code": "MTQ_1",
+        "name": "metre cubed"
+    },
+    {
+        "code": "MTR",
+        "name": "metre"
+    },
+    {
+        "code": "MTS",
+        "name": "metre per second"
+    },
+    {
+        "code": "MV",
+        "name": "number of mults"
+    },
+    {
+        "code": "MVA",
+        "name": "megavolt-ampere"
+    },
+    {
+        "code": "MWH",
+        "name": "megawatt hour (1000kW.h)"
+    },
+    {
+        "code": "N1",
+        "name": "pen calorie"
+    },
+    {
+        "code": "N2",
+        "name": "number of lines"
+    },
+    {
+        "code": "N3",
+        "name": "print point"
+    },
+    {
+        "code": "NA",
+        "name": "milligram per kilogram"
+    },
+    {
+        "code": "NAR",
+        "name": "number of articles"
+    },
+    {
+        "code": "NB",
+        "name": "barge"
+    },
+    {
+        "code": "NBB",
+        "name": "number of bobbins"
+    },
+    {
+        "code": "NC",
+        "name": "car"
+    },
+    {
+        "code": "NCL",
+        "name": "number of cells"
+    },
+    {
+        "code": "ND",
+        "name": "net barrel"
+    },
+    {
+        "code": "NE",
+        "name": "net litre"
+    },
+    {
+        "code": "NEW",
+        "name": "newton per square centimetre"
+    },
+    {
+        "code": "NF",
+        "name": "message"
+    },
+    {
+        "code": "NG",
+        "name": "net gallon (US)"
+    },
+    {
+        "code": "NH",
+        "name": "message hour"
+    },
+    {
+        "code": "NI",
+        "name": "net imperial gallon"
+    },
+    {
+        "code": "NIU",
+        "name": "number of international units"
+    },
+    {
+        "code": "NJ",
+        "name": "number of screens"
+    },
+    {
+        "code": "NL",
+        "name": "load"
+    },
+    {
+        "code": "NMI",
+        "name": "nautical mile"
+    },
+    {
+        "code": "NMP",
+        "name": "number of packs"
+    },
+    {
+        "code": "NN",
+        "name": "train"
+    },
+    {
+        "code": "NPL",
+        "name": "number of parcels"
+    },
+    {
+        "code": "NPR",
+        "name": "number of pairs"
+    },
+    {
+        "code": "NPT",
+        "name": "number of parts"
+    },
+    {
+        "code": "NQ",
+        "name": "mho"
+    },
+    {
+        "code": "NR",
+        "name": "micromho"
+    },
+    {
+        "code": "NRL",
+        "name": "number of rolls"
+    },
+    {
+        "code": "NT",
+        "name": "metric net ton"
+    },
+    {
+        "code": "NT_1",
+        "name": "net ton"
+    },
+    {
+        "code": "NTT",
+        "name": "net register ton"
+    },
+    {
+        "code": "NV",
+        "name": "vehicle"
+    },
+    {
+        "code": "NX",
+        "name": "part per thousand"
+    },
+    {
+        "code": "NY",
+        "name": "pound per air dry metric ton"
+    },
+    {
+        "code": "OA",
+        "name": "panel"
+    },
+    {
+        "code": "ODE",
+        "name": "ozone depletion equivalent"
+    },
+    {
+        "code": "OHM",
+        "name": "ohm"
+    },
+    {
+        "code": "ON",
+        "name": "ounce per square yard"
+    },
+    {
+        "code": "ONZ",
+        "name": "ounce per square yard"
+    },
+    {
+        "code": "OP",
+        "name": "two pack"
+    },
+    {
+        "code": "OT",
+        "name": "overtime hour"
+    },
+    {
+        "code": "OZ",
+        "name": "ounce av"
+    },
+    {
+        "code": "OZA",
+        "name": "fluid ounce (US)"
+    },
+    {
+        "code": "OZI",
+        "name": "fluid ounce (UK)"
+    },
+    {
+        "code": "P0",
+        "name": "page -electronic"
+    },
+    {
+        "code": "P1",
+        "name": "percent"
+    },
+    {
+        "code": "P2",
+        "name": "pound per foot"
+    },
+    {
+        "code": "P3",
+        "name": "three pack"
+    },
+    {
+        "code": "P4",
+        "name": "four pack"
+    },
+    {
+        "code": "P5",
+        "name": "five pack"
+    },
+    {
+        "code": "P6",
+        "name": "six pack"
+    },
+    {
+        "code": "P7",
+        "name": "seven pack"
+    },
+    {
+        "code": "P8",
+        "name": "eight pack"
+    },
+    {
+        "code": "P9",
+        "name": "nine pack"
+    },
+    {
+        "code": "PA",
+        "name": "packet"
+    },
+    {
+        "code": "PAL",
+        "name": "pascal"
+    },
+    {
+        "code": "PB",
+        "name": "pair inch"
+    },
+    {
+        "code": "PD",
+        "name": "pad"
+    },
+    {
+        "code": "PE",
+        "name": "pound equivalent"
+    },
+    {
+        "code": "PF",
+        "name": "pallet (lift)"
+    },
+    {
+        "code": "PFL",
+        "name": "proof litre"
+    },
+    {
+        "code": "PG",
+        "name": "plate"
+    },
+    {
+        "code": "PGL",
+        "name": "proof gallon"
+    },
+    {
+        "code": "PI",
+        "name": "pitch"
+    },
+    {
+        "code": "PK",
+        "name": "pack"
+    },
+    {
+        "code": "PK_1",
+        "name": "package"
+    },
+    {
+        "code": "PLA",
+        "name": "pail"
+    },
+    {
+        "code": "PLA_1",
+        "name": "degree Plato"
+    },
+    {
+        "code": "PM",
+        "name": "pound percentage"
+    },
+    {
+        "code": "PN",
+        "name": "pound net"
+    },
+    {
+        "code": "PO",
+        "name": "pound per inch of lengtt"
+    },
+    {
+        "code": "PQ",
+        "name": "page per inch"
+    },
+    {
+        "code": "PR",
+        "name": "pair inch"
+    },
+    {
+        "code": "PS",
+        "name": "pound-force per square inch"
+    },
+    {
+        "code": "PT",
+        "name": "pint (US)"
+    },
+    {
+        "code": "PTD",
+        "name": "dry pint(US)"
+    },
+    {
+        "code": "PTI",
+        "name": "pint (UK)"
+    },
+    {
+        "code": "PTL",
+        "name": "liquid pint (US)"
+    },
+    {
+        "code": "PU",
+        "name": "tray/tray pack"
+    },
+    {
+        "code": "PV",
+        "name": "half pint (US)"
+    },
+    {
+        "code": "PW",
+        "name": "pound per inch of width"
+    },
+    {
+        "code": "PY",
+        "name": "peck dry (US)"
+    },
+    {
+        "code": "PZ",
+        "name": "peck dry (UK)"
+    },
+    {
+        "code": "Q3",
+        "name": "meal"
+    },
+    {
+        "code": "QA",
+        "name": "page-facsimile"
+    },
+    {
+        "code": "QAN",
+        "name": "quarter (of a year)"
+    },
+    {
+        "code": "QB",
+        "name": "page-hardcopy"
+    },
+    {
+        "code": "QD",
+        "name": "quarter dozen"
+    },
+    {
+        "code": "QH",
+        "name": "quarter hour"
+    },
+    {
+        "code": "QK",
+        "name": "quartes kilogram"
+    },
+    {
+        "code": "QR",
+        "name": "quire"
+    },
+    {
+        "code": "QT",
+        "name": "quart (US)"
+    },
+    {
+        "code": "QTD",
+        "name": "dry quart (US)"
+    },
+    {
+        "code": "QTI",
+        "name": "quart (UK)"
+    },
+    {
+        "code": "QTL",
+        "name": "liquid quart (US)"
+    },
+    {
+        "code": "QTR",
+        "name": "quarter (UK)"
+    },
+    {
+        "code": "R1",
+        "name": "pica"
+    },
+    {
+        "code": "R4",
+        "name": "calorie"
+    },
+    {
+        "code": "R9",
+        "name": "thousand cubic metre"
+    },
+    {
+        "code": "RA",
+        "name": "rack"
+    },
+    {
+        "code": "RD",
+        "name": "rod"
+    },
+    {
+        "code": "RG",
+        "name": "ring"
+    },
+    {
+        "code": "RH",
+        "name": "running or operating hour"
+    },
+    {
+        "code": "RK",
+        "name": "roll metric measure"
+    },
+    {
+        "code": "RL",
+        "name": "reel"
+    },
+    {
+        "code": "RM",
+        "name": "ream"
+    },
+    {
+        "code": "RN",
+        "name": "ream metric measure"
+    },
+    {
+        "code": "RO",
+        "name": "roll metric measure"
+    },
+    {
+        "code": "RP",
+        "name": "pound per team"
+    },
+    {
+        "code": "RPM",
+        "name": "revolutions per minute"
+    },
+    {
+        "code": "RPS",
+        "name": "revolutions per second"
+    },
+    {
+        "code": "RS",
+        "name": "reset"
+    },
+    {
+        "code": "RT",
+        "name": "revenue ton mile"
+    },
+    {
+        "code": "RU",
+        "name": "run"
+    },
+    {
+        "code": "S3",
+        "name": "foot wquare per second"
+    },
+    {
+        "code": "S3_1",
+        "name": "square foot per second"
+    },
+    {
+        "code": "S4",
+        "name": "metre squared per second (square metres/seconds US)"
+    },
+    {
+        "code": "S4_1",
+        "name": "square metre per second sixty fourths of an inch"
+    },
+    {
+        "code": "S5",
+        "name": "sixty fourths of an inch"
+    },
+    {
+        "code": "S6",
+        "name": "session"
+    },
+    {
+        "code": "S7",
+        "name": "storage unit"
+    },
+    {
+        "code": "S8",
+        "name": "standard advertising unit"
+    },
+    {
+        "code": "SA",
+        "name": "sack"
+    },
+    {
+        "code": "SAN",
+        "name": "half year (6 months)"
+    },
+    {
+        "code": "SCO",
+        "name": "score"
+    },
+    {
+        "code": "SCR",
+        "name": "scruple"
+    },
+    {
+        "code": "SD",
+        "name": "solid pound"
+    },
+    {
+        "code": "SE",
+        "name": "section"
+    },
+    {
+        "code": "SEC",
+        "name": "second [unit of time]"
+    },
+    {
+        "code": "SET",
+        "name": "set"
+    },
+    {
+        "code": "SG",
+        "name": "segment"
+    },
+    {
+        "code": "SHT",
+        "name": "shipping ton"
+    },
+    {
+        "code": "SIE",
+        "name": "siemens"
+    },
+    {
+        "code": "SK",
+        "name": "split tank truck"
+    },
+    {
+        "code": "SL",
+        "name": "slipsheet"
+    },
+    {
+        "code": "SMI",
+        "name": "mile (statute mile)"
+    },
+    {
+        "code": "SN",
+        "name": "square rod"
+    },
+    {
+        "code": "SO",
+        "name": "spool"
+    },
+    {
+        "code": "SP",
+        "name": "shelf package"
+    },
+    {
+        "code": "SQ",
+        "name": "square"
+    },
+    {
+        "code": "SQR",
+        "name": "square, roofing"
+    },
+    {
+        "code": "SR",
+        "name": "strip"
+    },
+    {
+        "code": "SS",
+        "name": "sheet metric measure"
+    },
+    {
+        "code": "SST",
+        "name": "short standard (7200 matches)"
+    },
+    {
+        "code": "ST",
+        "name": "sheet"
+    },
+    {
+        "code": "STI",
+        "name": "stone (UK)"
+    },
+    {
+        "code": "STK",
+        "name": "stick, cigarette"
+    },
+    {
+        "code": "STL",
+        "name": "standard litre"
+    },
+    {
+        "code": "STN",
+        "name": "net ton (2000 lb)"
+    },
+    {
+        "code": "STN_1",
+        "name": "ton (US) or short ton (UK/US)"
+    },
+    {
+        "code": "SV",
+        "name": "skid"
+    },
+    {
+        "code": "SW",
+        "name": "skein"
+    },
+    {
+        "code": "SX",
+        "name": "shipment"
+    },
+    {
+        "code": "T0",
+        "name": "telecommunication line service"
+    },
+    {
+        "code": "T1",
+        "name": "thousand pound gross"
+    },
+    {
+        "code": "T3",
+        "name": "thousand piece"
+    },
+    {
+        "code": "T4",
+        "name": "thousand bag"
+    },
+    {
+        "code": "T5",
+        "name": "thousand casing"
+    },
+    {
+        "code": "T6",
+        "name": "thousand gallon (US)"
+    },
+    {
+        "code": "T7",
+        "name": "thousand impression"
+    },
+    {
+        "code": "T8",
+        "name": "thousand linear inch"
+    },
+    {
+        "code": "TA",
+        "name": "tenth cubic foot"
+    },
+    {
+        "code": "TAH",
+        "name": "kiloampere hour (thousand ampere hour"
+    },
+    {
+        "code": "TC",
+        "name": "truckload"
+    },
+    {
+        "code": "TD",
+        "name": "therm"
+    },
+    {
+        "code": "TE",
+        "name": "tote"
+    },
+    {
+        "code": "TF",
+        "name": "ten square yard"
+    },
+    {
+        "code": "TI",
+        "name": "thousand square inch"
+    },
+    {
+        "code": "TIC",
+        "name": "metric ton, including container"
+    },
+    {
+        "code": "TIP",
+        "name": "metric ton, including inner packaging"
+    },
+    {
+        "code": "TJ",
+        "name": "thousand square centimetre"
+    },
+    {
+        "code": "TK",
+        "name": "tank, rectangular"
+    },
+    {
+        "code": "TL",
+        "name": "thousand feet (linear)"
+    },
+    {
+        "code": "TMS",
+        "name": "kilogram of imported meta, less offal"
+    },
+    {
+        "code": "TN",
+        "name": "tin"
+    },
+    {
+        "code": "TNE",
+        "name": "metric ton"
+    },
+    {
+        "code": "TNE_1",
+        "name": "tonne (metric ton)"
+    },
+    {
+        "code": "TP",
+        "name": "ten pack"
+    },
+    {
+        "code": "TPR",
+        "name": "ten pair"
+    },
+    {
+        "code": "TQ",
+        "name": "thousand feet"
+    },
+    {
+        "code": "TQD",
+        "name": "thousand cubic metre per day"
+    },
+    {
+        "code": "TR",
+        "name": "ten square feet"
+    },
+    {
+        "code": "TRL",
+        "name": "trillion (EUR)"
+    },
+    {
+        "code": "TS",
+        "name": "tonne of substance 90% dry"
+    },
+    {
+        "code": "TSD",
+        "name": "thousand square feet"
+    },
+    {
+        "code": "TSH",
+        "name": "ton of steam per hour"
+    },
+    {
+        "code": "TT",
+        "name": "thousand linear metre"
+    },
+    {
+        "code": "TU",
+        "name": "tube"
+    },
+    {
+        "code": "TV",
+        "name": "thousand kilogram"
+    },
+    {
+        "code": "TW",
+        "name": "thousand sheet"
+    },
+    {
+        "code": "TY",
+        "name": "tank, cylindrical"
+    },
+    {
+        "code": "U1",
+        "name": "tratment"
+    },
+    {
+        "code": "U2",
+        "name": "tablet"
+    },
+    {
+        "code": "UA",
+        "name": "torr"
+    },
+    {
+        "code": "UB",
+        "name": "telecommunication line in service average"
+    },
+    {
+        "code": "UC",
+        "name": "telecommunication port"
+    },
+    {
+        "code": "UD",
+        "name": "tenth minute"
+    },
+    {
+        "code": "UE",
+        "name": "tenth hour"
+    },
+    {
+        "code": "UF",
+        "name": "usage per telecommunication line average"
+    },
+    {
+        "code": "UH",
+        "name": "ten thousand yard"
+    },
+    {
+        "code": "UM",
+        "name": "million un it"
+    },
+    {
+        "code": "UN",
+        "name": "newton metre"
+    },
+    {
+        "code": "VA",
+        "name": "volt ampere per kilogram"
+    },
+    {
+        "code": "VI",
+        "name": "vial"
+    },
+    {
+        "code": "VLT",
+        "name": "volt"
+    },
+    {
+        "code": "VQ",
+        "name": "bulk"
+    },
+    {
+        "code": "VS",
+        "name": "visit"
+    },
+    {
+        "code": "W2",
+        "name": "wet kilo"
+    },
+    {
+        "code": "W4",
+        "name": "two week"
+    },
+    {
+        "code": "WA",
+        "name": "watt per kilogram"
+    },
+    {
+        "code": "WB",
+        "name": "wet pound"
+    },
+    {
+        "code": "WCD",
+        "name": "cord"
+    },
+    {
+        "code": "WE",
+        "name": "wet ton"
+    },
+    {
+        "code": "WE_1",
+        "name": "wrap"
+    },
+    {
+        "code": "WEB",
+        "name": "weber"
+    },
+    {
+        "code": "WEE",
+        "name": "week"
+    },
+    {
+        "code": "WG",
+        "name": "wine gallon"
+    },
+    {
+        "code": "WH",
+        "name": "wheel"
+    },
+    {
+        "code": "WHR",
+        "name": "watt hour"
+    },
+    {
+        "code": "WI",
+        "name": "weight per square inch"
+    },
+    {
+        "code": "WM",
+        "name": "working month"
+    },
+    {
+        "code": "WSD",
+        "name": "standard"
+    },
+    {
+        "code": "WTT",
+        "name": "watt"
+    },
+    {
+        "code": "WW",
+        "name": "millilitre of water"
+    },
+    {
+        "code": "X1",
+        "name": "hchain"
+    },
+    {
+        "code": "YDK",
+        "name": "squared yard"
+    },
+    {
+        "code": "YDQ",
+        "name": "cubic yard"
+    },
+    {
+        "code": "YL",
+        "name": "hundred linear yard"
+    },
+    {
+        "code": "YRD",
+        "name": "yard"
+    },
+    {
+        "code": "YT",
+        "name": "ten yard"
+    },
+    {
+        "code": "Z1",
+        "name": "lift van"
+    },
+    {
+        "code": "Z2",
+        "name": "chest"
+    },
+    {
+        "code": "Z3",
+        "name": "cask"
+    },
+    {
+        "code": "Z4",
+        "name": "hogshead"
+    },
+    {
+        "code": "Z5",
+        "name": "lug"
+    },
+    {
+        "code": "Z6",
+        "name": "conference point"
+    },
+    {
+        "code": "Z8",
+        "name": "newspage agate line"
+    },
+    {
+        "code": "ZP",
+        "name": "page"
+    },
+    {
+        "code": "ZZ",
+        "name": "muatually defined"
+    }
+]

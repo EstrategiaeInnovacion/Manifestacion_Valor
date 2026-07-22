@@ -11,11 +11,17 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (Schema::getConnection()->getDriverName() === 'sqlite') {
+            return;
+        }
         \DB::statement("ALTER TABLE support_tickets MODIFY COLUMN status ENUM('open','in_progress','closed','cancelled') NOT NULL DEFAULT 'open'");
     }
 
     public function down(): void
     {
+        if (Schema::getConnection()->getDriverName() === 'sqlite') {
+            return;
+        }
         \DB::statement("ALTER TABLE support_tickets MODIFY COLUMN status ENUM('open','in_progress','closed') NOT NULL DEFAULT 'open'");
     }
 };
