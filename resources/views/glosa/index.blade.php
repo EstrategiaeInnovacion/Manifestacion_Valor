@@ -341,6 +341,7 @@
     </div>
 
     {{-- SCRIPTS INTERACTIVOS Y CHARTS --}}
+    <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         let chartTendencia = null;
